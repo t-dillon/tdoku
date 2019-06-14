@@ -1,0 +1,1480 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="pandoc.css" type="text/css" />
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+</head>
+<body>
+<p><link type="text/css" rel="stylesheet" href="jquery.tocify.css" /> <link type="text/css" rel="stylesheet" href="bootstrap.min.css" /></p>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-142101488-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-142101488-1');
+</script>
+<script src="jquery.min.js"></script>
+<script src="jquery-ui.min.js"></script>
+<script src="jquery.tocify.js"></script>
+<script>$(function() { $("#toc").tocify(); });</script>
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 110, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        displayAlign: "left" });
+</script>
+<div id="toc" class="tocify">
+
+</div>
+<div class="main-container">
+<div class="figure">
+<img src="i-should-write-a-sudoku-solver.png" />
+
+</div>
+<h2 id="nerd-sniped-a-sudoku-story"><a href="https://xkcd.com/356/">Nerd Sniped</a>: A Sudoku Story</h2>
+<p>Who doesn't love <a href="https://en.wikipedia.org/wiki/Sudoku">Sudoku</a>?</p>
+<p>Judging from the number of websites, apps, and books on the topic, lots of people love it; judging from the profusion of here's-my-Sudoku-solver blog posts (like this one), programmers love it too; and judging from the academic attention it has recieved, computer scientists and ML researchers love it just as much as everyone else.</p>
+<p>I've been known to pass time with Sudoku. Maybe too much time. So, like many before, I've tried to replace time spent solving Sudokus puzzles with time spent writing a Sudoku solver and in so doing have wasted more of it than ever.</p>
+<p>Sudoku has been famously described as a <a href="http://norvig.com/sudoku.html">denial of service attack on the human intellect</a>.</p>
+<p>I feel it keenly.</p>
+<p>Still, this has been an enjoyable project with a nice result. I hope you'll enjoy it too; I hope it adds something fresh to the Sudoku blogging genre; and, of course, I hope it contributes to reducing the carbon footprint and data center costs of the burgeoning Sudoku puzzle mining industry.</p>
+<h2 id="defining-our-terms">Defining our Terms</h2>
+<p>You know the rules, but I'll summarize to define some terms.</p>
+<p>The Sudoku puzzle is posed as a partially completed 9x9 grid comprising 81 <b>cells</b>. It is further divided into 9 3x3 subgrids which we'll call <b>boxes</b>. Each row, column, and box forms a <b>group</b> of 9 cells that obeys an exactly-one constraint. That's to say that each digit 1-9 must occur once and only once within each group. The union of 3 horizontally or vertically adjacent boxes is a <b>band</b>. A set of 3 horizontally or vertically adjacent cells <em>within</em> a box is an <b>intersection</b> (of a box with a row or column). There are 27 groups, 6 bands, and 54 intersections. The given values are <b>clues</b>.</p>
+<p>Elsewhere in Sudoku-land you may see various synonyms for boxes (squares or regions), groups (units or houses), or bands (chutes, stacks, towers, or floors), but box, group, and band are the terms I'll use here.</p>
+<h2 id="the-really-basic-solver">The Really Basic Solver</h2>
+<p>This is a long story, but it begins with a simple thing: a depth-first search where in each recursive call we pick an unassigned cell and try to complete the puzzle for each candidate digit locally consistent with the puzzle's current partial assignment.</p>
+<p>To help with determination of local consistency, we'll keep some extra state beyond the array of characters representing digits currently placed. It'll be convenient to keep an integer for each of the 27 groups. The integers serve as bitvectors where a 1 in the <span class="math inline">\(i\)</span>th bit position indicates that digit <span class="math inline">\(i\)</span> remains to be placed in the group and a 0 indicates that digit <span class="math inline">\(i\)</span> has already been placed in the group.</p>
+<p>We'll consume our input as a row-major 81 character string containing digits for given clues and periods for blank cells like so:</p>
+<pre>5.....37....6..............7..54.....4......2...1..6...6..83........2.4...1......</pre>
+<p>For each cell containing a clue we'll begin by clearing the appropriate bit in each of the cell's three groups to indicate that the value has already been used, and we'll further initialize a todo list of empty cells.</p>
+<p>Our state variables and this initialization look like so:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">constexpr</span> <span class="dt">uint32_t</span> kAll = <span class="bn">0x1ff</span>;  <span class="co">// 9 bits</span>
+<span class="kw">typedef</span> tuple&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">int</span>&gt; RowColBox;
+
+array&lt;<span class="dt">uint32_t</span>, <span class="dv">9</span>&gt; rows_{}, cols_{}, boxes_{};
+vector&lt;RowColBox&gt; cells_todo_;
+size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0</span>;
+
+<span class="dt">void</span> Initialize(<span class="dt">const</span> <span class="dt">char</span> *input, <span class="dt">char</span> *solution) {
+    rows_.fill(kAll); 
+    cols_.fill(kAll); 
+    boxes_.fill(kAll);
+    num_guesses_ = <span class="dv">0</span>;
+    
+    <span class="co">// copy initial clues to solution; todo list won&#39;t include these cells</span>
+    memcpy(solution, input, <span class="dv">81</span>); 
+    cells_todo_.clear();
+
+    <span class="kw">for</span> (<span class="dt">int</span> row = <span class="dv">0</span>; row &lt; <span class="dv">9</span>; ++row) {
+        <span class="kw">for</span> (<span class="dt">int</span> col = <span class="dv">0</span>; col &lt; <span class="dv">9</span>; ++col) {
+            <span class="dt">int</span> box = (row / <span class="dv">3</span>) * <span class="dv">3</span> + col / <span class="dv">3</span>;
+            <span class="kw">if</span> (input[row * <span class="dv">9</span> + col] == <span class="st">&#39;.&#39;</span>) {
+                <span class="co">// blank cell: add to the todo list</span>
+                cells_todo_.emplace_back(make_tuple(row, col, box));
+            } <span class="kw">else</span> {
+                <span class="co">// a given clue: clear availability bits for row, col, and box</span>
+                <span class="dt">uint32_t</span> value = <span class="dv">1u</span> &lt;&lt; (<span class="dt">uint32_t</span>) (input[row * <span class="dv">9</span> + col] - <span class="st">&#39;1&#39;</span>);
+                rows_[row] ^= value;
+                cols_[col] ^= value;
+                boxes_[box] ^= value;
+            }
+        }
+    }
+    num_todo_ = cells_todo_.size() - <span class="dv">1</span>;
+}</code></pre></div>
+<p>With the setup out of the way, our recursive function to solve the puzzle looks like this:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="co">// Returns true if a solution is found, updates *solution to reflect assignments</span>
+<span class="co">// made on solution path. Also updates num_guesses_ to reflect the number of </span>
+<span class="co">// guesses made during search.</span>
+<span class="dt">bool</span> SatisfyGivenPartialAssignment(<span class="dt">int</span> todo_index, <span class="dt">char</span> *solution) {
+    <span class="dt">int</span> [row, col, box] = cells_todo_[todo_index];
+
+    <span class="kw">auto</span> candidates = rows_[row] &amp; cols_[col] &amp; boxes_[box];
+    <span class="kw">while</span> (candidates) {
+        <span class="dt">uint32_t</span> candidate = GetLowBit(candidates);
+
+        <span class="co">// only count assignment as a guess if there&#39;s more than one candidate.</span>
+        <span class="kw">if</span> (candidates ^ candidate) num_guesses_++;
+
+        <span class="co">// clear the candidate from available candidate sets for row, col, box </span>
+        rows_[row] ^= candidate;
+        cols_[col] ^= candidate;
+        boxes_[box] ^= candidate;
+
+        <span class="co">// recursively solve remaining todo cells and back out with the solution. </span>
+        <span class="kw">if</span> (todo_index == num_todo_ || 
+            SatisfyGivenPartialAssignment(todo_index + <span class="dv">1</span>, solution)) {
+            board[row * <span class="dv">9</span> + col] = (<span class="dt">char</span>) (<span class="st">&#39;1&#39;</span> + LowOrderBitIndex(candidate));
+            <span class="kw">return</span> <span class="kw">true</span>;
+        }
+        
+        <span class="co">// restore the candidate to available candidate sets for row, col, box </span>
+        rows_[row] |= candidate;
+        cols_[col] |= candidate;
+        boxes_[box] |= candidate;
+
+        candidates = ClearLowBit(candidates);
+    }
+    <span class="kw">return</span> <span class="kw">false</span>;
+}</code></pre></div>
+<p>With the code above in a struct called SolverBasic, we'll put it all together like <a href="https://github.com/t-dillon/tdoku/blob/master/src/solver_basic.cc">so</a>:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="dt">bool</span> SolveSudoku(<span class="dt">const</span> <span class="dt">char</span> *input, <span class="dt">char</span> *solution, size_t *num_guesses) {
+    <span class="dt">static</span> SolverBasic solver;
+    solver.Initialize(input, solution);
+    <span class="dt">bool</span> found_solution =  solver.SatisfyGivenPartialAssignment(<span class="dv">0</span>, solution);
+    *num_guesses = num_guesses_;
+    <span class="kw">return</span> found_solution;s
+}</code></pre></div>
+<p>This is the sort of thing you might write to solve a problem on <a href="https://leetcode.com/problems/sudoku-solver/">Leetcode</a>.</p>
+<p>We could stop here and our puzzles would be satisfied.</p>
+<p>But would we be satisfied? Is this fast? Let's see ...</p>
+<h2 id="measuring-performance">Measuring Performance</h2>
+<p>If you only look at performance on really easy puzzles like those found in this <a href="https://www.kaggle.com/bryanpark/sudoku">Kaggle data set</a>, then you might say yes, this solver is actually fast! Here's how its performance on this dataset compares<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> to <a href="http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309">JCZSolve</a>, which is the fastest Sudoku solver I'm aware of:</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles0_kaggle</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">595,697.0</td>
+<td align="right">1.7</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic</td>
+<td align="right">587,632.6</td>
+<td align="right">1.7</td>
+<td align="right">0.0%</td>
+<td align="right">32.90</td>
+</tr>
+</tbody>
+</table>
+<p>588 kps is right up there! Do we have a contender?</p>
+<p>Certainly not. All this serves to show is that the choice of benchmark matters a lot. The puzzles in the Kaggle dataset are too easy to present an interesting challenge to humans or machines. They have an average of 35 clues per puzzle, many more than the typical Sudoku, and as a result each puzzle has many easy routes to a solution. Any solver will be fast on such puzzles, and JCZSolve is designed for much harder work.</p>
+<p>For a look at a dataset that's more of a challenge for the basic solver, consider the list of ~49,000 <a href="http://staffhome.ecm.uwa.edu.au/~00013890/sudokumin.php">17 Clue Puzzles</a> maintained by Gordon Royle of the University of Western Australia:</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles1_17_clue</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">318,424.5</td>
+<td align="right">3.1</td>
+<td align="right">69.6%</td>
+<td align="right">1.25</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic</td>
+<td align="right">3.9</td>
+<td align="right">254,036.0</td>
+<td align="right">0.0%</td>
+<td align="right">9,803,916.52</td>
+</tr>
+</tbody>
+</table>
+<p>At a pathetic 3.9 puzzles per second and 9.8 million guesses per puzzle our basic solver is not looking so fast anymore.</p>
+<p>At first glance you might guess that these 17 clue puzzles would be among the hardest Sudoku since the puzzle solver is given so little to work with. However, it turns out that while they're particularly difficult for our basic solver, they're actually among the easiest Sudoku for solvers that incorporate additional reasoning techniques or that start from a slightly different representation. Since 17 is the bare minimum number of clues required to constrain a Sudoku puzzle to a single solution, these clues will necessarily have a high degree of orthogonality, and this usually leads to many trivial consequences. Employing <em>nothing</em> but the most elementary Sudoku solving technique (that of <a href="http://sudopedia.enjoysudoku.com/Naked_Single.html">naked</a> and <a href="http://sudopedia.enjoysudoku.com/Hidden_Single.html">hidden singles</a>) one can solve 45% of 17-clue puzzles (i.e., a chain of trivial consequences leads to the entire solution). Only 0.07% of 17 clue puzzles lack an immediate opportunity to make some progress in this way.</p>
+<p>I'd like a solver that's fast on the hardest puzzles. What, then, makes a hard puzzle? This is an interesting question whose answer depends in part on the solver we have in mind. Do we mean hard for a human? Hard for a specific algorithm? There's been plenty of work on these questions, but I won't delve into it. Fortunately there's an active community of Sudoku enthusiasts who search for hard puzzles, rate their difficulty in various ways, and curate lists of the very hardest puzzles. For the rest of this post we'll rely on these lists in evaluating solver performance.</p>
+<p>In particular, we'll use four datasets in order of increasing difficulty:</p>
+<ol style="list-style-type: decimal">
+<li><a href="http://magictour.free.fr/sudoku.htm">Magic Tour Top 1465</a>: An old list of 1465 hard puzzles that's been used as a common benchmark (hard, but not among the hardest by modern standards).</li>
+<li><a href="http://forum.enjoysudoku.com/the-hardest-sudokus-new-thread-t6539-600.html#p277835">Player's Forum Hardest (1905)</a>: A list of over 2 million hard puzzles maintained by members of the Enjoy Sudoku players forum (see ph_1905.zip from the Google Drive link).</li>
+<li>The subset of <a href="http://forum.enjoysudoku.com/the-hardest-sudokus-new-thread-t6539-600.html#p277835">Player's Forum Hardest (1905)</a> list having a Sudoku Explainer difficulty rating above 11.0 (coincidentally also about 49,000 puzzles).</li>
+<li><a href="http://forum.enjoysudoku.com/the-hardest-sudokus-new-thread-t6539.html#p65791">Player's Forum Hardest (1106)</a>: The list of 376 puzzles that originally kicked off the linked player's forum hardest puzzle thread, and which seems to contain on average the hardest puzzles of all for the solvers we test.</li>
+</ol>
+<p>Tests on these datasets corroborate what we learned from the 17 clue puzzles. Our basic solver is not fast at all on difficult puzzles, and it does an excessive amount of guessing and backtracking (although it does better with these than it did with the 17 clue puzzles -- the 17 clue puzzles are especially pathological for it for reasons we'll discuss below). JCZSolve itself slows down quite a bit and does more guessing as we go from the easiest to the hardest of these datasets.</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles2_magictour_top1465</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">123,779.7</td>
+<td align="right">8.1</td>
+<td align="right">2.3%</td>
+<td align="right">12.53</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic</td>
+<td align="right">43.7</td>
+<td align="right">22,866.1</td>
+<td align="right">0.0%</td>
+<td align="right">909,286.96</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles3_forum_hardest_1905</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">30,678.3</td>
+<td align="right">32.6</td>
+<td align="right">0.0%</td>
+<td align="right">73.29</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic</td>
+<td align="right">365.9</td>
+<td align="right">2,733.0</td>
+<td align="right">0.0%</td>
+<td align="right">94,664.81</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles4_forum_hardest_1905_11+</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">24,054.3</td>
+<td align="right">41.6</td>
+<td align="right">0.0%</td>
+<td align="right">89.94</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic</td>
+<td align="right">277.8</td>
+<td align="right">3,599.4</td>
+<td align="right">0.0%</td>
+<td align="right">125,027.95</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles5_forum_hardest_1106</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">12,782.2</td>
+<td align="right">78.2</td>
+<td align="right">0.0%</td>
+<td align="right">188.69</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic</td>
+<td align="right">103.8</td>
+<td align="right">9,630.4</td>
+<td align="right">0.0%</td>
+<td align="right">344,814.26</td>
+</tr>
+</tbody>
+</table>
+<p>Cleary to improve on the performance of our basic solver we're going to have reduce the amount of guessing. We're doing orders of magnitude more of it than JCZSolve, and this is not at all in the spirit of human puzzle solving, where we prefer not to guess at all. Let's see what we can do.</p>
+<h2 id="the-low-hanging-fruit">The Low Hanging Fruit</h2>
+<p>Somewhere in any presentation on constraint solving is a discussion of the impact of variable ordering on backtracking efficiency. Before Peter Norvig ever wrote a <a href="https://norvig.com/sudoku.html">Sudoku solver</a> he first wrote <a href="http://aima.cs.berkeley.edu/">the book</a>, and you can read all about it there. So far we've paid no heed to which cell we're assigning next, and an obvious heuristic if we're going to be more deliberate about it is to pick from among the most constrained cells (i.e., those with the fewest remaining candidates) in order to reduce the effective branching factor of our search.</p>
+<p>To achieve this, we'll add two functions and stick a call to MoveBestTodoTofront() at the top of SatisfyGivenPartialAssignment():</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="dt">int</span> NumCandidates(<span class="dt">const</span> RowColBox &amp;row_col_box) {
+    <span class="dt">int</span> [row, col, box] = cells_todo_[todo_index];
+    <span class="kw">auto</span> candidates = rows_[row] &amp; cols_[col] &amp; boxes_[box];
+    <span class="kw">return</span> NumBitsSet(candidates);
+}
+
+<span class="dt">void</span> MoveBestTodoToFront(<span class="dt">int</span> todo_index) {
+    nth_element(cells_todo_.begin() + todo_index,
+                cells_todo_.begin() + todo_index,
+                cells_todo_.end(),
+                [&amp;](<span class="dt">const</span> RowColBox &amp;cell1, <span class="dt">const</span> RowColBox &amp;cell2) {
+                    <span class="kw">return</span> NumCandidates(cell1) &lt; NumCandidates(cell2);
+                });
+}</code></pre></div>
+<p>This simple change leads to a dramatic improvement. Let's compare on just one dataset:</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles2_magictour_top1465</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">123,779.7</td>
+<td align="right">8.1</td>
+<td align="right">2.3%</td>
+<td align="right">12.53</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic</td>
+<td align="right">43.7</td>
+<td align="right">22,866.1</td>
+<td align="right">0.0%</td>
+<td align="right">909,286.96</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">1,483.9</td>
+<td align="right">673.9</td>
+<td align="right">0.0%</td>
+<td align="right">329.01</td>
+</tr>
+</tbody>
+</table>
+<p>With a speedup of ~30x and a reduction in guessing of ~1/3000x, this is a big step in the right direction. If this sounds like a surprisingly large improvement, consider that the most constrained cell in the todo list might have no remaining candidates, in which case we'll backtrack immediately where previously we might have exhaustively explored assignments for multiple other variables before reaching the same conflict on each branch. The most constrained cell in the todo list might also have just one candidate, in which case we'll immediately propagate that value as a consequence of prior assignments, which may in turn lead to other single-candidate cells and further propagation. And if neither of these cases obtain, then we'll still pick the cell with the lowest current branching factor.</p>
+<p>Now, despite all this our heuristic basic solver is still very slow and it still does quite a bit more guessing than JCZSolve. Before really trying to optimize for performance let's look harder at why we do all this guessing and what we can do to reduce it.</p>
+<p>If you have experience in constraint solving and you think about code we've written so far, your reaction may be &quot;that's crypto-DPLL&quot;, and so it is. Let's uncover this algorithm and see where it leads.</p>
+<h2 id="getting-propositional">Getting Propositional</h2>
+<p>If you've read this far, I'll assume some basic familiarity with propositional logic. Suppose <span class="math inline">\(x_{rcv}\)</span> is a variable expressing that the cell at row <span class="math inline">\(r\)</span> and column <span class="math inline">\(c\)</span> contains the digit <span class="math inline">\(v\)</span>, <i>D</i> is the set { 1,2,3,4,5,6,7,8,9 }, and R(<i>i,j</i>) and C(<i>i,j</i>) are functions returning the row and column respectively of the <i>j</i>th cell in the <i>i</i>th box. A minimal CNF formula representing the rules of Sudoku is a conjunction of the following clauses:</p>
+<p><b>Each cell contains a value</b> (81 positive clauses, 9 literals each) <span class="math display">\[ \forall_{r,c \in D} \, (x_{rc1} \lor x_{rc2} \lor x_{rc3} \lor x_{rc4} \lor x_{rc5} \lor x_{rc6} \lor x_{rc7} \lor x_{rc8} \lor x_{rc9})  \]</span></p>
+<p><b>No cell contains more than one value</b> (<small><span class="math inline">\(81\binom{9}{2}=2916\)</span></small> binary constraint clauses) <span class="math display">\[ \forall_{r,c,i,j \in D, \,i &lt; j} \, (\lnot x_{rci} \lor \lnot x_{rcj}) \]</span></p>
+<p><b>No row|col|box contains the same value twice</b> (<small><span class="math inline">\(3 \times 81\binom{9}{2}=8748\)</span></small> binary constraint clauses) <span class="math display">\[ \forall_{r,v,i,j \in D, \,i &lt; j} \, (\lnot x_{riv} \lor \lnot x_{rjv}) \]</span> <span class="math display">\[ \forall_{c,v,i,j \in D, \,i &lt; j} \, (\lnot x_{icv} \lor \lnot x_{jcv}) \]</span> <span class="math display">\[ \forall_{b,v,i,j \in D, \,i &lt; j} \,
+ (\lnot x_{\mathrm{R}(b,i)\mathrm{C}(b,i)v} \lor \lnot x_{\mathrm{R}(b,j)\mathrm{C}(b,j)v}) \]</span></p>
+<p>These 11745 clauses capture the constraints that are common to all Sudoku puzzles. In order to express the additional constraints of a specific puzzle we add a unit clause for each of the given clues. For example, to represent the previous sample input:</p>
+<pre>5.....37....6..............7..54.....4......2...1..6...6..83........2.4...1......</pre>
+<p>We add these unit clauses:</p>
+<p><span class="math display">\[(x_{115}) \land (x_{173}) \land (x_{187}) \land (x_{246}) \land (x_{417}) \land
+(x_{445}) \land (x_{454}) \land (x_{524}) \land (x_{592}) \land (x_{641}) \land \\
+(x_{676}) \land (x_{726}) \land (x_{758}) \land (x_{763}) \land (x_{862}) \land
+(x_{884}) \land (x_{931})\]</span></p>
+<p>With our problem expressed as a propositional formula in CNF we can now turn to DPLL for a solution. What is DPLL? The <a href="https://en.wikipedia.org/wiki/DPLL_algorithm">Davis-Putnam-Logemann-Loveland</a> algorithm is the Kevin Bacon of satisfiability. There are shinier things, but he's been around for a long time, everyone has worked with him, and in the right role he still gets the job done. (<a href="https://www.youtube.com/watch?v=ooH3e1tD91E">Duck</a> anyone?) DPLL determines whether a CNF formula, <small><span class="math inline">\(F\)</span></small>, is satisfiable (and finds a satisfying truth assignment) by pairing search with restricted constraint propagation in the form of unit resolution. In a nutshell, the algorithm is this:</p>
+<div class="math-left-align">
+<p><span class="math display">\[\textrm{DPLL}(F)\textrm{:} \\
+\quad\,\, F \leftarrow \textrm{unit-propagate}(F) \\
+\quad\,\, \textrm{if (contains-empty-clause}(F)) \, \textrm{return UNSAT}\\
+\quad\,\, \textrm{if (contains-consistent-interpretation}(F)) \, \textrm{return SAT}\\
+\quad\,\, lit \leftarrow \textrm{choose-literal-to-branch}(F)\\
+\quad\,\, \textrm{return DPLL}(F \land \{lit\}) \lor \textrm{DPLL}(F \land \{\lnot lit\})\]</span></p>
+</div>
+<p>If you squint at it hard enough, you'll see that the behaviour of our heuristic simple solver is the same as that of DPLL. Its representation of clauses is implicit rather than explicit, but it does return false when there are no candidates for a cell (when the cell's positive clause has become empty); it does return true when a satisfying assignment for all cells is found; it does do unit propagation (if the last assignment caused another cell to have just one candidate then this cell will be processed next); and it does effectively branch on literals (since cell values are mutually exclusive asserting the next candidate is the same as negating the first and then choosing another literal to branch). Given this correspondence, in what follows we'll abandon the crypto-DPLL and speak in terms of DPLL directly.</p>
+<p>Now the core of DPLL, and the key to understanding its limitations, is the unit propagation step, so let's examine this more closely.</p>
+<p>Recall the resolution rule in propositional logic, which says we can take a pair of clauses, one containing a literal <span class="math inline">\(x\)</span> and the other containing its negation <span class="math inline">\(\lnot x\)</span>, and combine them to produce a third clause, the resolvent, containing the union of the literals in the first two clauses minus the complementary literals resolved upon.</p>
+<p>To motivate this, we can take an arbitrary pair of resolvable input clauses:</p>
+<p><span class="math inline">\((\,\,x \lor y_1 \lor \ldots \lor y_n) \\ (\lnot x \lor z_1 \lor \ldots \lor z_n)\)</span></p>
+<p>And rewrite them as implications:</p>
+<p><span class="math inline">\(\lnot x \rightarrow (y_1 \lor \ldots \lor y_n) \\ \,\, x \rightarrow (z_1 \lor \ldots \lor z_n)\)</span></p>
+<p>By the law of the excluded middle we know we must have <span class="math inline">\((\lnot x \lor x)\)</span>, so we must have one or the other of these consequences:</p>
+<p><span class="math inline">\((y_1\lor \ldots \lor y_n) \lor (z_1 \lor \ldots \lor z_n)\)</span></p>
+<p>Which we can write simply as:</p>
+<p><span class="math inline">\((y_1\lor \ldots \lor y_n \lor z_1 \lor \ldots \lor z_n)\)</span></p>
+<p>Resolution gives us a sound procedure for finding consequences, and if we exhaustively perform all possible resolutions we'll eventually find all consequences, including the puzzle solution in the form of a unit clause for each cell. This will do away with the need for any search, guessing, or backtracking, but it will also produce a fantastic number of consequences along the way, most of which are not required in the resolution derivation of our solution; our solver will be slow.</p>
+<p>Going in the other direction, we've already seen with our first basic solver that if we omit constraint propagation and just perform search then we wind up with a truly excessive amount of guessing and backtracking; again our solver will be slow.</p>
+<p>The winning compromise of DPLL is to use constraint propagation to prune the search tree, but to restrict the inference done during constraint propagation to keep it bounded and fast, if incomplete. In particular, in the constraint propagation step of DPLL we perform resolution, but we confine ourselves to resolutions between pairs of clauses where at least one of the parent clauses is a unit clause (i.e., a literal already known to be asserted). Since the resolvent in this case always subsumes its non-unit parent, the size of our formula can only shrink. This nicely bounds the cost of constraint propagation, but it does mean we'll fail to find any consequences not reachable via unit resolution.</p>
+<p>To illustrate a consequence we won't find, after unit propagation the first row of a puzzle might have the following assigned cells and remaining candidates in unassigned cells:</p>
+<center>
+<img src="pairs.png" />
+</center>
+<p><br></p>
+<p>It will be obvious to a human player that the solutions to the cells in the center and on the right are 2 and 8 respectively because these are hidden singles; but this conclusion can not be reached via unit resolution from our starting formula simply because there are no unit clauses to work with. The clauses relevant to the deductions we want to make are all binary constraint clauses or positive cell clauses that now contain 2, 3, or 4 literals.</p>
+<p>Fortunately there's an easy fix for this specific problem. All we need to do is add some new positive clauses that are group-aligned instead of cell-aligned:</p>
+<p><b>Each row contains each value in some column</b> (81 positive clauses, 9 literals each) <span class="math display">\[ \forall_{r,v \in D} \, (x_{r1v} \lor x_{r2v} \lor x_{r3v} \lor x_{r4v} \lor x_{r5v} \lor x_{r6v} \lor x_{r7v} \lor x_{r8v} \lor x_{r9v})  \]</span></p>
+<p><b>Each column contains each value in some row</b> (81 positive clauses, 9 literals each) <span class="math display">\[ \forall_{c,v \in D} \, (x_{1cv} \lor x_{2cv} \lor x_{3cv} \lor x_{4cv} \lor x_{5cv} \lor x_{6cv} \lor x_{c7v} \lor x_{8cv} \lor x_{9cv})  \]</span></p>
+<p><b>Each box contains each value in some cell</b> (81 positive clauses, 9 literals each) <span class="math display">\[ \forall_{b,v \in D} \, (x_{R(b,1)C(b,1)v} \lor x_{R(b,2)C(b,2)v} \lor \ldots \lor x_{R(b,8)C(b,8)v} \lor x_{R(b,9)C(b,9)v})  \]</span></p>
+<p>Armed with these new positive clauses unit resolution can discover and propagate hidden singles since these clauses will become unit clauses when only one candidate remains in a group.</p>
+<p>In a sense these clauses haven't added anything new. They are all logical consequences of the clauses we started with, and we could derive a resolution proof for each of them if we were patient. That said, we know these new clauses are consequences of the set we started with not because of resolution proofs, but because of the pigeonhole principle. And since the shortest resolution proof of a pigeonhole formula is exponential in the number of variables [<a href="https://www.sciencedirect.com/science/article/pii/0304397585901446">Haken 1985</a>], these new clauses are, in a sense, very very far away from our starting point. It's therefore no surprise that puzzles which require them (e.g., 17 clue puzzles) are very difficult for solvers that are not designed to take advantage of them.</p>
+<p>Note that we might easily have included these clauses from the start. They are, after all, the positive side of the &quot;exactly one&quot; rule. The main reason why we didn't is that we started by thinking not in terms of clauses and literals, but in terms of an implementation focused on cells and their candidates. This makes it natural to consider only the positive clauses representing candidates for a cell, not those that go across cells. It is probably also why many Sudoku solvers treat naked singles and hidden singles as different things, if they take hidden singles into consideration at all.</p>
+<h2 id="the-tseytinesque-transformation">The Tseytinesque Transformation</h2>
+<p>While the cost of unit propagation is bounded by the number and size of the clauses in our formula, we've just seen that this doesn't mean we want to strictly minimize the size of this formula. It can be quite useful to add clauses that are tautologically implied if they make consequences reachable via unit resolution that were not reachable before.</p>
+<p>This raises an important question: what other clauses would it help to add?</p>
+<p>There exist a range of knowledge compilation techniques whose purpose is to augment a logical formula with consequences found during an offline analysis phase so that the augmented formula supports complete inference with respect to a tractable procedure like unit resolution [<a href="https://www.semanticscholar.org/paper/A-Survey-on-Knowledge-Compilation-Cadoli-Donini/0fedcf2779f31ced9f147252bb6c454f5186a9f5">Cadoli 1997</a>]. If it were feasible for Sudoku we'd be happy to exchange an expensive one-time compilation for a representation that gives us fast and complete inference while puzzle solving. Unfortunately, judging just from the pigeonhole issues already discussed, it is almost certainly infeasible perform such a compilation for Sudoku, or it would produce a compiled theory much too large to be practical.</p>
+<p>However, a key insight discussed in [<a href="https://pdfs.semanticscholar.org/3fb6/f637a74ef2b694e8aceb61e876331a599a94.pdf">del Val 1994</a>] is that the incompleteness of unit resolution is tied to the occurrence of merges in resolution proofs. By a <b>merge</b> we mean a case where the resolvent contains one or more literals that occurred in both parent clauses, as in the following example where we have a merge on <i>b</i>.</p>
+<p><span class="math display">\[ \frac{(\,\,a \lor b \lor c) \land (\lnot a \lor b \lor d)}{(b \lor c \lor d)} \]</span></p>
+<p>This observation motivates del Val's compilation technique which augments a CNF formula with a subset of its merge prime implicates in a way that guarantees all other prime implicates can be reached during a unit resolution refutation.</p>
+<p>Following this line of thinking, if we're looking for clauses that would be useful to add to our Sudoku formula we should start by looking for common consequences that arise via merge resolutions. Where, then, can merges arise?</p>
+<p>They can <em>not</em> arise from any combination of binary constraint clauses exclusively. These clauses contain only negative literals and produce no resolutions on their own.</p>
+<p>They can <em>not</em> arise from the conjunction of binary constraint clauses and any single positive cell clause. A non-tautological resolution involving the positive cell clause exchanges one of its positive literals for a negative literal of the <em>same value</em> in a different cell. Since the possible substitutions for each positive literal are all disjoint, again no merges can occur.</p>
+<p>However a merge <em>can</em> arise from the conjunction of binary constraint clauses and any of the <em>group</em> positive clauses that we added to support hidden singles.</p>
+<p>For example, if we start from the clause asserting there's a one in the first row and assume that we've eliminated the possibility of a one in all cells except the intersection with the first box, then we're left with what we'll call a <b>triad</b>: a disjunction over three literals for the <em>same value</em> in an <em>intersection</em>:</p>
+<p><span class="math display">\[ (x_{111} \lor x_{121} \lor x_{131}) \]</span></p>
+<p>Looking at the first cell on the second row, we have among our binary constraints these clauses:</p>
+<p><span class="math display">\[ (\lnot x_{111} \lor \lnot x_{211}) \]</span> <span class="math display">\[ (\lnot x_{121} \lor \lnot x_{211}) \]</span> <span class="math display">\[ (\lnot x_{131} \lor \lnot x_{211}) \]</span></p>
+<p>A series of merge resolutions between these clauses results in the unit consequence that the cell on the second row can not contain a one:</p>
+<p><span class="math display">\[ (\lnot x_{211}) \]</span></p>
+<p>In Sudoku circles the situation described above is known as a &quot;locked candidate&quot;. i.e., we don't know which cell contains the candidate, but we do know that it's one of the three cells in the intersection, and therefore the candidate can be excluded from any other cells in the groups that contain the intersection. I don't know if locked candidates play an especially important role in human puzzle solving relative to the many other puzzle solving techniques, but their consideration of does appear to play an important role in fast sudoku solvers. They probably have a large payoff precisely because they are the simplest and most common cases where merge resolutions arise to thwart unit propagation.</p>
+<p>What, then, is the clause we should add to make the inference above available via unit resolution? In this case it would be:</p>
+<p><span class="math display">\[ (x_{141} \lor x_{151} \lor x_{161} \lor x_{171} \lor x_{181} \lor x_{191} \lor \lnot x_{211}) \]</span></p>
+<p>With 54 intersections, 12 cells that pivot around each, and 9 values we would need 5832 clauses of 7 literals each to represent all cases like this, which seems quite a lot. Adding such a large number of large clauses would almost triple the size of our formula. Fortunately, there is a better way.</p>
+<p>Observing that the triads we've defined above are common subexpressions between box-oriented positive clauses and row or column-oriented positive clauses, we can factor our logic by introducing a new propositional variable to represent the satisfiability of each triad. We separately define horizontal and vertical triads, here indexed respectively by the lowest column or row they contain:</p>
+<p><span class="math display">\[ \forall_{r,v \in D, b \in \{1,4,7\}} \,\,\, h_{rbv} \leftrightarrow (x_{r(b+0)v} \lor x_{r(b+1)v} \lor x_{r(b+2)v}) \]</span> <span class="math display">\[ \forall_{c,v \in D, b \in \{1,4,7\}} \,\,\, v_{bcv} \leftrightarrow (x_{(b+0)cv} \lor x_{(b+1)cv} \lor x_{(b+2)cv}) \]</span></p>
+<p>After adding these definitions to our formula we can replace our 9-literal positive row, column, and box clauses with 3-literal clauses over triads. Further, we can replace most of our group-aligned binary constraint clauses with binary constraints involving triads. e.g., we replace an exactly-one row constraint over cell literals:</p>
+<p><span class="math display">\[\,\,\textrm{exactly-one}(x_{r1v} \lor x_{r2v} \lor x_{r3v} \lor x_{r4v} \lor x_{r5v} \lor x_{r6v} \lor x_{r7v} \lor x_{r8v} \lor x_{r9v}) \]</span></p>
+<p>With three exactly-one constraints that define horizontal triads:</p>
+<p><span class="math display">\[\,\,\textrm{exactly-one}(x_{r1v} \lor x_{r2v} \lor x_{r3v} \lor \lnot h_{r1v})\]</span> <span class="math display">\[\,\,\textrm{exactly-one}(x_{r4v} \lor x_{r5v} \lor x_{r6v} \lor \lnot h_{r4v})\]</span> <span class="math display">\[\,\,\textrm{exactly-one}(x_{r7v} \lor x_{r8v} \lor x_{r9v} \lor \lnot h_{r7v})\]</span></p>
+<p>And one exactly-one constraint to re-express via triads that we have exactly one value in the row:</p>
+<p><span class="math display">\[\,\,\textrm{exactly-one}(h_{r1v} \lor h_{r4v} \lor h_{r7v})\]</span></p>
+<p>This replaces one 9-literal clause and 36 binary clauses with one 3-literal clause, three 4-literal clauses, and 21 binary clauses.</p>
+<p>This procedure is very much like applying a <a href="https://en.wikipedia.org/wiki/Tseytin_transformation">Tseytin transformation</a> with the goal not of putting our formula into CNF -- we already have CNF -- but rather to eliminate the need for merges. Our new formula has extra nuisance variables that are not directly a part of our solution, but the overall formula is equisatisfiable with the original, it is smaller than the original, and it makes more consequences reachable by unit resolution than does the original.</p>
+<h2 id="numerical-clauses">Numerical Clauses</h2>
+<p>The introduction of triads is a nice improvement in our representation, but there is more we can do with them. So far we've used them to express constraints that act on the <em>same</em> value <em>across</em> intersections in a group. We can also use them to express constraints over <em>different</em> values <em>within</em> the same intersection. However, to do this it will be convenient to think of clauses and resolution a little differently.</p>
+<p>Previously we justified resolution by converting clauses into implications and showing via the law of the excluded middle that we must have one or the other of the right hand sides of those implications. Let's consider another way to motivate it. A disjunction is a way of saying &quot;at least one of the literals in this set true&quot;. Let's generalize this notion and think of a <i>numerical clause</i> as a bag of literals with a specified minimum that must be true. We adopt the following notation:</p>
+<p><span class="math inline">\((1/ \,\, x \lor y_1 \lor \ldots \lor y_n) \\ (1/ \lnot x \lor z_1 \lor \ldots \lor z_n)\)</span></p>
+<p>In the event that the minumum is 1, as shown above, the numerical clause is the same as a normal clause, the difference between a bag and a set being irrelevant in this case.</p>
+<p>Now, if we've got at least <i>n</i> true literals in one bag and at least <i>m</i> true literals in another, and if we place the contents of the first two bags into a third, then the third bag has at least <i>n + m</i> true literals:</p>
+<p><span class="math inline">\((2/ \,\, x \lor y_1 \lor \ldots \lor y_n \lor \lnot x \lor z_1 \lor \ldots \lor z_n)\)</span></p>
+<p>If we remove the pair of complementary literals from this new numerical clause we know, again from the law of the excluded middle, that we are removing exactly one true literal, so we decrement the minimum by one and we've reached the same resolvent as before:</p>
+<p><span class="math inline">\((1/ \, y_1 \lor \ldots \lor y_n \lor z_1 \lor \ldots \lor z_n)\)</span></p>
+<p>So the numerical clause gives us a way to represent the constraint &quot;at least N of&quot;, and it is equipped a resolution rule for generating new numerical clauses. We can develop other rules for simplifying and reasoning with numerical clauses, but since we'll be sticking with unit resolution we won't need anything beyond the obvious: when the number of literals in a numerical clause equals the clause minimum, then we can assert each of the literals as a unit clause.</p>
+<p>With this tool we now have an easy way to represent and reason about the triad literals in a given interection. What we want to say is:</p>
+<p><span class="math display">\[ \textrm{exactly-three}(h_{111} \lor \ldots \lor h_{119} )\]</span></p>
+<p>The usual way to express this in CNF would be to add <small><span class="math inline">\(\binom{9}{7}=36\)</span></small> clauses to insist on at least 3 values and <small><span class="math inline">\(\binom{9}{4}=126\)</span></small> clauses to insist on at most 3 values. Instead, we can write this with just two numerical clauses:</p>
+<p><span class="math display">\[ (3/ \,\,\,h_{111} \lor \ldots \lor h_{119} )\]</span> <span class="math display">\[ (6/ \lnot h_{111} \lor \ldots \lor \lnot h_{119} )\]</span></p>
+<p>This is a much more compact and tidy representation, which we appreciate since the cost of unit propagation is bounded by the size of our representation, and since our efforts to implement this efficiently will be intimately tied to our representation.</p>
+<h2 id="the-representational-reward">The Representational Reward</h2>
+<p>Enough of the theory for a moment. Let's put this ideas into practice and see how far we've come.</p>
+<p>Our next solver will be based on DPLL with literals and numerical clauses as the native representation. The logic will be organized around triads as discussed above. The diagram below offers a visualization of the propositional variables involved in a single band and the ways in which literals occur together in each type of constraint:</p>
+<div class="figure">
+<img src="band_clauses.png" />
+
+</div>
+<p><br> There's a separate layer in the diagram for the literals for each digit. To help make relationships clear each box is depicted separately, containing a 3x3 matrix of cell literals as well as 3x1 and 1x3 vectors of horizontal and vertical triads. The colored regions indicate sets of literals that occur together in exactly-N constraints of each type:</p>
+<ul>
+<li>The blue literals (starting with X_111) form an exactly-one constraint indicating that the cell at R1C1 has exactly one value.</li>
+<li>The reddish triad literals (starting with H_171) form an exactly-three constraint indicating that the intersection containing cells R1C7,R1C8,R1C9 has exactly three values.</li>
+<li>The horizontal row of cyan literals (starting with X_311) form an exactly-one constraint establishing the definition of the H_311 triad literal (shown in red to indicate that its occurrence in this clause is negative).</li>
+<li>The vertical row of cyan literals (starting with X_151) form an exactly-one constraint establishing the definition of the V_151 triad literal (shown in red to indicate that its occurrence in this clause is negative).</li>
+<li>The horizontal row of yellow literals (starting with V_171) form an exactly-one constraint indicating that one and only one of the value one may occur in the box. The vertical column of yellow literals in the second layer establishes the same constraint for a different box for the value two. Note that these horizontal and vertical within-box constraints are in some sense redundent, but still valuable as discussed above.</li>
+<li>The set of non-contiguous orange literals (starting with H_211) form an exactly-one constraint indicating that one and only one of the value one may occur in the row. Note that there are similar constraints oriented vertically across boxes, but they're not shown here because we're only looking at one horizontal band.</li>
+</ul>
+<p>Note that we have no constraint directly involving all of the cell literals in a row, column, or box. These constraints are all mediated via triads.</p>
+<p>The code for this solver is <a href="https://github.com/t-dillon/tdoku/blob/master/src/solver_dpll_triad_scc.cc">here</a>, and here are the results.</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles2_magictour_top1465</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">123,779.7</td>
+<td align="right">8.1</td>
+<td align="right">2.3%</td>
+<td align="right">12.53</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">1,483.9</td>
+<td align="right">673.9</td>
+<td align="right">0.0%</td>
+<td align="right">329.01</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">4,981.8</td>
+<td align="right">200.7</td>
+<td align="right">7.9%</td>
+<td align="right">8.09</td>
+</tr>
+</tbody>
+</table>
+<p>This is a little bit faster than our basic heuristic solver, which is nice, but the main thing we've been aiming for is a reduction in the amount of guessing and backtracking we're doing. We're now averaging 8 guesses per puzzle on MagicTour (vs. 12.5 for JCZSolve), and we're managing to solve 7.9% with no guesses at all (vs. 2.3% for JCZSolve).</p>
+<p>These are solid improvements, all achieved within the unified framework of unit propagation with no special algorithmic consideration for hidden singles, locked candidates, etc.</p>
+<p>Of course, that's just on one data set. If we look at a harder one it's clear that there's still room for improvement:</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles4_forum_hardest_1905_11+</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">24,054.3</td>
+<td align="right">41.6</td>
+<td align="right">0.0%</td>
+<td align="right">89.94</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">874.1</td>
+<td align="right">1,144.1</td>
+<td align="right">0.0%</td>
+<td align="right">440.47</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">893.2</td>
+<td align="right">1,119.6</td>
+<td align="right">0.0%</td>
+<td align="right">69.76</td>
+</tr>
+</tbody>
+</table>
+<p>Can we do more to bring the guessing down without getting too ad hoc?</p>
+<h2 id="strongly-connected-components">Strongly Connected Components</h2>
+<p>So far we've spent a lot of time discussing unit resolution since this is at the heart of DPLL. However, unit resolution is not the only tractable form of propositional inference. Certainly the inference is bounded if our clauses must shrink, but it is also bounded if our clauses can't grow, a criterion that is also met if we restrict attention to binary clauses. It's worth noticing that the majority of our clauses are binary to begin with, and after the introduction of triads most of our other clauses are just one or two eliminations away from being binary. This hints that a substantial part of our reasoning can take place in the implication graph formed by just our binary clauses, a hint corroborated by the fact that a large fraction of advanced human puzzle solving strategies involve looking for cycles in exactly this graph.</p>
+<p>To explore what we can do here, we'll first update our unit propagation procedure to keep track of the binary clauses encountered during elimination. Each non-subsumed binary clause produces two binary implications, since <small><span class="math inline">\(a \lor b\)</span></small> can be written as <small><span class="math inline">\(\,\lnot a \rightarrow b\)</span></small> or as <small><span class="math inline">\(\,\lnot b \rightarrow a\)</span></small>, and these implications create a directed graph among our literals.</p>
+<p>Once unit propagation reaches a fixed point, but before making any guesses, we'll run a <a href="https://en.wikipedia.org/wiki/Strongly_connected_component">strongly connected components</a> algorithm on our binary implication graph. There are several DFS-based SCC algorithms that are linear-time like unit propagation itself. This will find the condensation graph, a DAG of strongly connected components, where each component is a clusters of literals that mutually imply each other. It will also return the components in <a href="https://en.wikipedia.org/wiki/Topological_sorting">topological order</a>.</p>
+<p>Finding these SCCs will assist us in a couple of ways:</p>
+<ul>
+<li>If we find a component that contains both a literal <small><span class="math inline">\(L\)</span></small> and its negation <small><span class="math inline">\(\lnot L\)</span></small>, then we are already in an inconsistent state and we can backtrack immediately without further search.</li>
+<li>If, during DFS, the algorithm encounters a literal that is a consequence of its negation (and not vice-versa), then that literal can be immediately asserted.</li>
+<li>Once we've found the SCCs we can use both the size of the components and their position in the topological order to determine the best literal to branch on next. i.e., it's beneficial to branch on a literal in a large component early in the topological order because reduces the remaining search space to the greatest extent has has the most consequences.</li>
+</ul>
+<p>From the standpoint of human puzzle solving techniques, our method of finding SCCs should allow the solver to exploit naked and hidden doubles as well as a variety of coloring and chaining methods.</p>
+<h2 id="the-guess-minimizing-solver">The Guess-Minimizing Solver</h2>
+<p>Let's see how we've done.</p>
+<p>In the tables below the {0x1} solver is using the SCC algorithm to assist with inference, but not for heuristic choice of the next branch literal; the {0x2} solver is using SCCs for the branch heuristic, but not to assist with inference; and the {0x3} solver is using SCCs for both purposes.</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles2_magictour_top1465</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">123,779.7</td>
+<td align="right">8.1</td>
+<td align="right">2.3%</td>
+<td align="right">12.53</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">1,483.9</td>
+<td align="right">673.9</td>
+<td align="right">0.0%</td>
+<td align="right">329.01</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">4,981.8</td>
+<td align="right">200.7</td>
+<td align="right">7.9%</td>
+<td align="right">8.09</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">2,205.5</td>
+<td align="right">453.4</td>
+<td align="right">12.8%</td>
+<td align="right">4.49</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">3,054.2</td>
+<td align="right">327.4</td>
+<td align="right">7.9%</td>
+<td align="right">3.33</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">2,950.3</td>
+<td align="right">338.9</td>
+<td align="right">12.7%</td>
+<td align="right">2.63</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles4_forum_hardest_1905_11+</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">24,054.3</td>
+<td align="right">41.6</td>
+<td align="right">0.0%</td>
+<td align="right">89.94</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">874.1</td>
+<td align="right">1,144.1</td>
+<td align="right">0.0%</td>
+<td align="right">440.47</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">893.2</td>
+<td align="right">1,119.6</td>
+<td align="right">0.0%</td>
+<td align="right">69.76</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">348.3</td>
+<td align="right">2,871.4</td>
+<td align="right">0.0%</td>
+<td align="right">35.55</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">528.5</td>
+<td align="right">1,892.0</td>
+<td align="right">0.0%</td>
+<td align="right">26.84</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">534.8</td>
+<td align="right">1,870.0</td>
+<td align="right">0.0%</td>
+<td align="right">20.50</td>
+</tr>
+</tbody>
+</table>
+<p>In terms of guessing we've done pretty well. Both the inference and heuristic components of our SCC exploitation result in significant reductions in guessing, which gets us down to less than a quarter of the guessing JCZSolve does. On the magic tour dataset we've also increased to 12.8% the number of puzzles that can be solved without a guess. That said, all of our SCC-based solvers are slower than the base dpll+triad version that does not compute SCCs.</p>
+<p>It appears that the cost of computing SCCs, at least in its current form, is just too high. Its possible that there are remedies here. At the moment we have to re-run the SCC algorithm for the entire graph before each guess even if there have only been a few implications added. There do exist <a href="https://arxiv.org/pdf/1105.2397.pdf">incremental SCC algorithms</a> that exploit the topological order, and it's possible that this might make a material difference.</p>
+<p>But I think we've chased the reduction of guessing far enough. Now it's time to focus on being fast.</p>
+<h2 id="getting-vectorized">Getting Vectorized</h2>
+<p>In the interest of speed we'll set aside the strongly connected components and focus exclusively on how to represent our numerical clauses and triads in a way the supports efficient inference. In fact, we've already had a preview of how this can be done in the diagram above that depicts our propositional variables and their co-occurrence in clauses.</p>
+<p>Briefly, we'll organize our representation of state and our inference procedure around two concepts: the box and the band. Each of these will have it own method of elimination and update, and we'll batch- propagate inference between boxes and bands via message passing between peers.</p>
+<p>For boxes we've seen above that it's convenient to organize the positive cell literals and negative triad literals of a box as a 4x4 matrix with one unused extra cell. This gives a compact way to organize 3 out of our 5 varieties of numerical clause (1/9 positive cell clauses, 6/9 negative triad clauses, and 1/4 triad definition clauses). We'll store the box state in a 256-bit SIMD vector of packed 16-bit integers. Each 16-bit integer will store 9 bits representing candidate layers in the diagram above, with the top 7 bits unused. For platforms lacking AVX2 support we'll wrap two __m128i in a vector class.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></p>
+<p>This representation allows lets us use vector instructions to perform all eliminations within a box at once when assigning one or more digits to cells in that box. For example, in the diagram below the first matrix represents the initial state of a box with an empty board. All candidates are possible for each cell and negative triad. The second matrix is a mask representing eliminations that follow from the placement of a 5 and an 8 in the first two cells of the second row. Note that the placement of a value in a cell rules out negative triads in the corresponding rows and columns. The third matrix shows the state of the box after application of the mask with a single SIMD instruction.</p>
+<div class="figure">
+<img src="box_elimination.png" />
+
+</div>
+<p><br> For this whole scheme to be efficient it's important that we operate on vectors as much as possible. The moment we start inspecting individual elements of the vectors we face major performance losses. So to make this work we need to be able to do a few interesting things, including:</p>
+<ul>
+<li>computing a vector popcount which takes a vector and returns a vector whose elements contain the number of bits set in the corresponding elements of the input vector.</li>
+<li>determining via a sequence of row and column rotations whether a triad definition clause is triggered</li>
+<li>constructing an elimination mask for an arbitrary set of triggered cells and values.</li>
+</ul>
+<p>None of these are as simple or as cheap as the straightforward vector operations of eliminating candidates, but they are all feasible and they can all be done without branches.</p>
+<p>Given our box representation it falls to the bands to represent the remaining two varieties of numerical clause, both of which involve only positive triad literals (1/3 clauses horizontally and vertically for each value within the band, and 3/9 clauses across values for each intersection).</p>
+<p>For the bands we could follow the same basic scheme we used for the boxes, in which case we would use 9 16-bit cells of another 256-bit vector to represent the clauses. However, this proves to be overkill. For a given value the band contains 9 triads, so on one level there are <small><span class="math inline">\(2^9\)</span></small> possible combinations of truth values these can assume. However, due to our horizontal and vertically-oriented exactly-one constraints, there are really only 6 configurations that the triads can take.</p>
+<div class="figure">
+<img src="configurations.png" />
+
+</div>
+<p><br> To take advantage of this we'll introduce another set of propositional variables representing these 6 configurations, and our representation of band state will be a 6-element vector indicating which values can take which configurations.</p>
+<p>With the previous introduction of triads we were able to both simplify our logic and make new consequences reachable via unit resolution. In this case we only achieve the first of those goals since all of the relevant consequences were already reachable. However, by reasoning first with configurations instead of triads we're able to do in what step what previously might have required multiple steps within the band.</p>
+<p>There are more details, but it'll be better to read the <a href="https://github.com/t-dillon/tdoku/blob/master/src/solver_dpll_triad_simd.cc">code</a> than to read about it here.</p>
+<p>There's one other thing worth mentioning. Our representation of bands and boxes affords a number of choices when it comes to initializing the state of the puzzle and to heuristics for guessing. In both cases it's proved fastest to come at things from the perspective of bands first.</p>
+<p>When initializing the puzzle instead of applying the clues once cell at a time, or even batch applying the clues one box at a time, it turns out to be best to construct 6 band elimination messages from all of the clues, and then apply these 6 messages in turn.</p>
+<p>When determining the next guess to make instead of finding the most constrained cell or box, it turns out to be best to find the band with the fewest possible configurations across all values, and then to branch on the value that has the fewest configurations in the band.</p>
+<p>OK! Enough talk. If you've read all this I'm impressed! Time for some results.</p>
+<h2 id="the-fast-simd-solver">The Fast SIMD Solver</h2>
+<p>At long last it appears that our dpll-triad-simd solver compares quite favorably to JCZSolve! It's around 33% faster on the magictour dataset, and relatively speaking it gets even faster as the datasets get harder!</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles2_magictour_top1465</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">123,779.7</td>
+<td align="right">8.1</td>
+<td align="right">2.3%</td>
+<td align="right">12.53</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">165,371.1</td>
+<td align="right">6.0</td>
+<td align="right">7.9%</td>
+<td align="right">6.13</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles3_forum_hardest_1905</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">30,678.3</td>
+<td align="right">32.6</td>
+<td align="right">0.0%</td>
+<td align="right">73.29</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">44,687.9</td>
+<td align="right">22.4</td>
+<td align="right">0.0%</td>
+<td align="right">30.61</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles4_forum_hardest_1905_11+</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">24,054.3</td>
+<td align="right">41.6</td>
+<td align="right">0.0%</td>
+<td align="right">89.94</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">37,556.3</td>
+<td align="right">26.6</td>
+<td align="right">0.0%</td>
+<td align="right">35.85</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles5_forum_hardest_1106</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">12,782.2</td>
+<td align="right">78.2</td>
+<td align="right">0.0%</td>
+<td align="right">188.69</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">24,481.0</td>
+<td align="right">40.8</td>
+<td align="right">0.0%</td>
+<td align="right">60.42</td>
+</tr>
+</tbody>
+</table>
+<div class="figure">
+<img src="perfchart.png" />
+
+</div>
+<p><br> Of course, YMMV, various caveats apply, etc. It's not as portable as JCZSolve; it won't be as fast on a machine lacking AVX2 or with slow AVX2 (looking at you Threadripper); it won't be as fast if you compile with gcc instead clang; it's actually a little <em>slower</em> for 17 clue puzzles, which JCZSolve seems to handle exceptionally well.</p>
+<p>But it's definitely fast. Which is what the world needs. Because, you know, who wants to wait? Who can <em>afford</em> to wait 78 microseconds to solve the hardest Sudoku? I know I can't.</p>
+<p>Thanks for reading!</p>
+<h2 id="all-the-data">All the data</h2>
+<p>In the tables above I've presented subsets of the benchmark results to highlight what we were talking about, but here's everything in one place reference. This also includes results for minisat which were not discussed above, but I include in case you're wondering how a general-purpose CDCL solver does against a domain-optimized DPLL.</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles0_kaggle</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">595,697.0</td>
+<td align="right">1.7</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">minisat</td>
+<td align="right">15,140.6</td>
+<td align="right">66.0</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_basic</td>
+<td align="right">587,632.6</td>
+<td align="right">1.7</td>
+<td align="right">0.0%</td>
+<td align="right">32.90</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">136,353.8</td>
+<td align="right">7.3</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">9,700.4</td>
+<td align="right">103.1</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">9,122.5</td>
+<td align="right">109.6</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">9,127.4</td>
+<td align="right">109.6</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">9,114.7</td>
+<td align="right">109.7</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">787,654.0</td>
+<td align="right">1.3</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles1_17_clue</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">318,424.5</td>
+<td align="right">3.1</td>
+<td align="right">69.6%</td>
+<td align="right">1.25</td>
+</tr>
+<tr class="even">
+<td align="left">minisat</td>
+<td align="right">4,441.1</td>
+<td align="right">225.2</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_basic</td>
+<td align="right">3.9</td>
+<td align="right">254,036.0</td>
+<td align="right">0.0%</td>
+<td align="right">9,803,916.52</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">197.5</td>
+<td align="right">5,062.4</td>
+<td align="right">0.0%</td>
+<td align="right">3,015.89</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">9,150.7</td>
+<td align="right">109.3</td>
+<td align="right">78.7%</td>
+<td align="right">0.59</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">7,900.5</td>
+<td align="right">126.6</td>
+<td align="right">86.8%</td>
+<td align="right">0.23</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">8,093.7</td>
+<td align="right">123.6</td>
+<td align="right">78.7%</td>
+<td align="right">0.26</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">8,136.6</td>
+<td align="right">122.9</td>
+<td align="right">86.8%</td>
+<td align="right">0.15</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">304,397.9</td>
+<td align="right">3.3</td>
+<td align="right">78.7%</td>
+<td align="right">0.48</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles2_magictour_top1465</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">123,779.7</td>
+<td align="right">8.1</td>
+<td align="right">2.3%</td>
+<td align="right">12.53</td>
+</tr>
+<tr class="even">
+<td align="left">minisat</td>
+<td align="right">2,625.8</td>
+<td align="right">380.8</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_basic</td>
+<td align="right">43.7</td>
+<td align="right">22,866.1</td>
+<td align="right">0.0%</td>
+<td align="right">909,286.96</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">1,483.9</td>
+<td align="right">673.9</td>
+<td align="right">0.0%</td>
+<td align="right">329.01</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">4,981.8</td>
+<td align="right">200.7</td>
+<td align="right">7.9%</td>
+<td align="right">8.09</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">2,205.5</td>
+<td align="right">453.4</td>
+<td align="right">12.8%</td>
+<td align="right">4.49</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">3,054.2</td>
+<td align="right">327.4</td>
+<td align="right">7.9%</td>
+<td align="right">3.33</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">2,950.3</td>
+<td align="right">338.9</td>
+<td align="right">12.7%</td>
+<td align="right">2.63</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">165,371.1</td>
+<td align="right">6.0</td>
+<td align="right">7.9%</td>
+<td align="right">6.13</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles3_forum_hardest_1905</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">30,678.3</td>
+<td align="right">32.6</td>
+<td align="right">0.0%</td>
+<td align="right">73.29</td>
+</tr>
+<tr class="even">
+<td align="left">minisat</td>
+<td align="right">867.8</td>
+<td align="right">1,152.3</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_basic</td>
+<td align="right">365.9</td>
+<td align="right">2,733.0</td>
+<td align="right">0.0%</td>
+<td align="right">94,664.81</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">1,050.7</td>
+<td align="right">951.8</td>
+<td align="right">0.0%</td>
+<td align="right">378.19</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">1,112.7</td>
+<td align="right">898.7</td>
+<td align="right">0.0%</td>
+<td align="right">58.46</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">442.3</td>
+<td align="right">2,260.9</td>
+<td align="right">0.0%</td>
+<td align="right">28.52</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">651.3</td>
+<td align="right">1,535.4</td>
+<td align="right">0.0%</td>
+<td align="right">22.50</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">666.2</td>
+<td align="right">1,501.1</td>
+<td align="right">0.0%</td>
+<td align="right">16.75</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">44,687.9</td>
+<td align="right">22.4</td>
+<td align="right">0.0%</td>
+<td align="right">30.61</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles4_forum_hardest_1905_11+</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">24,054.3</td>
+<td align="right">41.6</td>
+<td align="right">0.0%</td>
+<td align="right">89.94</td>
+</tr>
+<tr class="even">
+<td align="left">minisat</td>
+<td align="right">710.1</td>
+<td align="right">1,408.3</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_basic</td>
+<td align="right">277.8</td>
+<td align="right">3,599.4</td>
+<td align="right">0.0%</td>
+<td align="right">125,027.95</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">874.1</td>
+<td align="right">1,144.1</td>
+<td align="right">0.0%</td>
+<td align="right">440.47</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">893.2</td>
+<td align="right">1,119.6</td>
+<td align="right">0.0%</td>
+<td align="right">69.76</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">348.3</td>
+<td align="right">2,871.4</td>
+<td align="right">0.0%</td>
+<td align="right">35.55</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">528.5</td>
+<td align="right">1,892.0</td>
+<td align="right">0.0%</td>
+<td align="right">26.84</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">534.8</td>
+<td align="right">1,870.0</td>
+<td align="right">0.0%</td>
+<td align="right">20.50</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">37,556.3</td>
+<td align="right">26.6</td>
+<td align="right">0.0%</td>
+<td align="right">35.85</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">puzzles5_forum_hardest_1106</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">12,782.2</td>
+<td align="right">78.2</td>
+<td align="right">0.0%</td>
+<td align="right">188.69</td>
+</tr>
+<tr class="even">
+<td align="left">minisat</td>
+<td align="right">590.5</td>
+<td align="right">1,693.4</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_basic</td>
+<td align="right">103.8</td>
+<td align="right">9,630.4</td>
+<td align="right">0.0%</td>
+<td align="right">344,814.26</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">416.2</td>
+<td align="right">2,402.9</td>
+<td align="right">0.0%</td>
+<td align="right">980.90</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">498.1</td>
+<td align="right">2,007.7</td>
+<td align="right">0.0%</td>
+<td align="right">140.28</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x1}</td>
+<td align="right">216.4</td>
+<td align="right">4,621.0</td>
+<td align="right">0.0%</td>
+<td align="right">58.54</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_scc{0x2}</td>
+<td align="right">276.4</td>
+<td align="right">3,618.2</td>
+<td align="right">0.0%</td>
+<td align="right">54.68</td>
+</tr>
+<tr class="even">
+<td align="left">tdoku_dpll_triad_scc{0x3}</td>
+<td align="right">288.3</td>
+<td align="right">3,468.6</td>
+<td align="right">0.0%</td>
+<td align="right">39.57</td>
+</tr>
+<tr class="odd">
+<td align="left">tdoku_dpll_triad_simd</td>
+<td align="right">24,481.0</td>
+<td align="right">40.8</td>
+<td align="right">0.0%</td>
+<td align="right">60.42</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>All benchmarks run on i5-8600k@3.6GHz; clang++-8 -O3 -mavx2 -march=native; Ubuntu 18.04 using benchmark program found <a href="https://github.com/t-dillon/tdoku/blob/master/src/run_benchmark.cc">here</a><a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>Our vector implemention can work with SSE2 which has been around since 2000. However, we rely heavily on shuffles that appeared in 2006 with SSSE3 and there is a large penalty for the SSE2 workaround. The code performs well for an SSE4.1 target and a little better with AVX2. It will probably be better still with Ice Lake whose AVX512BITALG will supply a single-instruction vector popcount.<a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
+</body>
+</html>
