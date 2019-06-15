@@ -45,16 +45,11 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
   </style>
   <link rel="stylesheet" href="pandoc.css" type="text/css" />
   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-142101488-1"></script>
+  <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'UA-142101488-1'); </script>
 </head>
 <body>
 <p><link type="text/css" rel="stylesheet" href="jquery.tocify.css" /> <link type="text/css" rel="stylesheet" href="bootstrap.min.css" /></p>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-142101488-1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-142101488-1');
-</script>
 <script src="jquery.min.js"></script>
 <script src="jquery-ui.min.js"></script>
 <script src="jquery.tocify.js"></script>
@@ -969,7 +964,7 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 <p>But it's definitely fast. Which is what the world needs. Because, you know, who wants to wait? Who can <em>afford</em> to wait 78 microseconds to solve the hardest Sudoku? I know I can't.</p>
 <p>Thanks for reading!</p>
 <h2 id="all-the-data">All the data</h2>
-<p>In the tables above I've presented subsets of the benchmark results to highlight what we were talking about, but here's everything in one place reference. This also includes results for minisat which were not discussed above, but I include in case you're wondering how a general-purpose CDCL solver does against a domain-optimized DPLL.</p>
+<p>In the tables above I've presented subsets of the benchmark results to highlight what we were talking about, but here's everything in one place reference. This also includes results for minisat which were not discussed above, but I include in case you're wondering how a general-purpose CDCL solver does against a domain-optimized DPLL. Minisat was given a triad-based representation, but without the intersection-based numerical clauses.</p>
 <table>
 <colgroup>
 <col width="41%" />
@@ -997,8 +992,8 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 </tr>
 <tr class="even">
 <td align="left">minisat</td>
-<td align="right">15,140.6</td>
-<td align="right">66.0</td>
+<td align="right">15,008.1</td>
+<td align="right">66.6</td>
 <td align="right">100.0%</td>
 <td align="right">0.00</td>
 </tr>
@@ -1080,10 +1075,10 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 </tr>
 <tr class="even">
 <td align="left">minisat</td>
-<td align="right">4,441.1</td>
-<td align="right">225.2</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="right">4,434.2</td>
+<td align="right">225.5</td>
+<td align="right">76.0%</td>
+<td align="right">0.85</td>
 </tr>
 <tr class="odd">
 <td align="left">tdoku_basic</td>
@@ -1163,10 +1158,10 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 </tr>
 <tr class="even">
 <td align="left">minisat</td>
-<td align="right">2,625.8</td>
-<td align="right">380.8</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="right">2,623.8</td>
+<td align="right">381.1</td>
+<td align="right">4.1%</td>
+<td align="right">12.90</td>
 </tr>
 <tr class="odd">
 <td align="left">tdoku_basic</td>
@@ -1246,10 +1241,10 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 </tr>
 <tr class="even">
 <td align="left">minisat</td>
-<td align="right">867.8</td>
-<td align="right">1,152.3</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="right">873.8</td>
+<td align="right">1,144.5</td>
+<td align="right">0.0%</td>
+<td align="right">53.25</td>
 </tr>
 <tr class="odd">
 <td align="left">tdoku_basic</td>
@@ -1329,10 +1324,10 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 </tr>
 <tr class="even">
 <td align="left">minisat</td>
-<td align="right">710.1</td>
-<td align="right">1,408.3</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="right">714.3</td>
+<td align="right">1,399.9</td>
+<td align="right">0.0%</td>
+<td align="right">65.10</td>
 </tr>
 <tr class="odd">
 <td align="left">tdoku_basic</td>
@@ -1412,10 +1407,10 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 </tr>
 <tr class="even">
 <td align="left">minisat</td>
-<td align="right">590.5</td>
-<td align="right">1,693.4</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="right">592.8</td>
+<td align="right">1,686.9</td>
+<td align="right">0.0%</td>
+<td align="right">83.30</td>
 </tr>
 <tr class="odd">
 <td align="left">tdoku_basic</td>

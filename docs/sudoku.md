@@ -1,13 +1,17 @@
+---
+header-includes:
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-142101488-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-142101488-1');
+    </script>
+---
+
 <link type="text/css" rel="stylesheet" href="jquery.tocify.css" />
 <link type="text/css" rel="stylesheet" href="bootstrap.min.css" />
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-142101488-1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-142101488-1');
-</script>
 <script src="jquery.min.js"></script>
 <script src="jquery-ui.min.js"></script>
 <script src="jquery.tocify.js"></script>
@@ -938,12 +942,13 @@ Thanks for reading!
 In the tables above I've presented subsets of the benchmark results to highlight what we were 
 talking about, but here's everything in one place reference. This also includes results for minisat
 which were not discussed above, but I include in case you're wondering how a general-purpose CDCL
-solver does against a domain-optimized DPLL.
+solver does against a domain-optimized DPLL. Minisat was given a triad-based representation, but 
+without the intersection-based numerical clauses.
 
 |puzzles0_kaggle                       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |jczsolve                              |   595,697.0 |         1.7 |     100.0% |           0.00 |
-|minisat                               |    15,140.6 |        66.0 |     100.0% |           0.00 |
+|minisat                               |    15,008.1 |        66.6 |     100.0% |           0.00 |
 |tdoku_basic                           |   587,632.6 |         1.7 |       0.0% |          32.90 |
 |tdoku_basic_heuristic                 |   136,353.8 |         7.3 |     100.0% |           0.00 |
 |tdoku_dpll_triad                      |     9,700.4 |       103.1 |     100.0% |           0.00 |
@@ -955,7 +960,7 @@ solver does against a domain-optimized DPLL.
 |puzzles1_17_clue                      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |jczsolve                              |   318,424.5 |         3.1 |      69.6% |           1.25 |
-|minisat                               |     4,441.1 |       225.2 |     100.0% |           0.00 |
+|minisat                               |     4,434.2 |       225.5 |      76.0% |           0.85 |
 |tdoku_basic                           |         3.9 |   254,036.0 |       0.0% |   9,803,916.52 |
 |tdoku_basic_heuristic                 |       197.5 |     5,062.4 |       0.0% |       3,015.89 |
 |tdoku_dpll_triad                      |     9,150.7 |       109.3 |      78.7% |           0.59 |
@@ -967,7 +972,7 @@ solver does against a domain-optimized DPLL.
 |puzzles2_magictour_top1465            |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |jczsolve                              |   123,779.7 |         8.1 |       2.3% |          12.53 |
-|minisat                               |     2,625.8 |       380.8 |     100.0% |           0.00 |
+|minisat                               |     2,623.8 |       381.1 |       4.1% |          12.90 |
 |tdoku_basic                           |        43.7 |    22,866.1 |       0.0% |     909,286.96 |
 |tdoku_basic_heuristic                 |     1,483.9 |       673.9 |       0.0% |         329.01 |
 |tdoku_dpll_triad                      |     4,981.8 |       200.7 |       7.9% |           8.09 |
@@ -979,7 +984,7 @@ solver does against a domain-optimized DPLL.
 |puzzles3_forum_hardest_1905           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |jczsolve                              |    30,678.3 |        32.6 |       0.0% |          73.29 |
-|minisat                               |       867.8 |     1,152.3 |     100.0% |           0.00 |
+|minisat                               |       873.8 |     1,144.5 |       0.0% |          53.25 |
 |tdoku_basic                           |       365.9 |     2,733.0 |       0.0% |      94,664.81 |
 |tdoku_basic_heuristic                 |     1,050.7 |       951.8 |       0.0% |         378.19 |
 |tdoku_dpll_triad                      |     1,112.7 |       898.7 |       0.0% |          58.46 |
@@ -991,7 +996,7 @@ solver does against a domain-optimized DPLL.
 |puzzles4_forum_hardest_1905_11+       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |jczsolve                              |    24,054.3 |        41.6 |       0.0% |          89.94 |
-|minisat                               |       710.1 |     1,408.3 |     100.0% |           0.00 |
+|minisat                               |       714.3 |     1,399.9 |       0.0% |          65.10 |
 |tdoku_basic                           |       277.8 |     3,599.4 |       0.0% |     125,027.95 |
 |tdoku_basic_heuristic                 |       874.1 |     1,144.1 |       0.0% |         440.47 |
 |tdoku_dpll_triad                      |       893.2 |     1,119.6 |       0.0% |          69.76 |
@@ -1003,7 +1008,7 @@ solver does against a domain-optimized DPLL.
 |puzzles5_forum_hardest_1106           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |jczsolve                              |    12,782.2 |        78.2 |       0.0% |         188.69 |
-|minisat                               |       590.5 |     1,693.4 |     100.0% |           0.00 |
+|minisat                               |       592.8 |     1,686.9 |       0.0% |          83.30 |
 |tdoku_basic                           |       103.8 |     9,630.4 |       0.0% |     344,814.26 |
 |tdoku_basic_heuristic                 |       416.2 |     2,402.9 |       0.0% |         980.90 |
 |tdoku_dpll_triad                      |       498.1 |     2,007.7 |       0.0% |         140.28 |
