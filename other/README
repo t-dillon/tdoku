@@ -2,21 +2,18 @@
 To compile with support for FSSS2:
 -- From https://github.com/dobrichev/fsss2 place files fsss2.cpp, fsss2.h, t_128.cpp, t_128.h
    in this directory
--- If you want to count guesses, update fsss2.cpp to keep track using
-   extern size_t Fsss2_guesses;
+-- patch fsss2.cpp fsss2.cpp.diff
 -- build with -DFSSS2=on   
 
 To compile with support for JCZSolve:
 -- Find JCZSolve10.zip here:
    http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309
 -- From JCZSolve10.zip place files JCZSolve.c, JCZSolve.h in this directory
--- If you want to count guesses, update JCZSolve.c to keep track using
-   extern size_t JCZSolve_guesses;
+-- patch JCZSolve.c JCZSolve.c.diff
 -- build with -DJCZSOLVE=on
 
 To compile with support for JSolve:
 -- From http://www.enjoysudoku.com/JSolve12.zip
    place files JSolve.c, JSolve.h in this directory
--- If you want to count guesses, update JSolve.c to keep track using
-   extern size_t JSolve_guesses;
+-- patch JSolve.c JSolve.c.diff
 -- build with -DJSOLVE=on

@@ -8,6 +8,7 @@ size_t JCZSolve_guesses;  // edit JCZSolve.c to update this extern
 extern "C"
 size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_flags*/,
                            char *solution, size_t *num_guesses) {
+    JCZSolve_guesses = 0;
     int count = JCZSolver(input, solution, limit);
     *num_guesses = JCZSolve_guesses;
     return count;

@@ -117,7 +117,7 @@ struct SolverMiniSat {
         }
     }
 
-    bool SolveSudoku(const char *input, char *solution) {
+    bool SolveSudoku(const char *input, char *solution, size_t *num_guesses) {
         Minisat::vec<Minisat::Lit> assumptions;
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < 9; column++) {
@@ -127,6 +127,7 @@ struct SolverMiniSat {
                 }
             }
         }
+        solver.decisions = 0;
         bool satisfied = solver.solve(assumptions);
         if (satisfied) {
             for (int row = 0; row < 9; row++) {
@@ -140,6 +141,7 @@ struct SolverMiniSat {
                 }
             }
         }
+        *num_guesses = solver.decisions - 1;
         return satisfied;
     }
 };
@@ -151,6 +153,5 @@ extern "C"
 size_t TdokuSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t /*unused_flags*/,
                           char *solution, size_t *num_guesses) {
     static SolverMiniSat solver;
-    *num_guesses = 0; // don't think there's a way to get this out of minisat
-    return solver.SolveSudoku(input, solution);
+    return solver.SolveSudoku(input, solution, num_guesses);
 }

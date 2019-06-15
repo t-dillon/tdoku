@@ -1,0 +1,12 @@
+739a740,741
+> extern size_t JSolve_guesses;
+> 
+769a772
+>         JSolve_guesses++;
+788c791,794
+< 		else Queue(cell,mask);							// one fewer option, may set digit
+---
+> 		else {
+>           JSolve_guesses++;
+>           Queue(cell,mask);							// one fewer option, may set digit
+>         }
