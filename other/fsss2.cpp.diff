@@ -3,3 +3,7 @@
 > 
 893a896
 > 		Fsss2_guesses++;
+1224c1227
+< 	return (++nsol == 2); //stop after possible second solution
+---
+> 	return (++nsol == 1); //stop after first solution
