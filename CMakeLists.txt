@@ -6,7 +6,7 @@ option(OPT      "Compile with full optimization" ON)
 option(SSE4_1   "Compile with SSE4.1 support" ON)
 option(AVX2     "Compile with AVX2 support" OFF)
 option(AVX512   "Compile with AVX512BITALG support" OFF)
-option(NATIVE   "Compile for native architecture" OFF)
+option(NATIVE   "Compile for native architecture" ON)
 
 option(FSSS2    "Include fsss2"    OFF)
 option(JCZSOLVE "Include JCZSolve" OFF)
