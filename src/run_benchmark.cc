@@ -30,6 +30,7 @@ struct Benchmark {
             "tdoku_basic:0,tdoku_basic:1,tdoku_dpll_triad_scc:0,"
             "tdoku_dpll_triad_scc:1,tdoku_dpll_triad_scc:2,tdoku_dpll_triad_scc:3,"
             "tdoku_dpll_triad_simd";
+    bool check_multiple_ = false;
     bool csv_output_ = false;
     bool randomize_ = true;
     bool validate_ = false;
@@ -201,7 +202,7 @@ struct Benchmark {
                     " -----------:| ----------:| --------------:|";
             cout << endl;
         }
-        char output[82]{0};
+        char output[81]{0};
         size_t num_guesses;
 
         for (Solver &solver : solvers) {
@@ -245,7 +246,7 @@ struct Benchmark {
 
             for (int i = 0; i < puzzles_todo; i++) {
                 string &puzzle = testing_data_[i % test_dataset_size_];
-                if (!solver.Solve(puzzle.c_str(), 1, output, &num_guesses) ||
+                if (!solver.Solve(puzzle.c_str(), check_multiple_ ? 2 : 1, output, &num_guesses) ||
                     (validate_ && !ValidateSolution(output))) {
                     cout << "Error during benchmark" << endl;
                     PrintSudoku(puzzle.c_str(), false);
@@ -303,10 +304,14 @@ int main(int argc, char **argv) {
 #endif
 
     char c;
-    while ((c = getopt(argc, argv, "chn:r:s:t:v:w:")) != -1) {
+    while ((c = getopt(argc, argv, "c::hm::n:r::s:t:v::w:")) != -1) {
         switch (c) {
             case 'c': {
-                benchmark.csv_output_ = true;
+                benchmark.csv_output_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);;
+                break;
+            }
+            case 'm': {
+                benchmark.check_multiple_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);;
                 break;
             }
             case 'n': {
@@ -314,7 +319,7 @@ int main(int argc, char **argv) {
                 break;
             }
             case 'r': {
-                benchmark.randomize_ = strtol(optarg, nullptr, 10);
+                benchmark.randomize_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);
                 break;
             }
             case 's': {
@@ -326,7 +331,7 @@ int main(int argc, char **argv) {
                 break;
             }
             case 'v': {
-                benchmark.validate_ = strtol(optarg, nullptr, 10);
+                benchmark.validate_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);
                 break;
             }
             case 'w': {
@@ -337,12 +342,13 @@ int main(int argc, char **argv) {
             default: {
                 cout << "usage: run_benchmark <options> puzzle_file_1 [...] " << endl;
                 cout << "options:" << endl;
-                cout << "  -c                  // output csv instead of table" << endl;
+                cout << "  -c [0|1]            // output csv instead of table [default 0]" << endl;
+                cout << "  -m [0|1]            // check for multiple solutions [default 0]" << endl;
                 cout << "  -n <size>           // test set size [default 2500000]" << endl;
-                cout << "  -r 0|1              // randomly permute puzzles [default 1]" << endl;
+                cout << "  -r [0|1]            // randomly permute puzzles [default 1]" << endl;
                 cout << "  -s solver_1,...     // which solvers to run [default all]" << endl;
                 cout << "  -t <secs>           // target test time [default 20]" << endl;
-                cout << "  -v 0|1              // validate solutions [default 0]" << endl;
+                cout << "  -v [0|1]            // validate solutions [default 0]" << endl;
                 cout << "  -w <secs>           // target warmup time [default 10]" << endl;
                 cout << "solvers: " << endl << benchmark.solvers_ << endl;
                 cout << "build info: " << CXX_COMPILER_ID <<  " " << CXX_COMPILER_VERSION
@@ -350,6 +356,9 @@ int main(int argc, char **argv) {
                 exit(0);
             }
         }
+    }
+    if (benchmark.check_multiple_ && benchmark.validate_) {
+        cout << "Incompatible options: -m and -v" << endl;
     }
 
     benchmark.InitSolvers();
