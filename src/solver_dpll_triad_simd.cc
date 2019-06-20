@@ -80,13 +80,17 @@ struct State {
 struct BoxIndexing {
     uint8_t box_i;
     uint8_t box_j;
+    uint8_t box;
     uint8_t elem_i;
     uint8_t elem_j;
+    uint8_t elem;
 
     BoxIndexing() = default;
 
     explicit BoxIndexing(int cell) : box_i(cell / 27), box_j((cell % 9) / 3),
-                                     elem_i((cell / 9) % 3), elem_j(cell % 3) {}
+                                     box(box_i * 3 + box_j),
+                                     elem_i((cell / 9) % 3), elem_j(cell % 3),
+                                     elem(elem_i * 4 + elem_j) {}
 };
 
 constexpr uint16_t shuf00 = 0x0100, shuf01 = 0x0302, shuf02 = 0x0504, shuf03 = 0x0706;
@@ -171,7 +175,6 @@ const Tables tables{};
 struct SolverDpllTriadSimd {
     State puzzle_{};
     size_t limit_ = 1;
-    size_t num_clues_ = 0;
     size_t num_solutions_ = 0;
     size_t num_guesses_ = 0;
 
@@ -464,18 +467,21 @@ struct SolverDpllTriadSimd {
     bool InitBandBatch(const char *input, State &state) {
         Cells08 h_eliminations[3]{};
         Cells08 v_eliminations[3]{};
-        num_clues_ = 0;
         for (int i = 0; i < 81; i++) {
-            const BoxIndexing &indexing = tables.box_indexing[i];
             char digit = input[i];
             if (digit != '.') {
+                const BoxIndexing &indexing = tables.box_indexing[i];
+                uint16_t candidate = 1u << (uint32_t) (digit - '1');
+                // perform eliminations for digit in box, but don't propagate
+                state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
+                        tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
+                // merge all band eliminations; we'll propagate these below.
                 h_eliminations[indexing.box_i] |=
                         tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i] &
-                        Cells08::All(1u << (uint32_t) (digit - '1'));
+                        Cells08::All(candidate);
                 v_eliminations[indexing.box_j] |=
                         tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j] &
-                        Cells08::All(1u << (uint32_t) (digit - '1'));
-                num_clues_++;
+                        Cells08::All(candidate);
             }
         }
         return BandEliminate(state, 0, 0, h_eliminations[0], 1) &&
@@ -487,12 +493,9 @@ struct SolverDpllTriadSimd {
     }
 
     static inline void ExtractTriad(uint64_t triad, int triad_base, char *solution) {
-        int value = LowOrderBitIndex(triad >> 0u);
-        solution[triad_base + 0] = char('1' + value);
-        value = LowOrderBitIndex(triad >> 16u);
-        solution[triad_base + 1] = char('1' + value);
-        value = LowOrderBitIndex(triad >> 32u);
-        solution[triad_base + 2] = char('1' + value);
+        solution[triad_base + 0] = char('1' + LowOrderBitIndex(triad >> 0u));
+        solution[triad_base + 1] = char('1' + LowOrderBitIndex(triad >> 16u));
+        solution[triad_base + 2] = char('1' + LowOrderBitIndex(triad >> 32u));
     }
 
     static void ExtractSolution(const State &state, char *solution) {
