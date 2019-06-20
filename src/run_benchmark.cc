@@ -30,10 +30,10 @@ struct Benchmark {
             "tdoku_basic:0,tdoku_basic:1,tdoku_dpll_triad_scc:0,"
             "tdoku_dpll_triad_scc:1,tdoku_dpll_triad_scc:2,tdoku_dpll_triad_scc:3,"
             "tdoku_dpll_triad_simd";
-    bool check_multiple_ = false;
     bool csv_output_ = false;
     bool randomize_ = true;
-    bool validate_ = false;
+    bool validate_ = true;
+    bool allow_zero_ = false;
 
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     mt19937 rng{seed};
@@ -213,8 +213,8 @@ struct Benchmark {
             microseconds end = start;
             while ((end - start).count() < min_seconds_warmup_ * 1000000) {
                 string &puzzle = testing_data_[n % test_dataset_size_];
-                if (!solver.Solve(puzzle.c_str(), 1, output, &num_guesses) ||
-                    !ValidateSolution(output)) {  // always validate during warmup
+                int count = solver.Solve(puzzle.c_str(), 2, output, &num_guesses);
+                if ((!allow_zero_ && !count) || (validate_ && !ValidateSolution(output))) {
                     cout << "Error during warmup" << endl;
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);
@@ -246,8 +246,8 @@ struct Benchmark {
 
             for (int i = 0; i < puzzles_todo; i++) {
                 string &puzzle = testing_data_[i % test_dataset_size_];
-                if (!solver.Solve(puzzle.c_str(), check_multiple_ ? 2 : 1, output, &num_guesses) ||
-                    (validate_ && !ValidateSolution(output))) {
+                int count = solver.Solve(puzzle.c_str(), 2, output, &num_guesses);
+                if ((!allow_zero_ && !count) || (validate_ && !ValidateSolution(output))) {
                     cout << "Error during benchmark" << endl;
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);
@@ -304,14 +304,10 @@ int main(int argc, char **argv) {
 #endif
 
     char c;
-    while ((c = getopt(argc, argv, "c::hm::n:r::s:t:v::w:")) != -1) {
+    while ((c = getopt(argc, argv, "c::hn:r::s:t:v::w:z::")) != -1) {
         switch (c) {
             case 'c': {
-                benchmark.csv_output_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);;
-                break;
-            }
-            case 'm': {
-                benchmark.check_multiple_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);;
+                benchmark.csv_output_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);;
                 break;
             }
             case 'n': {
@@ -319,7 +315,7 @@ int main(int argc, char **argv) {
                 break;
             }
             case 'r': {
-                benchmark.randomize_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);
+                benchmark.randomize_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);
                 break;
             }
             case 's': {
@@ -331,11 +327,15 @@ int main(int argc, char **argv) {
                 break;
             }
             case 'v': {
-                benchmark.validate_ = optarg == nullptr ? 1 : strtol(optarg, nullptr, 10);
+                benchmark.validate_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);
                 break;
             }
             case 'w': {
                 benchmark.min_seconds_warmup_ = strtol(optarg, nullptr, 10);
+                break;
+            }
+            case 'z': {
+                benchmark.allow_zero_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);
                 break;
             }
             case 'h':
@@ -348,17 +348,15 @@ int main(int argc, char **argv) {
                 cout << "  -r [0|1]            // randomly permute puzzles [default 1]" << endl;
                 cout << "  -s solver_1,...     // which solvers to run [default all]" << endl;
                 cout << "  -t <secs>           // target test time [default 20]" << endl;
-                cout << "  -v [0|1]            // validate solutions [default 0]" << endl;
+                cout << "  -v [0|1]            // validate solutions [default 1]" << endl;
                 cout << "  -w <secs>           // target warmup time [default 10]" << endl;
+                cout << "  -z [0|1]            // allow zero zolution [default 0]" << endl;
                 cout << "solvers: " << endl << benchmark.solvers_ << endl;
                 cout << "build info: " << CXX_COMPILER_ID <<  " " << CXX_COMPILER_VERSION
                      << CXX_FLAGS << endl;
                 exit(0);
             }
         }
-    }
-    if (benchmark.check_multiple_ && benchmark.validate_) {
-        cout << "Incompatible options: -m and -v" << endl;
     }
 
     benchmark.InitSolvers();

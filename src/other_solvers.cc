@@ -51,12 +51,12 @@ size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t /*unused_flags
     }
     int count;
     if (limit == 1) {
+        hasAnySolution has{};
+        count = has.solve(zero_based_input);
+    } else {
         getSingleSolution gss{};
         count = gss.solve(zero_based_input, zero_based_output);
         for (int i = 0; i < 81; i++) solution[i] = '0' + zero_based_output[i];
-    } else {
-        hasSingleSolution hss{};
-        count = hss.solve(zero_based_input);
     }
     *num_guesses = Fsss2_guesses;
     return count;
