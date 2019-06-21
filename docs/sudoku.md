@@ -176,7 +176,8 @@ bool SolveSudoku(const char *input, char *solution, size_t *num_guesses) {
     return found_solution;s
 }
 ```
-This is the sort of thing you might write to solve a problem on [Leetcode](https://leetcode.com/problems/sudoku-solver/).
+This is the sort of thing you might write to solve a problem on
+[Project Euler](https://projecteuler.net/problem=96) or [Leetcode](https://leetcode.com/problems/sudoku-solver/).
 
 We could stop here and our puzzles would be satisfied.
 
@@ -184,26 +185,34 @@ But would we be satisfied? Is this fast? Let's see ...
 
 ## Measuring Performance
 
-If you only look at performance on really easy puzzles like those found in this
+If you only look at performance[^1] on really easy puzzles like those found in this
 [Kaggle data set](https://www.kaggle.com/bryanpark/sudoku), then you might say yes, this solver is
-actually fast! Here's how its performance on this dataset compares[^1] to
-[JCZSolve](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309), 
-which is the fastest Sudoku solver I'm aware of:
+actually fast! Here's how its performance on this dataset compares to
+[JCZSolve](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309)
+and [fsss2](https://github.com/dobrichev/fsss2)[^2], the fastest Sudoku solvers I'm aware of:
 
 |puzzles0_kaggle                       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   595,697.0 |         1.7 |     100.0% |           0.00 |
-|tdoku_basic                           |   587,632.6 |         1.7 |       0.0% |          32.90 |
+|tdoku_basic                           |   382,436.4 |         2.6 |       0.0% |          54.48 |
+|jczsolve                              |   596,311.1 |         1.7 |     100.0% |           0.00 |
+|fsss2                                 | 1,456,305.4 |         0.7 |     100.0% |           0.00 |
 
-[^1]: All benchmarks run on i5-8600k@3.6GHz; clang++-8 -O3 -mavx2 -march=native; Ubuntu 18.04 using benchmark program found [here](https://github.com/t-dillon/tdoku/blob/master/src/run_benchmark.cc)
+[^1]: All benchmarks run on i5-8600k@3.6GHz; Ubuntu 18.04; [benchmark program](https://github.com/t-dillon/tdoku/blob/master/src/run_benchmark.cc)
+compiled with clang++-8 -O3 -mavx2 -march=native, except for testing fsss2, which was compiled with gcc-6 and the same
+flags. (of several compilers tested clang-8 produced fastest code for jczsolve and various tdoku while gcc-6 produced fastest
+code for fsss2). All benchmarks look for up to 2 solutions (i.e., to find a solution and confirm it is unique).
 
-588 kps is right up there! Do we have a contender?  
+[^2]: fsss2 can be configured to use or not use locked candidates and pairs. The results here are based on a version
+compiled to use locked candidates but not pairs. This is not the default configuration, but it is the fastest
+configuration on the datasets we focus on.
+
+382 kps seems pretty decent! Is this a potential contender?
 
 Certainly not. All this serves to show is that the choice of benchmark matters a lot. The 
 puzzles in the Kaggle dataset are too easy to present an interesting challenge to humans
 or machines. They have an average of 35 clues per puzzle, many more than the typical Sudoku, and as
-a result each puzzle has many easy routes to a solution. Any solver will be fast on such puzzles,
-and JCZSolve is designed for much harder work.
+a result the puzzles are already almost solved with many easy routes to a solution. Any solver will
+be fast on such puzzles, and JCZSolve and fsss2 are designed for harder work.
 
 For a look at a dataset that's more of a challenge for the basic solver, consider the list of ~49,000
 [17 Clue Puzzles](http://staffhome.ecm.uwa.edu.au/~00013890/sudokumin.php) maintained by Gordon Royle 
@@ -211,10 +220,11 @@ of the University of Western Australia:
 
 |puzzles1_17_clue                      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   318,424.5 |         3.1 |      69.6% |           1.25 |
-|tdoku_basic                           |         3.9 |   254,036.0 |       0.0% |   9,803,916.52 |
+|tdoku_basic                           |         1.9 |   539,197.7 |       0.0% |  22,350,875.05 |
+|jczsolve                              |   289,520.0 |         3.5 |      69.6% |           1.86 |
+|fsss2                                 |   299,584.6 |         3.3 |      72.5% |           1.32 |
 
-At a pathetic 3.9 puzzles per second and 9.8 million guesses per puzzle our basic solver is not 
+At a pathetic 1.9 puzzles per second and 22 million guesses per puzzle our basic solver is not
 looking so fast anymore.
 
 At first glance you might guess that these 17 clue puzzles would be among the hardest Sudoku since the 
@@ -229,7 +239,7 @@ many trivial consequences. Employing *nothing* but the most elementary Sudoku so
 solve 45% of 17-clue puzzles (i.e., a chain of trivial consequences leads to the entire solution).
 Only 0.07% of 17 clue puzzles lack an immediate opportunity to make some progress in this way.
 
-I'd like a solver that's fast on the hardest puzzles. 
+I'd like a solver that's fast on the *hardest puzzles*.
 What, then, makes a hard puzzle? This is an interesting question whose answer depends
 in part on the solver we have in mind. Do we mean hard for a human? Hard for a specific 
 algorithm? There's been plenty of work on these questions, but I won't delve into it.
@@ -254,31 +264,35 @@ In particular, we'll use four datasets in order of increasing difficulty:
 Tests on these datasets corroborate what we learned from the 17 clue puzzles. Our basic solver is 
 not fast at all on difficult puzzles, and it does an excessive amount of guessing and backtracking
 (although it does better with these than it did with the 17 clue puzzles -- the 17 clue puzzles are
-especially pathological for it for reasons we'll discuss below). JCZSolve itself slows down quite
-a bit and does more guessing as we go from the easiest to the hardest of these datasets. 
+especially pathological for it for reasons we'll discuss below). JCZSolve and fsss2 both slow down quite
+a bit and do more guessing as we go from the easiest to the hardest of these datasets.
 
 |puzzles2_magictour_top1465            |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   123,779.7 |         8.1 |       2.3% |          12.53 |
-|tdoku_basic                           |        43.7 |    22,866.1 |       0.0% |     909,286.96 |
+|tdoku_basic                           |        20.7 |    48,276.4 |       0.0% |   2,008,517.38 |
+|jczsolve                              |    77,760.3 |        12.9 |       2.3% |          20.77 |
+|fsss2                                 |    70,821.8 |        14.1 |       1.7% |          19.16 |
 
 |puzzles3_forum_hardest_1905           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    30,678.3 |        32.6 |       0.0% |          73.29 |
-|tdoku_basic                           |       365.9 |     2,733.0 |       0.0% |      94,664.81 |
+|tdoku_basic                           |       196.4 |     5,092.7 |       0.0% |     184,166.12 |
+|jczsolve                              |    16,197.5 |        61.7 |       0.0% |         138.69 |
+|fsss2                                 |    14,470.4 |        69.1 |       0.0% |         117.71 |
 
 |puzzles4_forum_hardest_1905_11+       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    24,054.3 |        41.6 |       0.0% |          89.94 |
-|tdoku_basic                           |       277.8 |     3,599.4 |       0.0% |     125,027.95 |
+|tdoku_basic                           |       142.1 |     7,036.3 |       0.0% |     256,410.60 |
+|jczsolve                              |    12,564.5 |        79.6 |       0.0% |         170.99 |
+|fsss2                                 |    11,881.4 |        84.2 |       0.0% |         138.67 |
 
 |puzzles5_forum_hardest_1106           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    12,782.2 |        78.2 |       0.0% |         188.69 |
-|tdoku_basic                           |       103.8 |     9,630.4 |       0.0% |     344,814.26 |
+|tdoku_basic                           |        54.6 |    18,300.7 |       0.0% |     684,253.42 |
+|jczsolve                              |     6,567.1 |       152.3 |       0.0% |         366.84 |
+|fsss2                                 |     6,483.2 |       154.2 |       0.0% |         277.75 |
 
 Cleary to improve on the performance of our basic solver we're going to have reduce the amount of
-guessing. We're doing orders of magnitude more of it than JCZSolve, and this is not at all in the
+guessing. We're doing orders of magnitude more of it than the fastest solvers, and this is not at all in the
 spirit of human puzzle solving, where we prefer not to guess at all. Let's see  what we can do.
 
 ## The Low Hanging Fruit
@@ -314,11 +328,12 @@ This simple change leads to a dramatic improvement. Let's compare on just one da
 
 |puzzles2_magictour_top1465            |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   123,779.7 |         8.1 |       2.3% |          12.53 |
-|tdoku_basic                           |        43.7 |    22,866.1 |       0.0% |     909,286.96 |
-|tdoku_basic_heuristic                 |     1,483.9 |       673.9 |       0.0% |         329.01 |
+|tdoku_basic                           |        20.7 |    48,276.4 |       0.0% |   2,008,517.38 |
+|tdoku_basic_heuristic                 |       743.6 |     1,344.9 |       0.0% |         652.51 |
+|jczsolve                              |    77,760.3 |        12.9 |       2.3% |          20.77 |
+|fsss2                                 |    70,821.8 |        14.1 |       1.7% |          19.16 |
 
-With a speedup of ~30x and a reduction in guessing of ~1/3000x, this is a big step in the right 
+With a speedup of ~35x and a reduction in guessing of ~1/3000x, this is a big step in the right
 direction. If this sounds like a surprisingly large improvement, consider that the most constrained
 cell in the todo list might have no remaining candidates, in which case we'll backtrack immediately
 where previously we might have exhaustively explored assignments for multiple other variables before
@@ -329,7 +344,7 @@ And if neither of these cases obtain, then we'll still pick the cell with the lo
 factor.
 
 Now, despite all this our heuristic basic solver is still very slow and it still does quite a bit
-more guessing than JCZSolve. Before really trying to optimize for performance let's look harder at 
+more guessing than JCZSolve or fsss2. Before really trying to optimize for performance let's look harder at
 why we do all this guessing and what we can do to reduce it.
  
 If you have experience in constraint solving and you think about code we've written so far, your
@@ -702,26 +717,28 @@ and here are the results.
 
 |puzzles2_magictour_top1465            |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   123,779.7 |         8.1 |       2.3% |          12.53 |
-|tdoku_basic_heuristic                 |     1,483.9 |       673.9 |       0.0% |         329.01 |
-|tdoku_dpll_triad                      |     4,981.8 |       200.7 |       7.9% |           8.09 |
+|tdoku_basic_heuristic                 |       743.6 |     1,344.9 |       0.0% |         652.51 |
+|tdoku_dpll_triad                      |     3,506.2 |       285.2 |       8.0% |          12.68 |
+|jczsolve                              |    77,760.3 |        12.9 |       2.3% |          20.77 |
+|fsss2                                 |    70,821.8 |        14.1 |       1.7% |          19.16 |
 
 This is a little bit faster than our basic heuristic solver, which is nice, but the main thing
 we've been aiming for is a reduction in the amount of guessing and backtracking we're doing. We're 
-now averaging 8 guesses per puzzle on MagicTour (vs. 12.5 for JCZSolve), and we're managing to
-solve 7.9% with no guesses at all (vs. 2.3% for JCZSolve).
+now averaging 12.7 guesses per puzzle on MagicTour (vs. 20.8 for JCZSolve), and we're managing to
+solve 8% with no guesses at all (vs. 2.3% for JCZSolve).
 
 These are solid improvements, all achieved within the unified framework of unit propagation with no
 special algorithmic consideration for hidden singles, locked candidates, etc.
 
 Of course, that's just on one data set. If we look at a harder one it's clear that there's still
 room for improvement:
- 
+
 |puzzles4_forum_hardest_1905_11+       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    24,054.3 |        41.6 |       0.0% |          89.94 |
-|tdoku_basic_heuristic                 |       874.1 |     1,144.1 |       0.0% |         440.47 |
-|tdoku_dpll_triad                      |       893.2 |     1,119.6 |       0.0% |          69.76 |
+|tdoku_basic_heuristic                 |       438.1 |     2,282.8 |       0.0% |         872.38 |
+|tdoku_dpll_triad                      |       483.1 |     2,070.1 |       0.0% |         132.08 |
+|jczsolve                              |    12,564.5 |        79.6 |       0.0% |         170.99 |
+|fsss2                                 |    11,881.4 |        84.2 |       0.0% |         138.67 |
 
 Can we do more to bring the guessing down without getting too ad hoc?
 
@@ -776,25 +793,27 @@ using SCCs for both purposes.
 
 |puzzles2_magictour_top1465            |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   123,779.7 |         8.1 |       2.3% |          12.53 |
-|tdoku_basic_heuristic                 |     1,483.9 |       673.9 |       0.0% |         329.01 |
-|tdoku_dpll_triad                      |     4,981.8 |       200.7 |       7.9% |           8.09 |
-|tdoku_dpll_triad_scc{0x1}             |     2,205.5 |       453.4 |      12.8% |           4.49 |
-|tdoku_dpll_triad_scc{0x2}             |     3,054.2 |       327.4 |       7.9% |           3.33 |
-|tdoku_dpll_triad_scc{0x3}             |     2,950.3 |       338.9 |      12.7% |           2.63 |
+|tdoku_basic_heuristic                 |       743.6 |     1,344.9 |       0.0% |         652.51 |
+|tdoku_dpll_triad                      |     3,506.2 |       285.2 |       8.0% |          12.68 |
+|tdoku_dpll_triad_scc{0x1}             |     1,630.3 |       613.4 |      12.8% |           6.25 |
+|tdoku_dpll_triad_scc{0x2}             |     2,405.0 |       415.8 |       7.9% |           4.44 |
+|tdoku_dpll_triad_scc{0x3}             |     2,426.1 |       412.2 |      12.7% |           3.33 |
+|jczsolve                              |    77,760.3 |        12.9 |       2.3% |          20.77 |
+|fsss2                                 |    70,821.8 |        14.1 |       1.7% |          19.16 |
 
 |puzzles4_forum_hardest_1905_11+       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    24,054.3 |        41.6 |       0.0% |          89.94 |
-|tdoku_basic_heuristic                 |       874.1 |     1,144.1 |       0.0% |         440.47 |
-|tdoku_dpll_triad                      |       893.2 |     1,119.6 |       0.0% |          69.76 |
-|tdoku_dpll_triad_scc{0x1}             |       348.3 |     2,871.4 |       0.0% |          35.55 |
-|tdoku_dpll_triad_scc{0x2}             |       528.5 |     1,892.0 |       0.0% |          26.84 |
-|tdoku_dpll_triad_scc{0x3}             |       534.8 |     1,870.0 |       0.0% |          20.50 |
+|tdoku_basic_heuristic                 |       438.1 |     2,282.8 |       0.0% |         872.38 |
+|tdoku_dpll_triad                      |       483.1 |     2,070.1 |       0.0% |         132.08 |
+|tdoku_dpll_triad_scc{0x1}             |       190.8 |     5,242.3 |       0.0% |          64.73 |
+|tdoku_dpll_triad_scc{0x2}             |       269.9 |     3,705.6 |       0.0% |          53.09 |
+|tdoku_dpll_triad_scc{0x3}             |       279.8 |     3,573.7 |       0.0% |          39.42 |
+|jczsolve                              |    12,564.5 |        79.6 |       0.0% |         170.99 |
+|fsss2                                 |    11,881.4 |        84.2 |       0.0% |         138.67 |
 
 In terms of guessing we've done pretty well. Both the inference and heuristic components of our 
-SCC exploitation result in significant reductions in guessing, which gets us down to less than
-a quarter of the guessing JCZSolve does. On the magic tour dataset we've also increased to 12.8%
+SCC exploitation result in significant reductions in guessing, which gets us to levels significantly
+below JCZSolve and fsss2. On the magic tour dataset we've also increased to 12.8%
 the number of puzzles that can be solved without a guess. That said, all of our SCC-based
 solvers are slower than the base dpll+triad version that does not compute SCCs.
 
@@ -823,9 +842,9 @@ to organize 3 out of our 5 varieties of numerical clause (1/9 positive cell clau
 triad clauses, and 1/4 triad definition clauses). We'll store the box state in a 256-bit SIMD
 vector of packed 16-bit integers. Each 16-bit integer will store 9 bits representing candidate 
 layers in the diagram above, with the top 7 bits unused. For platforms lacking AVX2 support we'll
-wrap two __m128i in a vector class.[^2]
+wrap two __m128i in a vector class.[^3]
 
-[^2]: Our vector implemention can work with SSE2 which has been around since 2000. However, we
+[^3]: Our vector implemention can work with SSE2 which has been around since 2000. However, we
       rely heavily on shuffles that appeared in 2006 with SSSE3 and there is a large penalty
       for the SSE2 workaround. The code performs well for an SSE4.1 target and a little better
       with AVX2. It will probably be better still with Ice Lake whose AVX512BITALG will supply
@@ -890,7 +909,7 @@ In both cases it's proved fastest to come at things from the perspective of band
 
 When initializing the puzzle instead of applying the clues once cell at a time, or even batch 
 applying the clues one box at a time, it turns out to be best to construct 6 band elimination
-messages from all of the clues, and then apply these 6 messages in turn.
+messages from all of the clues, and then apply and propagate these 6 messages in turn.
 
 When determining the next guess to make instead of finding the most constrained cell or box, it
 turns out to be best to find the band with the fewest possible configurations across all values,
@@ -900,121 +919,143 @@ OK! Enough talk. If you've read all this I'm impressed! Time for some results.
 
 ## The Fast SIMD Solver
 
-At long last it appears that our dpll-triad-simd solver compares quite favorably to JCZSolve!
-It's around 33% faster on the magictour dataset, and relatively speaking it gets even faster as the 
-datasets get harder!
+At long last it appears that our dpll-triad-simd solver compares quite favorably to JCZSolve and
+fsss2 on hard puzzles!
+It's around 44% faster on the magictour dataset, and relatively speaking it gets even faster as the
+datasets get harder, approaching 2x as fast on the hardest_1106 dataset!
 
 |puzzles2_magictour_top1465            |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   123,779.7 |         8.1 |       2.3% |          12.53 |
-|tdoku_dpll_triad_simd                 |   165,371.1 |         6.0 |       7.9% |           6.13 |
+|tdoku_dpll_triad_simd                 |   112,243.0 |         8.9 |       7.9% |           9.07 |
+|jczsolve                              |    77,760.3 |        12.9 |       2.3% |          20.77 |
+|fsss2                                 |    70,821.8 |        14.1 |       1.7% |          19.16 |
 
 |puzzles3_forum_hardest_1905           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    30,678.3 |        32.6 |       0.0% |          73.29 |
-|tdoku_dpll_triad_simd                 |    44,687.9 |        22.4 |       0.0% |          30.61 |
+|tdoku_dpll_triad_simd                 |    24,335.7 |        41.1 |       0.0% |          55.00 |
+|jczsolve                              |    16,197.5 |        61.7 |       0.0% |         138.69 |
+|fsss2                                 |    14,470.4 |        69.1 |       0.0% |         117.71 |
 
 |puzzles4_forum_hardest_1905_11+       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    24,054.3 |        41.6 |       0.0% |          89.94 |
-|tdoku_dpll_triad_simd                 |    37,556.3 |        26.6 |       0.0% |          35.85 |
+|tdoku_dpll_triad_simd                 |    20,277.9 |        49.3 |       0.0% |          64.94 |
+|jczsolve                              |    12,564.5 |        79.6 |       0.0% |         170.99 |
+|fsss2                                 |    11,881.4 |        84.2 |       0.0% |         138.67 |
 
 |puzzles5_forum_hardest_1106           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    12,782.2 |        78.2 |       0.0% |         188.69 |
-|tdoku_dpll_triad_simd                 |    24,481.0 |        40.8 |       0.0% |          60.42 |
+|tdoku_dpll_triad_simd                 |    12,944.1 |        77.3 |       0.0% |         113.24 |
+|jczsolve                              |     6,567.1 |       152.3 |       0.0% |         366.84 |
+|fsss2                                 |     6,483.2 |       154.2 |       0.0% |         277.75 |
 
 ![](perfchart.png)
 
 <br>
 Of course, YMMV, various caveats apply, etc. It's not as portable as JCZSolve; it won't
 be as fast on a machine lacking AVX2 or with slow AVX2 (looking at you Threadripper); it won't be
-as fast if you compile with gcc instead clang; it's actually a little *slower* for 17 clue puzzles,
-which JCZSolve seems to handle exceptionally well.
+as fast if you compile with gcc instead clang; it's quite a bit slower than fsss2 for easy puzzles
+and invalid puzzles.
 
 But it's definitely fast. Which is what the world needs. Because, you know, who wants to wait? 
 Who can *afford* to wait 78 microseconds to solve the hardest Sudoku? I know I can't. 
 
 Thanks for reading!
 
-## All the data
+## Appendix 1: All the Data
 
 In the tables above I've presented subsets of the benchmark results to highlight what we were 
-talking about, but here's everything in one place reference. This also includes results for minisat
-which were not discussed above, but I include in case you're wondering how a general-purpose CDCL
-solver does against a domain-optimized DPLL. Minisat was given a triad-based representation, but 
-without the intersection-based numerical clauses.
+talking about, but here's everything in one place reference.
 
 |puzzles0_kaggle                       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   595,697.0 |         1.7 |     100.0% |           0.00 |
-|minisat                               |    15,008.1 |        66.6 |     100.0% |           0.00 |
-|tdoku_basic                           |   587,632.6 |         1.7 |       0.0% |          32.90 |
-|tdoku_basic_heuristic                 |   136,353.8 |         7.3 |     100.0% |           0.00 |
-|tdoku_dpll_triad                      |     9,700.4 |       103.1 |     100.0% |           0.00 |
-|tdoku_dpll_triad_scc{0x1}             |     9,122.5 |       109.6 |     100.0% |           0.00 |
-|tdoku_dpll_triad_scc{0x2}             |     9,127.4 |       109.6 |     100.0% |           0.00 |
-|tdoku_dpll_triad_scc{0x3}             |     9,114.7 |       109.7 |     100.0% |           0.00 |
-|tdoku_dpll_triad_simd                 |   787,654.0 |         1.3 |     100.0% |           0.00 |
+|tdoku_basic                           |   382,436.4 |         2.6 |       0.0% |          54.48 |
+|tdoku_basic_heuristic                 |   136,354.3 |         7.3 |     100.0% |           0.00 |
+|tdoku_dpll_triad                      |    10,018.7 |        99.8 |     100.0% |           0.00 |
+|tdoku_dpll_triad_scc{0x1}             |     9,522.8 |       105.0 |     100.0% |           0.00 |
+|tdoku_dpll_triad_scc{0x2}             |     9,548.1 |       104.7 |     100.0% |           0.00 |
+|tdoku_dpll_triad_scc{0x3}             |     9,520.2 |       105.0 |     100.0% |           0.00 |
+|tdoku_dpll_triad_simd                 |   623,855.8 |         1.6 |     100.0% |           0.00 |
+|jczsolve                              |   596,311.1 |         1.7 |     100.0% |           0.00 |
+|fsss2                                 | 1,456,305.4 |         0.7 |     100.0% |           0.00 |
 
 |puzzles1_17_clue                      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   318,424.5 |         3.1 |      69.6% |           1.25 |
-|minisat                               |     4,434.2 |       225.5 |      76.0% |           0.85 |
-|tdoku_basic                           |         3.9 |   254,036.0 |       0.0% |   9,803,916.52 |
-|tdoku_basic_heuristic                 |       197.5 |     5,062.4 |       0.0% |       3,015.89 |
-|tdoku_dpll_triad                      |     9,150.7 |       109.3 |      78.7% |           0.59 |
-|tdoku_dpll_triad_scc{0x1}             |     7,900.5 |       126.6 |      86.8% |           0.23 |
-|tdoku_dpll_triad_scc{0x2}             |     8,093.7 |       123.6 |      78.7% |           0.26 |
-|tdoku_dpll_triad_scc{0x3}             |     8,136.6 |       122.9 |      86.8% |           0.15 |
-|tdoku_dpll_triad_simd                 |   304,397.9 |         3.3 |      78.7% |           0.48 |
+|tdoku_basic                           |         1.9 |   539,197.7 |       0.0% |  22,350,875.05 |
+|tdoku_basic_heuristic                 |        99.9 |    10,014.5 |       0.0% |       5,947.18 |
+|tdoku_dpll_triad                      |     9,098.0 |       109.9 |      78.7% |           0.82 |
+|tdoku_dpll_triad_scc{0x1}             |     7,936.9 |       126.0 |      86.8% |           0.27 |
+|tdoku_dpll_triad_scc{0x2}             |     8,277.4 |       120.8 |      78.7% |           0.27 |
+|tdoku_dpll_triad_scc{0x3}             |     8,357.1 |       119.7 |      86.8% |           0.16 |
+|tdoku_dpll_triad_simd                 |   287,053.8 |         3.5 |      78.7% |           0.62 |
+|jczsolve                              |   289,520.0 |         3.5 |      69.6% |           1.86 |
+|fsss2                                 |   299,584.6 |         3.3 |      72.5% |           1.32 |
 
 |puzzles2_magictour_top1465            |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |   123,779.7 |         8.1 |       2.3% |          12.53 |
-|minisat                               |     2,623.8 |       381.1 |       4.1% |          12.90 |
-|tdoku_basic                           |        43.7 |    22,866.1 |       0.0% |     909,286.96 |
-|tdoku_basic_heuristic                 |     1,483.9 |       673.9 |       0.0% |         329.01 |
-|tdoku_dpll_triad                      |     4,981.8 |       200.7 |       7.9% |           8.09 |
-|tdoku_dpll_triad_scc{0x1}             |     2,205.5 |       453.4 |      12.8% |           4.49 |
-|tdoku_dpll_triad_scc{0x2}             |     3,054.2 |       327.4 |       7.9% |           3.33 |
-|tdoku_dpll_triad_scc{0x3}             |     2,950.3 |       338.9 |      12.7% |           2.63 |
-|tdoku_dpll_triad_simd                 |   165,371.1 |         6.0 |       7.9% |           6.13 |
+|tdoku_basic                           |        20.7 |    48,276.4 |       0.0% |   2,008,517.38 |
+|tdoku_basic_heuristic                 |       743.6 |     1,344.9 |       0.0% |         652.51 |
+|tdoku_dpll_triad                      |     3,506.2 |       285.2 |       8.0% |          12.68 |
+|tdoku_dpll_triad_scc{0x1}             |     1,630.3 |       613.4 |      12.8% |           6.25 |
+|tdoku_dpll_triad_scc{0x2}             |     2,405.0 |       415.8 |       7.9% |           4.44 |
+|tdoku_dpll_triad_scc{0x3}             |     2,426.1 |       412.2 |      12.7% |           3.33 |
+|tdoku_dpll_triad_simd                 |   112,243.0 |         8.9 |       7.9% |           9.07 |
+|jczsolve                              |    77,760.3 |        12.9 |       2.3% |          20.77 |
+|fsss2                                 |    70,821.8 |        14.1 |       1.7% |          19.16 |
 
 |puzzles3_forum_hardest_1905           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    30,678.3 |        32.6 |       0.0% |          73.29 |
-|minisat                               |       873.8 |     1,144.5 |       0.0% |          53.25 |
-|tdoku_basic                           |       365.9 |     2,733.0 |       0.0% |      94,664.81 |
-|tdoku_basic_heuristic                 |     1,050.7 |       951.8 |       0.0% |         378.19 |
-|tdoku_dpll_triad                      |     1,112.7 |       898.7 |       0.0% |          58.46 |
-|tdoku_dpll_triad_scc{0x1}             |       442.3 |     2,260.9 |       0.0% |          28.52 |
-|tdoku_dpll_triad_scc{0x2}             |       651.3 |     1,535.4 |       0.0% |          22.50 |
-|tdoku_dpll_triad_scc{0x3}             |       666.2 |     1,501.1 |       0.0% |          16.75 |
-|tdoku_dpll_triad_simd                 |    44,687.9 |        22.4 |       0.0% |          30.61 |
+|tdoku_basic                           |       196.4 |     5,092.7 |       0.0% |     184,166.12 |
+|tdoku_basic_heuristic                 |       529.4 |     1,888.9 |       0.0% |         745.29 |
+|tdoku_dpll_triad                      |       605.4 |     1,651.9 |       0.0% |         110.68 |
+|tdoku_dpll_triad_scc{0x1}             |       244.2 |     4,094.6 |       0.0% |          51.68 |
+|tdoku_dpll_triad_scc{0x2}             |       328.6 |     3,043.6 |       0.0% |          45.64 |
+|tdoku_dpll_triad_scc{0x3}             |       347.3 |     2,879.0 |       0.0% |          32.65 |
+|tdoku_dpll_triad_simd                 |    24,335.7 |        41.1 |       0.0% |          55.00 |
+|jczsolve                              |    16,197.5 |        61.7 |       0.0% |         138.69 |
+|fsss2                                 |    14,470.4 |        69.1 |       0.0% |         117.71 |
 
 |puzzles4_forum_hardest_1905_11+       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    24,054.3 |        41.6 |       0.0% |          89.94 |
-|minisat                               |       714.3 |     1,399.9 |       0.0% |          65.10 |
-|tdoku_basic                           |       277.8 |     3,599.4 |       0.0% |     125,027.95 |
-|tdoku_basic_heuristic                 |       874.1 |     1,144.1 |       0.0% |         440.47 |
-|tdoku_dpll_triad                      |       893.2 |     1,119.6 |       0.0% |          69.76 |
-|tdoku_dpll_triad_scc{0x1}             |       348.3 |     2,871.4 |       0.0% |          35.55 |
-|tdoku_dpll_triad_scc{0x2}             |       528.5 |     1,892.0 |       0.0% |          26.84 |
-|tdoku_dpll_triad_scc{0x3}             |       534.8 |     1,870.0 |       0.0% |          20.50 |
-|tdoku_dpll_triad_simd                 |    37,556.3 |        26.6 |       0.0% |          35.85 |
+|tdoku_basic                           |       142.1 |     7,036.3 |       0.0% |     256,410.60 |
+|tdoku_basic_heuristic                 |       438.1 |     2,282.8 |       0.0% |         872.38 |
+|tdoku_dpll_triad                      |       483.1 |     2,070.1 |       0.0% |         132.08 |
+|tdoku_dpll_triad_scc{0x1}             |       190.8 |     5,242.3 |       0.0% |          64.73 |
+|tdoku_dpll_triad_scc{0x2}             |       269.9 |     3,705.6 |       0.0% |          53.09 |
+|tdoku_dpll_triad_scc{0x3}             |       279.8 |     3,573.7 |       0.0% |          39.42 |
+|tdoku_dpll_triad_simd                 |    20,277.9 |        49.3 |       0.0% |          64.94 |
+|jczsolve                              |    12,564.5 |        79.6 |       0.0% |         170.99 |
+|fsss2                                 |    11,881.4 |        84.2 |       0.0% |         138.67 |
 
 |puzzles5_forum_hardest_1106           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|jczsolve                              |    12,782.2 |        78.2 |       0.0% |         188.69 |
-|minisat                               |       592.8 |     1,686.9 |       0.0% |          83.30 |
-|tdoku_basic                           |       103.8 |     9,630.4 |       0.0% |     344,814.26 |
-|tdoku_basic_heuristic                 |       416.2 |     2,402.9 |       0.0% |         980.90 |
-|tdoku_dpll_triad                      |       498.1 |     2,007.7 |       0.0% |         140.28 |
-|tdoku_dpll_triad_scc{0x1}             |       216.4 |     4,621.0 |       0.0% |          58.54 |
-|tdoku_dpll_triad_scc{0x2}             |       276.4 |     3,618.2 |       0.0% |          54.68 |
-|tdoku_dpll_triad_scc{0x3}             |       288.3 |     3,468.6 |       0.0% |          39.57 |
-|tdoku_dpll_triad_simd                 |    24,481.0 |        40.8 |       0.0% |          60.42 |
+|tdoku_basic                           |        54.6 |    18,300.7 |       0.0% |     684,253.42 |
+|tdoku_basic_heuristic                 |       209.1 |     4,781.3 |       0.0% |       1,943.07 |
+|tdoku_dpll_triad                      |       263.6 |     3,794.1 |       0.0% |         272.07 |
+|tdoku_dpll_triad_scc{0x1}             |       114.5 |     8,731.8 |       0.0% |         110.65 |
+|tdoku_dpll_triad_scc{0x2}             |       137.7 |     7,264.1 |       0.0% |         110.47 |
+|tdoku_dpll_triad_scc{0x3}             |       146.3 |     6,834.7 |       0.0% |          78.35 |
+|tdoku_dpll_triad_simd                 |    12,944.1 |        77.3 |       0.0% |         113.24 |
+|jczsolve                              |     6,567.1 |       152.3 |       0.0% |         366.84 |
+|fsss2                                 |     6,483.2 |       154.2 |       0.0% |         277.75 |
+
+## Appendix 2: Practical Performance
+
+Joking aside, I hope I didn't give the impression that any of this would be practical. :-)
+
+While my interest was attracted to the problem of solving difficult Sudoku instances, it's been pointed
+out to me that this is not usually an important concern for users of fast Sudoku solvers. If you care
+about solving speed it's probably because you are doing vicinity search or some other systematic
+exploration of Sudoku space. In such cases a large proportion of tested puzzles have no solutions or many
+solutions, and such puzzles are often easy to classify.
+
+To round out the picture on a dataset that may be more germane for such use cases, here are results
+from testing the raw output of a puzzle generator found [here](http://www.enjoysudoku.com/gen_puzzles.zip).
+This file contains many invalid puzzles, multiple-solution puzzles, and rarely single-solution ones.
+
+|gen_puzzles                           |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|tdoku_dpll_triad_simd                 | 1,592,351.2 |         0.6 |      97.4% |           0.29 |
+|jczsolve                              | 1,779,151.9 |         0.6 |      97.4% |           0.31 |
+|fsss2                                 | 2,337,581.1 |         0.4 |      97.4% |           0.03 |
 
 </div>
