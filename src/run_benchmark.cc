@@ -107,6 +107,9 @@ struct Benchmark {
                 if (max_puzzles_to_load_-- == 0) {
                     break;
                 }
+                if (line[line.size() - 1] == '\r') {
+                  line.erase(line.size() - 1);
+                }
                 if (line.length() == 81) {
                     puzzles.push_back(line);
                 }
