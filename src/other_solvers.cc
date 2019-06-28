@@ -3,7 +3,8 @@
 
 #ifdef JCZSOLVE
 #include "../other/JCZSolve.h"
-size_t JCZSolve_guesses;  // edit JCZSolve.c to update this extern
+// apply patch JCZSolve.c.diff so JCZSolve uses this extern.
+size_t JCZSolve_guesses;
 
 extern "C"
 size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_flags*/,
@@ -17,7 +18,8 @@ size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_fl
 
 #ifdef JSOLVE
 #include "../other/JSolve.h"
-size_t JSolve_guesses;  // edit JSolve.c to update this extern
+// apply patch JSolve.c.diff so JSolve uses this extern
+size_t JSolve_guesses;
 
 extern "C"
 size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_flags*/,
@@ -31,12 +33,15 @@ size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_flag
 
 #ifdef FSSS2
 #include "../other/fsss2.h"
-size_t Fsss2_guesses;  // edit fsss2.cc to update this extern
+// apply patches fsss2.cc.diff,fsss2.h.diff so fsss2 uses these externs
+size_t Fsss2_guesses;
+bool do_locked_candidates;
 
 extern "C"
-size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t /*unused_flags*/,
+size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t flags,
                         char *solution, size_t *num_guesses) {
     Fsss2_guesses = 0;
+    do_locked_candidates = flags > 0;
     char zero_based_input[81];
     char zero_based_output[81];
     for (int i = 0; i < 9; i++) {

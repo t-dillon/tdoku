@@ -301,6 +301,7 @@ int main(int argc, char **argv) {
 #endif
 #ifdef FSSS2
     benchmark.solvers_.append(",fsss2");
+    benchmark.solvers_.append(",fsss2:1");
 #endif
 #ifdef MINISAT
     benchmark.solvers_.append(",minisat");

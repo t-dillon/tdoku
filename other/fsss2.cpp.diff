@@ -1,5 +1,10 @@
-212a213,214
+212a213,215
 > extern size_t Fsss2_guesses;
+> extern bool do_locked_candidates;
 > 
-893a896
+730c733
+< 	if(lockedDone == 0) {
+---
+> 	if(lockedDone == 0 && do_locked_candidates) {
+893a897
 > 		Fsss2_guesses++;
