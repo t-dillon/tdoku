@@ -1,4 +1,0 @@
-19c19
-< //#define USE_LOCKED_CANDIDATES
----
-> #define USE_LOCKED_CANDIDATES

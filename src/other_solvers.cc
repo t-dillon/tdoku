@@ -33,14 +33,13 @@ size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_flag
 
 #ifdef FSSS2
 #include "../other/fsss2.h"
-// apply patches fsss2.cc.diff,fsss2.h.diff so fsss2 uses these externs
-size_t Fsss2_guesses;
+int nTrials;
 bool do_locked_candidates;
 
 extern "C"
 size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t flags,
                         char *solution, size_t *num_guesses) {
-    Fsss2_guesses = 0;
+    nTrials = 0;
     do_locked_candidates = flags > 0;
     char zero_based_input[81];
     char zero_based_output[81];
@@ -63,7 +62,7 @@ size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t flags,
         count = gss.solve(zero_based_input, zero_based_output);
         for (int i = 0; i < 81; i++) solution[i] = '0' + zero_based_output[i];
     }
-    *num_guesses = Fsss2_guesses;
+    *num_guesses = nTrials;
     return count;
 }
 #endif

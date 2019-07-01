@@ -1,8 +1,8 @@
 
 To compile with support for FSSS2:
--- From https://github.com/dobrichev/fsss2 place files fsss2.cpp, fsss2.h, t_128.cpp, t_128.h
+-- From https://github.com/t-dillon/fsss2 (a branch of dobrichev/fsss2 with some changes to
+   work with the benchmark program here) place files fsss2.cpp, fsss2.h, t_128.cpp, t_128.h
    in this directory
--- patch fsss2.cpp fsss2.cpp.diff
 -- build with -DFSSS2=on   
 
 To compile with support for JCZSolve:
