@@ -61,15 +61,16 @@ struct SolverBasic {
             rows_[row] ^= candidate;
             cols_[col] ^= candidate;
             boxes_[box] ^= candidate;
+ 
+            if (num_solutions_ == 0)
+                solution[row * 9 + col] = (char) ('1' + LowOrderBitIndex(candidate));
 
             // recursively solve remaining todo cells and back out with the solution.
             if (todo_index == num_todo_) {
                 ++num_solutions_;
-                solution[row * 9 + col] = (char) ('1' + LowOrderBitIndex(candidate));
             } else {
                 SatisfyGivenPartialAssignment(todo_index + 1, solution);
                 if (num_solutions_ == limit_) {
-                    solution[row * 9 + col] = (char) ('1' + LowOrderBitIndex(candidate));
                     break;
                 }
             }
