@@ -3,6 +3,7 @@
 build/
 cmake-build-debug/
 data/
+
 other/fsss2.cpp
 other/fsss2.h
 other/t_128.cpp
@@ -11,6 +12,14 @@ other/JCZSolve.c
 other/JCZSolve.h
 other/JSolve.c
 other/JSolve.h
+other/Zhn.h
+other/Zhn_cpp.h
+other/Zhtables_cpp.h
+other/sk_bitfields.cpp
+other/sk_bitfields.h
+other/sk_t.cpp
+other/sk_t.h
+
 src/build_info.h
 
 run_benchmark

@@ -28,6 +28,7 @@ extern "C" {
     SolverFn OtherSolverJCZSolve;
     SolverFn OtherSolverJSolve;
     SolverFn OtherSolverFsss2;
+    SolverFn OtherSolverSKBFORCE;
 #ifdef __cplusplus
 }
 #endif
@@ -38,10 +39,12 @@ private:
     SolverFn *solve_;
     uint32_t flags_;
     std::string name_;
-
+    bool returns_solution_;
+    
 public:
-    Solver(SolverFn *solver_fn, uint32_t flags, std::string name)
-            : solve_(solver_fn), flags_(flags), name_(std::move(name)) {}
+    Solver(SolverFn *solver_fn, uint32_t flags, std::string name, bool returns_solution=true)
+            : solve_(solver_fn), flags_(flags), name_(std::move(name)),
+              returns_solution_(returns_solution) {}
 
     inline int Solve(const char *input, int limit,
                      char *solution, size_t *num_guesses) const {
@@ -55,6 +58,10 @@ public:
             os << "{0x" << std::hex << flags_ << "}";
         }
         return os.str();
+    }
+
+    inline bool ReturnsSolution() {
+        return returns_solution_;
     }
 };
 #endif

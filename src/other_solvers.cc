@@ -1,6 +1,23 @@
 #include <cstddef>
 #include <cstdint>
 
+#ifdef SKBFORCE
+#include "../other/sk_t.h"
+#include "../other/Zhn.h"
+#include "../other/Zhn_cpp.h"
+
+size_t SKBFORCE_guesses;
+
+extern "C"
+size_t OtherSolverSKBFORCE(const char *input, size_t limit, uint32_t /*unused_flags*/,
+                           char *solution, size_t *num_guesses) {
+    SKBFORCE_guesses = 0;
+    int result = zhou[0].CheckValidityQuick((char*)input);
+    *num_guesses = SKBFORCE_guesses;
+    return result;
+}
+#endif
+
 #ifdef JCZSOLVE
 #include "../other/JCZSolve.h"
 // apply patch JCZSolve.c.diff so JCZSolve uses this extern.

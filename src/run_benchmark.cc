@@ -146,7 +146,7 @@ struct Benchmark {
             } else if (solver == "tdoku_dpll_triad_scc") {
                 solvers.emplace_back(
                         Solver(TdokuSolverDpllTriadScc, options, "tdoku_dpll_triad_scc"));
-            } else if (solver == "tdoku_dpll_triad_simd") {
+            } else if (solver == "tdoku_dpll_triad_simd" || solver == "tdoku") {
                 solvers.emplace_back(
                         Solver(TdokuSolverDpllTriadSimd, options, "tdoku_dpll_triad_simd"));
 #ifdef JCZSOLVE
@@ -168,6 +168,11 @@ struct Benchmark {
             } else if (solver == "minisat") {
                 solvers.emplace_back(
                         Solver(TdokuSolverMiniSat, options, "minisat"));
+#endif
+#ifdef SKBFORCE
+            } else if (solver == "skbforce") {
+                solvers.emplace_back(
+                        Solver(OtherSolverSKBFORCE, options, "skbforce", false));
 #endif
             }
         }
@@ -216,8 +221,9 @@ struct Benchmark {
             microseconds end = start;
             while ((end - start).count() < min_seconds_warmup_ * 1000000) {
                 string &puzzle = testing_data_[n % test_dataset_size_];
-                int count = solver.Solve(puzzle.c_str(), 2, output, &num_guesses);
-                if ((!allow_zero_ && !count) || (validate_ && !ValidateSolution(output))) {
+                int count = solver.Solve(puzzle.c_str(), 1, output, &num_guesses);
+                if ((!allow_zero_ && !count) ||
+                    (validate_ && solver.ReturnsSolution() && !ValidateSolution(output))) {
                     cout << "Error during warmup" << endl;
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);
@@ -306,7 +312,10 @@ int main(int argc, char **argv) {
 #ifdef MINISAT
     benchmark.solvers_.append(",minisat");
 #endif
-
+#ifdef SKBFORCE
+    benchmark.solvers_.append(",skbforce");
+#endif
+    
     char c;
     while ((c = getopt(argc, argv, "c::hn:r::s:t:v::w:z::")) != -1) {
         switch (c) {
