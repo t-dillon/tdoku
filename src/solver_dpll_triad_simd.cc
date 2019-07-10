@@ -31,7 +31,6 @@ constexpr uint16_t kAll = 0x1ff;
 //
 struct Box {
     Cells16 cells{Cells16::All(kAll)};
-    Cells16 triggered{Cells16::All(0)};
     uint32_t box_idx, box_i, box_j;
 
     Box(int box_idx) : box_idx(box_idx), box_i(box_idx / 3), box_j(box_idx % 3) {}
@@ -147,6 +146,23 @@ struct Tables {
              {kAll,   kAll,      0,   kAll,      0,   kAll,    0,    0},
              {   0,   kAll,   kAll,   kAll,   kAll,      0,    0,    0}}
     };
+
+    const Cells08 one_value_mask[9]{
+            Cells08::All(1u << 0u), Cells08::All(1u << 1u), Cells08::All(1u << 2u),
+            Cells08::All(1u << 3u), Cells08::All(1u << 4u), Cells08::All(1u << 5u),
+            Cells08::All(1u << 6u), Cells08::All(1u << 7u), Cells08::All(1u << 8u),
+    };
+
+    const Cells08 one_cell_mask[6]{
+            {kAll, 0,    0,    0,    0,    0,    0, 0},
+            {0,    kAll, 0,    0,    0,    0,    0, 0},
+            {0,    0,    kAll, 0,    0,    0,    0, 0},
+            {0,    0,    0,    kAll, 0,    0,    0, 0},
+            {0,    0,    0,    0,    kAll, 0,    0, 0},
+            {0,    0,    0,    0,    0,    kAll, 0, 0},
+    };
+
+    const Cells16 box_minimums{1, 1, 1, 6, 1, 1, 1, 6, 1, 1, 1, 6, 6, 6, 6, 0};
     // @formatter:on
 
     BoxIndexing box_indexing[81]{};
@@ -173,7 +189,7 @@ struct Tables {
 const Tables tables{};
 
 struct SolverDpllTriadSimd {
-    State puzzle_{};
+    State solution_{};
     size_t limit_ = 1;
     size_t num_solutions_ = 0;
     size_t num_guesses_ = 0;
@@ -194,8 +210,8 @@ struct SolverDpllTriadSimd {
             if (counts.AnyLessThan(box_minimums)) return false;
 
             // gather literals asserted by triggered cell clauses
-            box.triggered = counts.Equal(box_minimums);
-            Cells16 all_assertions = box.cells & box.triggered;
+            Cells16 triggered = counts.Equal(box_minimums);
+            Cells16 all_assertions = box.cells & triggered;
             // and add literals asserted by triggered triad definition clauses
             GatherTriadClauseAssertions(
                     box.cells, [](const Cells16 &x) { return x.RotateRows(); }, all_assertions);
@@ -371,21 +387,8 @@ struct SolverDpllTriadSimd {
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    Cells08 one_value_mask[9]{
-            Cells08::All(1u << 0u), Cells08::All(1u << 1u), Cells08::All(1u << 2u),
-            Cells08::All(1u << 3u), Cells08::All(1u << 4u), Cells08::All(1u << 5u),
-            Cells08::All(1u << 6u), Cells08::All(1u << 7u), Cells08::All(1u << 8u),
-    };
-    Cells08 one_cell_mask[6]{
-            {kAll, 0,    0,    0,    0,    0,    0, 0},
-            {0,    kAll, 0,    0,    0,    0,    0, 0},
-            {0,    0,    kAll, 0,    0,    0,    0, 0},
-            {0,    0,    0,    kAll, 0,    0,    0, 0},
-            {0,    0,    0,    0,    kAll, 0,    0, 0},
-            {0,    0,    0,    0,    0,    kAll, 0, 0},
-    };
-    uint32_t div3[6]{0, 0, 0, 1, 1, 1};
-    uint32_t mod3[6]{0, 1, 2, 0, 1, 2};
+    const uint32_t div3[6]{0, 0, 0, 1, 1, 1};
+    const uint32_t mod3[6]{0, 1, 2, 0, 1, 2};
 
     inline pair<uint32_t, uint32_t> ChooseBandAndValueToBranch(const State &state) {
         uint32_t best_band = UINT32_MAX, best_band_count = UINT32_MAX;
@@ -403,10 +406,11 @@ struct SolverDpllTriadSimd {
         if (best_band < UINT32_MAX) {
             const Band &band = state.bands[div3[best_band]][mod3[best_band]];
             for (uint32_t i = 0; i < 9; i++) {
-                uint32_t value_count = (band.configurations & one_value_mask[i]).Popcount();
+                uint32_t value_count = (band.configurations & tables.one_value_mask[i]).Popcount();
                 if (value_count > 1 && value_count < best_value_count) {
                     best_value_count = value_count;
                     best_value = i;
+                    if (best_value_count == 2) break;
                 }
             }
         }
@@ -415,10 +419,10 @@ struct SolverDpllTriadSimd {
 
     void BranchOnBandAndValue(int orientation, int band_idx, int value, State &state) {
         Band &band = state.bands[orientation][band_idx];
-        Cells08 configurations = band.configurations & one_value_mask[value];
+        Cells08 configurations = band.configurations & tables.one_value_mask[value];
         // we enter with two or more possible configurations for this value; pick one to assign.
         int assignment1_idx = (configurations ^ Cells08::All(kAll)).MinPos().second;
-        Cells08 assignment1_mask = configurations.and_not(one_cell_mask[assignment1_idx]);
+        Cells08 assignment1_mask = configurations.and_not(tables.one_cell_mask[assignment1_idx]);
 
         num_guesses_++;
         State state_copy = state;
@@ -436,12 +440,12 @@ struct SolverDpllTriadSimd {
             }
         } else {
             // but if there were three or more then negate the first and recurse.
-            Cells08 negation1_mask = configurations & one_cell_mask[assignment1_idx];
+            Cells08 negation1_mask = configurations & tables.one_cell_mask[assignment1_idx];
             if (BandEliminate(state, orientation, band_idx, negation1_mask)) {
                 // but note: when there are three or more configurations it may arise that negating
                 // one can lead to elimination of others, possibly narrowing to one, in which case
                 // there's no need to branch again.
-                if ((band.configurations & one_value_mask[value]).Popcount() == 1) {
+                if ((band.configurations & tables.one_value_mask[value]).Popcount() == 1) {
                     CountSolutionsConsistentWithPartialAssignment(state);
                 } else {
                     BranchOnBandAndValue(orientation, band_idx, value, state);
@@ -453,7 +457,8 @@ struct SolverDpllTriadSimd {
     void CountSolutionsConsistentWithPartialAssignment(State &state) {
         auto band_and_value = ChooseBandAndValueToBranch(state);
         if (band_and_value.second == UINT32_MAX) {
-            if (++num_solutions_ == 1) puzzle_ = state;
+            num_solutions_++;
+            if (limit_ == 1) solution_ = state;
         } else {
             BranchOnBandAndValue(div3[band_and_value.first], mod3[band_and_value.first],
                                  band_and_value.second, state);
@@ -462,28 +467,43 @@ struct SolverDpllTriadSimd {
 
     ///////////////////////////////////////////////////////////////////////////////////
 
+    static inline void InitClue(const char *input, State &state, int pos,
+                                Cells08 (&h_eliminations)[3], Cells08 (&v_eliminations)[3]) {
+        const BoxIndexing &indexing = tables.box_indexing[pos];
+        char digit = input[pos];
+        uint16_t candidate = 1u << (uint32_t) (digit - '1');
+        // perform eliminations for digit in box, but don't propagate
+        state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
+                tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
+        // merge all band eliminations; we'll propagate these below.
+        h_eliminations[indexing.box_i] |=
+                tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i] &
+                Cells08::All(candidate);
+        v_eliminations[indexing.box_j] |=
+                tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j] &
+                Cells08::All(candidate);
+    }
+
     // We could set the initial clues in other ways, including one box update for each clue, or
     // one batch box update for each box. But it's fastest to start with 6 batched band updates.
     bool InitBandBatch(const char *input, State &state) {
         Cells08 h_eliminations[3]{};
         Cells08 v_eliminations[3]{};
-        for (int i = 0; i < 81; i++) {
-            char digit = input[i];
-            if (digit != '.') {
-                const BoxIndexing &indexing = tables.box_indexing[i];
-                uint16_t candidate = 1u << (uint32_t) (digit - '1');
-                // perform eliminations for digit in box, but don't propagate
-                state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
-                        tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
-                // merge all band eliminations; we'll propagate these below.
-                h_eliminations[indexing.box_i] |=
-                        tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i] &
-                        Cells08::All(candidate);
-                v_eliminations[indexing.box_j] |=
-                        tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j] &
-                        Cells08::All(candidate);
+
+        __m128i dots = _mm_set1_epi8('.');
+        for (int i = 0; i < 5; i++) {
+            __m128i str16 = _mm_loadu_si128((const __m128i *) &input[i * 16]);
+            uint32_t clues = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(str16, dots)) ^0xffffu;
+            while (clues) {
+                uint32_t cell_idx = i * 16 + LowOrderBitIndex(clues);
+                InitClue(input, state, cell_idx, h_eliminations, v_eliminations);
+                clues = ClearLowBit(clues);
             }
         }
+        if (input[80] != '.') {
+            InitClue(input, state, 80, h_eliminations, v_eliminations);
+        }
+
         return BandEliminate(state, 0, 0, h_eliminations[0], 1) &&
                BandEliminate(state, 1, 0, v_eliminations[0], 1) &&
                BandEliminate(state, 0, 1, h_eliminations[1], 2) &&
@@ -511,19 +531,14 @@ struct SolverDpllTriadSimd {
     int SolveSudoku(const char *input, size_t limit,
                     char *solution, size_t *const num_guesses) {
         limit_ = limit;
-        puzzle_ = State{};
         num_solutions_ = 0;
         num_guesses_ = 0;
 
-        if (!InitBandBatch(input, puzzle_)) {
-            *num_guesses = 0;
-            return 0;
+        State state;
+        if (InitBandBatch(input, state)) {
+            CountSolutionsConsistentWithPartialAssignment(state);
+            if (limit_ == 1) ExtractSolution(solution_, solution);
         }
-        // make a copy before solving; the first solution will be assigned to puzzle_ and we
-        // don't want this to interfere with solution counting if we were given a limit > 1.
-        State state = puzzle_;
-        CountSolutionsConsistentWithPartialAssignment(state);
-        ExtractSolution(puzzle_, solution);
         *num_guesses = num_guesses_;
         return num_solutions_;
     };

@@ -50,6 +50,15 @@ struct FourBy64 {
     uint64_t x3;
 };
 
+namespace {
+
+const __m128i popcount_lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+const __m128i popcount_mask4 = _mm_set1_epi16(0x0f);
+const __m128i rotate_rows1 = _mm_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9);
+const __m128i rotate_rows2 = _mm_setr_epi8(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
+
+} // namespace
+
 struct Bitvec08x16 {
     __m128i vec;
 
@@ -120,10 +129,8 @@ struct Bitvec08x16 {
     // the 7 high bits are nonzero.
     inline Bitvec08x16 Popcounts9() const {
 #ifdef __SSE4_1__
-        Bitvec08x16 lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-        Bitvec08x16 mask4 = _mm_set1_epi16(0x0f);
-        Bitvec08x16 sum_0_3 = lookup.Shuffle(*this & mask4);
-        Bitvec08x16 sum_4_7 = lookup.Shuffle(_mm_srli_epi16(vec, 4));
+        Bitvec08x16 sum_0_3 = Bitvec08x16{popcount_lookup}.Shuffle(*this & popcount_mask4);
+        Bitvec08x16 sum_4_7 = Bitvec08x16{popcount_lookup}.Shuffle(_mm_srli_epi16(vec, 4));
         Bitvec08x16 sum_0_7 = _mm_add_epi16(sum_0_3.vec, sum_4_7.vec);
         Bitvec08x16 result = _mm_add_epi16(sum_0_7.vec, _mm_srli_epi16(vec, 8));
         return result;
@@ -148,8 +155,8 @@ struct Bitvec08x16 {
     }
 
     inline int Popcount() const {
-        return NumBitsSet64(_mm_cvtsi128_si64(vec)) +
-               NumBitsSet64(_mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec)));
+        return NumBitsSet64(_mm_extract_epi64(vec, 0)) +
+               NumBitsSet64(_mm_extract_epi64(vec, 1));
     }
 
     inline std::pair<uint16_t, uint16_t> MinPos() const {
@@ -210,7 +217,7 @@ struct Bitvec08x16 {
 
     inline Bitvec08x16 RotateRows() const {
 #ifdef __SSE4_1__
-        return Shuffle(_mm_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9));
+        return Shuffle(rotate_rows1);
 #else
         __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0xffff, 0x0, 0xffff, 0xffff, 0xffff, 0x0);
         __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0x0, 0xffff, 0x0, 0x0, 0x0, 0xffff);
@@ -222,7 +229,7 @@ struct Bitvec08x16 {
 
     inline Bitvec08x16 RotateRows2() const {
 #ifdef __SSE4_1__
-        return Shuffle(_mm_setr_epi8(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11));
+        return Shuffle(rotate_rows2);
 #else
         __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0);
         __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff);
