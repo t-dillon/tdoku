@@ -260,11 +260,8 @@ struct Benchmark {
 
             for (int i = 0; i < puzzles_todo; i++) {
                 string &puzzle = testing_data_[i % test_dataset_size_];
-                output[0] = '.'; // make sure we won't validate a previous solution
                 int count = solver.Solve(puzzle.c_str(), 2, output, &num_guesses);
-                if ((!allow_zero_ && !count) ||
-                    (!allow_zero_ && validate_ &&
-                     solver.ReturnsSolution() && !ValidateSolution(output))) {
+                if (!allow_zero_ && !count) {
                     cout << "Error during benchmark" << endl;
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);
