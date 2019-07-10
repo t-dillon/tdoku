@@ -85,7 +85,7 @@ if (MINISAT)
     target_link_libraries(run_benchmark minisat)
 endif()
 
-add_executable(run_tests src/run_tests.cc ${BENCHMARK_SOLVER_SOURCES})
+add_executable(run_tests test/run_tests.cc ${BENCHMARK_SOLVER_SOURCES})
 if (MINISAT)
     target_link_libraries(run_tests minisat)
 endif()

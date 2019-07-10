@@ -40,11 +40,15 @@ private:
     uint32_t flags_;
     std::string name_;
     bool returns_solution_;
-    
+    bool returns_count_;
+    bool returns_full_count_;
+
 public:
-    Solver(SolverFn *solver_fn, uint32_t flags, std::string name, bool returns_solution=true)
+    Solver(SolverFn *solver_fn, uint32_t flags, std::string name, uint features=7)
             : solve_(solver_fn), flags_(flags), name_(std::move(name)),
-              returns_solution_(returns_solution) {}
+              returns_solution_(features & 1u),
+              returns_count_(features & 2u),
+              returns_full_count_(features & 4u) {}
 
     inline int Solve(const char *input, int limit,
                      char *solution, size_t *num_guesses) const {
@@ -60,8 +64,16 @@ public:
         return os.str();
     }
 
-    inline bool ReturnsSolution() {
+    inline bool ReturnsSolution() const {
         return returns_solution_;
+    }
+
+    inline bool ReturnsCount() const {
+        return returns_count_;
+    }
+
+    inline bool ReturnsFullCount() const {
+        return returns_full_count_;
     }
 };
 #endif

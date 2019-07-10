@@ -3,14 +3,14 @@
 
 #include <algorithm>
 #include <array>
-#include <stdlib.h>
 #include <chrono>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <map>
 #include <random>
+#include <stdlib.h>
 #include <vector>
 #include <unistd.h>
 
@@ -92,6 +92,7 @@ struct Benchmark {
     }
 
     void Load(const string &dataset_filename) {
+        allow_zero_ = false;
         vector<string> puzzles;
         puzzles.reserve(max_puzzles_to_load_);
 
@@ -108,11 +109,13 @@ struct Benchmark {
                     break;
                 }
                 if (line[line.size() - 1] == '\r') {
-                  line.erase(line.size() - 1);
+                    line.erase(line.size() - 1);
                 }
                 if (line.length() == 81) {
                     puzzles.push_back(line);
                 }
+            } else if (line.find("ALLOWZERO") != string::npos) {
+                allow_zero_ = true;
             }
         }
         file.close();
@@ -162,17 +165,17 @@ struct Benchmark {
 #ifdef FSSS2
             } else if (solver == "fsss2") {
                 solvers.emplace_back(
-                        Solver(OtherSolverFsss2, options, "fsss2"));
+                        Solver(OtherSolverFsss2, options, "fsss2", 3));
 #endif
 #ifdef MINISAT
             } else if (solver == "minisat") {
                 solvers.emplace_back(
-                        Solver(TdokuSolverMiniSat, options, "minisat"));
+                        Solver(TdokuSolverMiniSat, options, "minisat", 1));
 #endif
 #ifdef SKBFORCE
             } else if (solver == "skbforce") {
                 solvers.emplace_back(
-                        Solver(OtherSolverSKBFORCE, options, "skbforce", false));
+                        Solver(OtherSolverSKBFORCE, options, "skbforce", 2));
 #endif
             }
         }
@@ -223,7 +226,8 @@ struct Benchmark {
                 string &puzzle = testing_data_[n % test_dataset_size_];
                 int count = solver.Solve(puzzle.c_str(), 1, output, &num_guesses);
                 if ((!allow_zero_ && !count) ||
-                    (validate_ && solver.ReturnsSolution() && !ValidateSolution(output))) {
+                    (!allow_zero_ && validate_ &&
+                     solver.ReturnsSolution() && !ValidateSolution(output))) {
                     cout << "Error during warmup" << endl;
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);
@@ -256,7 +260,8 @@ struct Benchmark {
             for (int i = 0; i < puzzles_todo; i++) {
                 string &puzzle = testing_data_[i % test_dataset_size_];
                 int count = solver.Solve(puzzle.c_str(), 2, output, &num_guesses);
-                if ((!allow_zero_ && !count) || (validate_ && !ValidateSolution(output))) {
+                if ((!allow_zero_ && !count) ||
+                    (!allow_zero_ && validate_ && !ValidateSolution(output))) {
                     cout << "Error during benchmark" << endl;
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);
@@ -315,7 +320,7 @@ int main(int argc, char **argv) {
 #ifdef SKBFORCE
     benchmark.solvers_.append(",skbforce");
 #endif
-    
+
     char c;
     while ((c = getopt(argc, argv, "c::hn:r::s:t:v::w:z::")) != -1) {
         switch (c) {
@@ -347,10 +352,6 @@ int main(int argc, char **argv) {
                 benchmark.min_seconds_warmup_ = strtol(optarg, nullptr, 10);
                 break;
             }
-            case 'z': {
-                benchmark.allow_zero_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);
-                break;
-            }
             case 'h':
             default: {
                 cout << "usage: run_benchmark <options> puzzle_file_1 [...] " << endl;
@@ -363,9 +364,8 @@ int main(int argc, char **argv) {
                 cout << "  -t <secs>           // target test time [default 20]" << endl;
                 cout << "  -v [0|1]            // validate solutions [default 1]" << endl;
                 cout << "  -w <secs>           // target warmup time [default 10]" << endl;
-                cout << "  -z [0|1]            // allow zero zolution [default 0]" << endl;
                 cout << "solvers: " << endl << benchmark.solvers_ << endl;
-                cout << "build info: " << CXX_COMPILER_ID <<  " " << CXX_COMPILER_VERSION
+                cout << "build info: " << CXX_COMPILER_ID << " " << CXX_COMPILER_VERSION
                      << CXX_FLAGS << endl;
                 exit(0);
             }

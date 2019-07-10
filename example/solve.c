@@ -7,8 +7,13 @@ int main(int argc, const char **argv) {
     size_t size, guesses;
 
     while (getline(&puzzle, &size, stdin) != -1) {
-        printf("%s", puzzle);
-        SolveSudoku(puzzle, 1, 0, solution, &guesses);
-        printf("%.81s\n\n", solution);
+        int count = SolveSudoku(puzzle, 100000, 0, solution, &guesses);
+        printf("%.81s:%d", puzzle, count);
+        solution[0] = '\0';
+        if (count == 1) {
+            SolveSudoku(puzzle, 1, 0, solution, &guesses);
+            printf(":%.81s", solution);
+        }
+        printf("\n");
     }
 }
