@@ -77,7 +77,6 @@ size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t flags,
     } else {
         getSingleSolution gss{};
         count = gss.solve(zero_based_input, zero_based_output);
-        for (int i = 0; i < 81; i++) solution[i] = '0' + zero_based_output[i];
     }
     *num_guesses = nTrials;
     return count;

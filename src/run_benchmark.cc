@@ -165,7 +165,7 @@ struct Benchmark {
 #ifdef FSSS2
             } else if (solver == "fsss2") {
                 solvers.emplace_back(
-                        Solver(OtherSolverFsss2, options, "fsss2", 3));
+                        Solver(OtherSolverFsss2, options, "fsss2", 2));
 #endif
 #ifdef MINISAT
             } else if (solver == "minisat") {
@@ -224,6 +224,7 @@ struct Benchmark {
             microseconds end = start;
             while ((end - start).count() < min_seconds_warmup_ * 1000000) {
                 string &puzzle = testing_data_[n % test_dataset_size_];
+                output[0] = '.'; // make sure we won't validate a previous solution
                 int count = solver.Solve(puzzle.c_str(), 1, output, &num_guesses);
                 if ((!allow_zero_ && !count) ||
                     (!allow_zero_ && validate_ &&
@@ -259,9 +260,11 @@ struct Benchmark {
 
             for (int i = 0; i < puzzles_todo; i++) {
                 string &puzzle = testing_data_[i % test_dataset_size_];
+                output[0] = '.'; // make sure we won't validate a previous solution
                 int count = solver.Solve(puzzle.c_str(), 2, output, &num_guesses);
                 if ((!allow_zero_ && !count) ||
-                    (!allow_zero_ && validate_ && !ValidateSolution(output))) {
+                    (!allow_zero_ && validate_ &&
+                     solver.ReturnsSolution() && !ValidateSolution(output))) {
                     cout << "Error during benchmark" << endl;
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);

@@ -62,7 +62,7 @@ vector<Solver> GetSolvers() {
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "tdoku_dpll_triad_scc"));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadSimd,     0, "tdoku_dpll_triad_simd"));
 #ifdef FSSS2
-    solvers.emplace_back(Solver(OtherSolverFsss2,             0, "fsss2", 3));
+    solvers.emplace_back(Solver(OtherSolverFsss2,             0, "fsss2", 2));
 #endif
 #ifdef JCZSOLVE
     solvers.emplace_back(Solver(OtherSolverJCZSolve,          0, "jczsolve"));
