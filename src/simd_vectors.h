@@ -155,8 +155,10 @@ struct Bitvec08x16 {
     }
 
     inline int Popcount() const {
-        return NumBitsSet64(_mm_extract_epi64(vec, 0)) +
-               NumBitsSet64(_mm_extract_epi64(vec, 1));
+        // unpackhi_epi64+cvtsi128_si64 compiles to the same instructions as extract_epi64,
+        // but works on windows where extract_epi64 is missing.
+        return NumBitsSet64(_mm_cvtsi128_si64(vec)) +
+               NumBitsSet64(_mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec)));
     }
 
     inline std::pair<uint16_t, uint16_t> MinPos() const {

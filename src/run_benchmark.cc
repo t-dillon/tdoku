@@ -1,5 +1,6 @@
 #include "all_solvers.h"
 #include "build_info.h"
+#include "klib/ketopt.h"
 
 #include <algorithm>
 #include <array>
@@ -12,7 +13,6 @@
 #include <random>
 #include <stdlib.h>
 #include <vector>
-#include <unistd.h>
 
 using namespace std;
 using chrono::system_clock;
@@ -277,8 +277,12 @@ struct Benchmark {
             double us_per_puzzle = usec_total / puzzles_todo;
             double bt_per_puzzle = total_guesses / (double) puzzles_todo;
 
+#ifdef WIN32
+#define COMMAS ""
+#else
+#define COMMAS "'"
             setlocale(LC_NUMERIC, "");
-
+#endif
             if (csv_output_) {
                 cout << "tdokubench,"
                      << CXX_COMPILER_ID << "," << CXX_COMPILER_VERSION << "," << CXX_FLAGS << ","
@@ -288,10 +292,10 @@ struct Benchmark {
                      << 100.0 * num_no_guess / puzzles_todo << "," << bt_per_puzzle << endl;
             } else {
                 cout << "|" << left << setw(38) << solver.Id();
-                printf("| %'11.1f |", puzzles_todo / seconds);
-                printf("%'12.1f |", us_per_puzzle);
-                printf("%'10.1f%% |", 100.0 * num_no_guess / puzzles_todo);
-                printf("%'15.2f |", bt_per_puzzle);
+                printf("| %" COMMAS "11.1f |", puzzles_todo / seconds);
+                printf("%" COMMAS "12.1f |", us_per_puzzle);
+                printf("%10.1f%% |", 100.0 * num_no_guess / puzzles_todo);
+                printf("%" COMMAS "15.2f |", bt_per_puzzle);
                 cout << endl;
             }
         }
@@ -321,35 +325,36 @@ int main(int argc, char **argv) {
     benchmark.solvers_.append(",skbforce");
 #endif
 
+    ketopt_t opt = KETOPT_INIT;
     char c;
-    while ((c = getopt(argc, argv, "c::hn:r::s:t:v::w:z::")) != -1) {
+    while ((c = ketopt(&opt, argc, argv, 1, "c::hn:r::s:t:v::w:z::", nullptr)) != -1) {
         switch (c) {
             case 'c': {
-                benchmark.csv_output_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);;
+                benchmark.csv_output_ = opt.arg == nullptr ? true : strtol(opt.arg, nullptr, 10);;
                 break;
             }
             case 'n': {
-                benchmark.test_dataset_size_ = strtol(optarg, nullptr, 10);
+                benchmark.test_dataset_size_ = strtol(opt.arg, nullptr, 10);
                 break;
             }
             case 'r': {
-                benchmark.randomize_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);
+                benchmark.randomize_ = opt.arg == nullptr ? true : strtol(opt.arg, nullptr, 10);
                 break;
             }
             case 's': {
-                benchmark.solvers_ = optarg;
+                benchmark.solvers_ = opt.arg;
                 break;
             }
             case 't': {
-                benchmark.min_seconds_test_ = strtol(optarg, nullptr, 10);
+                benchmark.min_seconds_test_ = strtol(opt.arg, nullptr, 10);
                 break;
             }
             case 'v': {
-                benchmark.validate_ = optarg == nullptr ? true : strtol(optarg, nullptr, 10);
+                benchmark.validate_ = opt.arg == nullptr ? true : strtol(opt.arg, nullptr, 10);
                 break;
             }
             case 'w': {
-                benchmark.min_seconds_warmup_ = strtol(optarg, nullptr, 10);
+                benchmark.min_seconds_warmup_ = strtol(opt.arg, nullptr, 10);
                 break;
             }
             case 'h':
@@ -374,10 +379,10 @@ int main(int argc, char **argv) {
 
     benchmark.InitSolvers();
 
-    if (optind == argc) {
+    if (opt.ind == argc) {
         benchmark.Test("data/puzzles4_forum_hardest_1905_11+");
     } else {
-        for (int i = optind; i < argc; i++) {
+        for (int i = opt.ind; i < argc; i++) {
             benchmark.Test(argv[i]);
         }
     }

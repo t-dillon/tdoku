@@ -44,7 +44,7 @@ private:
     bool returns_full_count_;
 
 public:
-    Solver(SolverFn *solver_fn, uint32_t flags, std::string name, uint features=7)
+    Solver(SolverFn *solver_fn, uint32_t flags, std::string name, uint32_t features=7)
             : solve_(solver_fn), flags_(flags), name_(std::move(name)),
               returns_solution_(features & 1u),
               returns_count_(features & 2u),
