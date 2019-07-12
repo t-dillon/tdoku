@@ -277,7 +277,7 @@ struct Benchmark {
             double us_per_puzzle = usec_total / puzzles_todo;
             double bt_per_puzzle = total_guesses / (double) puzzles_todo;
 
-#ifdef WIN32
+#ifdef _WIN32
 #define COMMAS ""
 #else
 #define COMMAS "'"
