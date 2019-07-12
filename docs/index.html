@@ -44,7 +44,7 @@ code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* Com
 code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
   </style>
   <link rel="stylesheet" href="pandoc.css" type="text/css" />
-  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML-full" type="text/javascript"></script>
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-142101488-1"></script>
   <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'UA-142101488-1'); </script>
 </head>
@@ -77,7 +77,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>Still, this has been an enjoyable project with a nice result. I hope you'll enjoy it too; I hope it adds something fresh to the Sudoku blogging genre; and, of course, I hope it contributes to reducing the carbon footprint and data center costs of the burgeoning Sudoku puzzle mining industry.</p>
 <h2 id="defining-our-terms">Defining our Terms</h2>
 <p>You know the rules, but I'll summarize to define some terms.</p>
-<p>The Sudoku puzzle is posed as a partially completed 9x9 grid comprising 81 <b>cells</b>. It is further divided into 9 3x3 subgrids which we'll call <b>boxes</b>. Each row, column, and box forms a <b>group</b> of 9 cells that obeys an exactly-one constraint. That's to say that each digit 1-9 must occur once and only once within each group. The union of 3 horizontally or vertically adjacent boxes is a <b>band</b>. A set of 3 horizontally or vertically adjacent cells <em>within</em> a box is an <b>intersection</b> (of a box with a row or column). There are 27 groups, 6 bands, and 54 intersections. The given values are <b>clues</b>.</p>
+<p>The Sudoku puzzle is posed as a partially completed 9x9 grid comprising 81 <b>cells</b>. It is further divided into 9 3x3 subgrids which we'll call <b>boxes</b>. Each row, column, and box forms a <b>group</b> of 9 cells that obeys an exactly-one constraint. That's to say that each digit 1-9 must occur once and only once within each group. The union of 3 horizontally or vertically adjacent boxes is a <b>band</b>. A set of 3 horizontally or vertically adjacent cells <em>within</em> a box is an <b>intersection</b> (of a box with a row or column). There are 27 groups, 6 bands, and 54 intersections. The initially assigned values are <b>clues</b>.</p>
 <p>Elsewhere in Sudoku-land you may see various synonyms for boxes (squares or regions), groups (units or houses), or bands (chutes, stacks, towers, or floors), but box, group, and band are the terms I'll use here.</p>
 <h2 id="the-really-basic-solver">The Really Basic Solver</h2>
 <p>This is a long story, but it begins with a simple thing: a depth-first search where in each recursive call we pick an unassigned cell and try to complete the puzzle for each candidate digit locally consistent with the puzzle's current partial assignment.</p>
@@ -89,85 +89,85 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">constexpr</span> <span class="dt">uint32_t</span> kAll = <span class="bn">0x1ff</span>;  <span class="co">// 9 bits</span>
 <span class="kw">typedef</span> tuple&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">int</span>&gt; RowColBox;
 
-array&lt;<span class="dt">uint32_t</span>, <span class="dv">9</span>&gt; <span class="va">rows_</span>{}, <span class="va">cols_</span>{}, <span class="va">boxes_</span>{};
-vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
-<span class="dt">size_t</span> <span class="va">num_todo_</span> = <span class="dv">0</span>, <span class="va">num_guesses_</span> = <span class="dv">0</span>;
+array&lt;<span class="dt">uint32_t</span>, <span class="dv">9</span>&gt; rows_{}, cols_{}, boxes_{};
+vector&lt;RowColBox&gt; cells_todo_;
+size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0</span>;
 
-<span class="dt">void</span> Initialize(<span class="at">const</span> <span class="dt">char</span> *input, <span class="dt">char</span> *solution) {
-    <span class="va">rows_</span>.fill(kAll); 
-    <span class="va">cols_</span>.fill(kAll); 
-    <span class="va">boxes_</span>.fill(kAll);
-    <span class="va">num_guesses_</span> = <span class="dv">0</span>;
+<span class="dt">void</span> Initialize(<span class="dt">const</span> <span class="dt">char</span> *input, <span class="dt">char</span> *solution) {
+    rows_.fill(kAll); 
+    cols_.fill(kAll); 
+    boxes_.fill(kAll);
+    num_guesses_ = <span class="dv">0</span>;
     
     <span class="co">// copy initial clues to solution; todo list won&#39;t include these cells</span>
     memcpy(solution, input, <span class="dv">81</span>); 
-    <span class="va">cells_todo_</span>.clear();
+    cells_todo_.clear();
 
-    <span class="cf">for</span> (<span class="dt">int</span> row = <span class="dv">0</span>; row &lt; <span class="dv">9</span>; ++row) {
-        <span class="cf">for</span> (<span class="dt">int</span> col = <span class="dv">0</span>; col &lt; <span class="dv">9</span>; ++col) {
+    <span class="kw">for</span> (<span class="dt">int</span> row = <span class="dv">0</span>; row &lt; <span class="dv">9</span>; ++row) {
+        <span class="kw">for</span> (<span class="dt">int</span> col = <span class="dv">0</span>; col &lt; <span class="dv">9</span>; ++col) {
             <span class="dt">int</span> box = (row / <span class="dv">3</span>) * <span class="dv">3</span> + col / <span class="dv">3</span>;
-            <span class="cf">if</span> (input[row * <span class="dv">9</span> + col] == <span class="st">&#39;.&#39;</span>) {
+            <span class="kw">if</span> (input[row * <span class="dv">9</span> + col] == <span class="st">&#39;.&#39;</span>) {
                 <span class="co">// blank cell: add to the todo list</span>
-                <span class="va">cells_todo_</span>.emplace_back(make_tuple(row, col, box));
-            } <span class="cf">else</span> {
+                cells_todo_.emplace_back(make_tuple(row, col, box));
+            } <span class="kw">else</span> {
                 <span class="co">// a given clue: clear availability bits for row, col, and box</span>
                 <span class="dt">uint32_t</span> value = <span class="dv">1u</span> &lt;&lt; (<span class="dt">uint32_t</span>) (input[row * <span class="dv">9</span> + col] - <span class="st">&#39;1&#39;</span>);
-                <span class="va">rows_</span>[row] ^= value;
-                <span class="va">cols_</span>[col] ^= value;
-                <span class="va">boxes_</span>[box] ^= value;
+                rows_[row] ^= value;
+                cols_[col] ^= value;
+                boxes_[box] ^= value;
             }
         }
     }
-    <span class="va">num_todo_</span> = <span class="va">cells_todo_</span>.size() - <span class="dv">1</span>;
+    num_todo_ = cells_todo_.size() - <span class="dv">1</span>;
 }</code></pre></div>
 <p>With the setup out of the way, our recursive function to solve the puzzle looks like this:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="co">// Returns true if a solution is found, updates *solution to reflect assignments</span>
 <span class="co">// made on solution path. Also updates num_guesses_ to reflect the number of </span>
 <span class="co">// guesses made during search.</span>
 <span class="dt">bool</span> SatisfyGivenPartialAssignment(<span class="dt">int</span> todo_index, <span class="dt">char</span> *solution) {
-    <span class="dt">int</span> [row, col, box] = <span class="va">cells_todo_</span>[todo_index];
+    <span class="dt">int</span> [row, col, box] = cells_todo_[todo_index];
 
-    <span class="kw">auto</span> candidates = <span class="va">rows_</span>[row] &amp; <span class="va">cols_</span>[col] &amp; <span class="va">boxes_</span>[box];
-    <span class="cf">while</span> (candidates) {
+    <span class="kw">auto</span> candidates = rows_[row] &amp; cols_[col] &amp; boxes_[box];
+    <span class="kw">while</span> (candidates) {
         <span class="dt">uint32_t</span> candidate = GetLowBit(candidates);
 
         <span class="co">// only count assignment as a guess if there&#39;s more than one candidate.</span>
-        <span class="cf">if</span> (candidates ^ candidate) <span class="va">num_guesses_</span>++;
+        <span class="kw">if</span> (candidates ^ candidate) num_guesses_++;
 
         <span class="co">// clear the candidate from available candidate sets for row, col, box </span>
-        <span class="va">rows_</span>[row] ^= candidate;
-        <span class="va">cols_</span>[col] ^= candidate;
-        <span class="va">boxes_</span>[box] ^= candidate;
+        rows_[row] ^= candidate;
+        cols_[col] ^= candidate;
+        boxes_[box] ^= candidate;
 
         <span class="co">// recursively solve remaining todo cells and back out with the solution. </span>
-        <span class="cf">if</span> (todo_index == <span class="va">num_todo_</span> || 
+        <span class="kw">if</span> (todo_index == num_todo_ || 
             SatisfyGivenPartialAssignment(todo_index + <span class="dv">1</span>, solution)) {
             board[row * <span class="dv">9</span> + col] = (<span class="dt">char</span>) (<span class="st">&#39;1&#39;</span> + LowOrderBitIndex(candidate));
-            <span class="cf">return</span> <span class="kw">true</span>;
+            <span class="kw">return</span> <span class="kw">true</span>;
         }
         
         <span class="co">// restore the candidate to available candidate sets for row, col, box </span>
-        <span class="va">rows_</span>[row] |= candidate;
-        <span class="va">cols_</span>[col] |= candidate;
-        <span class="va">boxes_</span>[box] |= candidate;
+        rows_[row] |= candidate;
+        cols_[col] |= candidate;
+        boxes_[box] |= candidate;
 
         candidates = ClearLowBit(candidates);
     }
-    <span class="cf">return</span> <span class="kw">false</span>;
+    <span class="kw">return</span> <span class="kw">false</span>;
 }</code></pre></div>
 <p>With the code above in a struct called SolverBasic, we'll put it all together like <a href="https://github.com/t-dillon/tdoku/blob/master/src/solver_basic.cc">so</a>:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="dt">bool</span> SolveSudoku(<span class="at">const</span> <span class="dt">char</span> *input, <span class="dt">char</span> *solution, <span class="dt">size_t</span> *num_guesses) {
-    <span class="at">static</span> SolverBasic solver;
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="dt">bool</span> SolveSudoku(<span class="dt">const</span> <span class="dt">char</span> *input, <span class="dt">char</span> *solution, size_t *num_guesses) {
+    <span class="dt">static</span> SolverBasic solver;
     solver.Initialize(input, solution);
     <span class="dt">bool</span> found_solution =  solver.SatisfyGivenPartialAssignment(<span class="dv">0</span>, solution);
-    *num_guesses = <span class="va">num_guesses_</span>;
-    <span class="cf">return</span> found_solution;s
+    *num_guesses = num_guesses_;
+    <span class="kw">return</span> found_solution;s
 }</code></pre></div>
 <p>This is the sort of thing you might write to solve a problem on <a href="https://projecteuler.net/problem=96">Project Euler</a> or <a href="https://leetcode.com/problems/sudoku-solver/">Leetcode</a>.</p>
 <p>We could stop here and our puzzles would be satisfied.</p>
 <p>But would we be satisfied? Is this fast? Let's see ...</p>
 <h2 id="measuring-performance">Measuring Performance</h2>
-<p>If you only look at performance<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> on really easy puzzles like those found in this <a href="https://www.kaggle.com/bryanpark/sudoku">Kaggle data set</a>, then you might say yes, this solver is actually fast! Here's how its performance on this dataset compares to <a href="http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309">JCZSolve</a> and <a href="https://github.com/dobrichev/fsss2">fsss2</a><a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>, the fastest Sudoku solvers I'm aware of:</p>
+<p>If you only look at performance<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> on really easy puzzles like those found in this <a href="https://www.kaggle.com/bryanpark/sudoku">Kaggle data set</a>, then you might say yes, this solver is actually fast! Here's how its performance on this dataset compares to the fastest Sudoku solvers I'm aware of:</p>
 <table>
 <colgroup>
 <col width="41%" />
@@ -178,7 +178,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles0_kaggle</th>
+<th align="left">data/puzzles0_kaggle</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -187,30 +187,37 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">382,436.4</td>
-<td align="right">2.6</td>
+<td align="left"><em>tdoku_basic</em></td>
+<td align="right">362,635.9</td>
+<td align="right">2.8</td>
 <td align="right">0.0%</td>
-<td align="right">54.48</td>
+<td align="right">54.49</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">596,311.1</td>
-<td align="right">1.7</td>
+<td align="left"><a href="https://github.com/dobrichev/fsss2">fsss2</a><a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></td>
+<td align="right">1,473,728.1</td>
+<td align="right">0.7</td>
 <td align="right">100.0%</td>
 <td align="right">0.00</td>
 </tr>
 <tr class="odd">
-<td>fsss2</td>
-<td align="right">1,456,305.4</td>
-<td align="right">0.7</td>
+<td align="left"><a href="http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309">jczsolve</a><a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></td>
+<td align="right">595,962.4</td>
+<td align="right">1.7</td>
+<td align="right">100.0%</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left"><a href="https://github.com/GPenet/SK_BFORCE2">skbforce</a><a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a></td>
+<td align="right">1,238,719.4</td>
+<td align="right">0.8</td>
 <td align="right">100.0%</td>
 <td align="right">0.00</td>
 </tr>
 </tbody>
 </table>
-<p>382 kps seems pretty decent! Is this a potential contender?</p>
-<p>Certainly not. All this serves to show is that the choice of benchmark matters a lot. The puzzles in the Kaggle dataset are too easy to present an interesting challenge to humans or machines. They have an average of 35 clues per puzzle, many more than the typical Sudoku, and as a result the puzzles are already almost solved with many easy routes to a solution. Any solver will be fast on such puzzles, and JCZSolve and fsss2 are designed for harder work.</p>
+<p>362 kps doesn't place our basic solver in the same vicinity as state-of-the-art solvers, but it's at least in the same zip code. Could this be a contender with some further optimization?</p>
+<p>Certainly not. All this serves to show is that the choice of benchmark matters a lot. The puzzles in the Kaggle dataset are too easy to present an interesting challenge to humans or machines. They have an average of 35 clues per puzzle, many more than the typical Sudoku, and as a result the puzzles are already &quot;almost solved&quot; with many easy routes to a solution. Any solver will be fast on such puzzles.</p>
 <p>For a look at a dataset that's more of a challenge for the basic solver, consider the list of ~49,000 <a href="http://staffhome.ecm.uwa.edu.au/~00013890/sudokumin.php">17 Clue Puzzles</a> maintained by Gordon Royle of the University of Western Australia:</p>
 <table>
 <colgroup>
@@ -222,7 +229,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles1_17_clue</th>
+<th align="left">data/puzzles1_17_clue</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -231,25 +238,32 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
+<td align="left"><em>tdoku_basic</em></td>
 <td align="right">1.9</td>
-<td align="right">539,197.7</td>
+<td align="right">527,905.4</td>
 <td align="right">0.0%</td>
-<td align="right">22,350,875.05</td>
+<td align="right">22,231,848.78</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">289,520.0</td>
-<td align="right">3.5</td>
-<td align="right">69.6%</td>
-<td align="right">1.86</td>
+<td align="left">fsss2</td>
+<td align="right">305,446.5</td>
+<td align="right">3.3</td>
+<td align="right">72.6%</td>
+<td align="right">1.32</td>
 </tr>
 <tr class="odd">
-<td>fsss2</td>
-<td align="right">299,584.6</td>
-<td align="right">3.3</td>
-<td align="right">72.5%</td>
-<td align="right">1.32</td>
+<td align="left">jczsolve</td>
+<td align="right">289,951.4</td>
+<td align="right">3.4</td>
+<td align="right">69.5%</td>
+<td align="right">1.91</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">378,385.5</td>
+<td align="right">2.6</td>
+<td align="right">73.7%</td>
+<td align="right">1.00</td>
 </tr>
 </tbody>
 </table>
@@ -263,7 +277,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 <li>The subset of <a href="http://forum.enjoysudoku.com/the-hardest-sudokus-new-thread-t6539-600.html#p277835">Player's Forum Hardest (1905)</a> list having a Sudoku Explainer difficulty rating above 11.0 (coincidentally also about 49,000 puzzles).</li>
 <li><a href="http://forum.enjoysudoku.com/the-hardest-sudokus-new-thread-t6539.html#p65791">Player's Forum Hardest (1106)</a>: The list of 376 puzzles that originally kicked off the linked player's forum hardest puzzle thread, and which seems to contain on average the hardest puzzles of all for the solvers we test.</li>
 </ol>
-<p>Tests on these datasets corroborate what we learned from the 17 clue puzzles. Our basic solver is not fast at all on difficult puzzles, and it does an excessive amount of guessing and backtracking (although it does better with these than it did with the 17 clue puzzles -- the 17 clue puzzles are especially pathological for it for reasons we'll discuss below). JCZSolve and fsss2 both slow down quite a bit and do more guessing as we go from the easiest to the hardest of these datasets.</p>
+<p>Tests on these datasets corroborate what we learned from the 17 clue puzzles. Our basic solver is not fast at all on difficult puzzles, and it does an excessive amount of guessing and backtracking (although it does better with these than it did with the 17 clue puzzles -- the 17 clue puzzles are especially pathological for it for reasons we'll discuss below). The other solvers all slow down quite a bit and do more guessing as we go from the easiest to the hardest of these datasets.</p>
 <table>
 <colgroup>
 <col width="41%" />
@@ -274,7 +288,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles2_magictour_top1465</th>
+<th align="left">data/puzzles2_magictour_top1465</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -283,25 +297,32 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">20.7</td>
-<td align="right">48,276.4</td>
+<td align="left"><em>tdoku_basic</em></td>
+<td align="right">29.6</td>
+<td align="right">33,804.9</td>
 <td align="right">0.0%</td>
-<td align="right">2,008,517.38</td>
+<td align="right">1,371,524.66</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">77,760.3</td>
-<td align="right">12.9</td>
-<td align="right">2.3%</td>
-<td align="right">20.77</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">70,821.8</td>
+<td align="left">fsss2</td>
+<td align="right">71,065.9</td>
 <td align="right">14.1</td>
 <td align="right">1.7%</td>
-<td align="right">19.16</td>
+<td align="right">19.17</td>
+</tr>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">78,476.5</td>
+<td align="right">12.7</td>
+<td align="right">2.3%</td>
+<td align="right">20.70</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">86,743.8</td>
+<td align="right">11.5</td>
+<td align="right">3.6%</td>
+<td align="right">15.40</td>
 </tr>
 </tbody>
 </table>
@@ -315,7 +336,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles3_forum_hardest_1905</th>
+<th align="left">data/puzzles3_forum_hardest_1905</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -324,25 +345,32 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">196.4</td>
-<td align="right">5,092.7</td>
+<td align="left"><em>tdoku_basic</em></td>
+<td align="right">185.6</td>
+<td align="right">5,388.4</td>
 <td align="right">0.0%</td>
-<td align="right">184,166.12</td>
+<td align="right">191,717.34</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">16,197.5</td>
-<td align="right">61.7</td>
+<td align="left">fsss2</td>
+<td align="right">14,704.9</td>
+<td align="right">68.0</td>
 <td align="right">0.0%</td>
-<td align="right">138.69</td>
+<td align="right">117.77</td>
 </tr>
 <tr class="odd">
-<td>fsss2</td>
-<td align="right">14,470.4</td>
-<td align="right">69.1</td>
+<td align="left">jczsolve</td>
+<td align="right">16,379.7</td>
+<td align="right">61.1</td>
 <td align="right">0.0%</td>
-<td align="right">117.71</td>
+<td align="right">138.58</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">18,158.5</td>
+<td align="right">55.1</td>
+<td align="right">0.0%</td>
+<td align="right">103.17</td>
 </tr>
 </tbody>
 </table>
@@ -356,7 +384,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles4_forum_hardest_1905_11+</th>
+<th align="left">data/puzzles4_forum_hardest_1905_11+</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -365,25 +393,32 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">142.1</td>
-<td align="right">7,036.3</td>
+<td align="left"><em>tdoku_basic</em></td>
+<td align="right">147.4</td>
+<td align="right">6,782.7</td>
 <td align="right">0.0%</td>
-<td align="right">256,410.60</td>
+<td align="right">241,327.57</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">12,564.5</td>
-<td align="right">79.6</td>
+<td align="left">fsss2</td>
+<td align="right">12,022.8</td>
+<td align="right">83.2</td>
 <td align="right">0.0%</td>
-<td align="right">170.99</td>
+<td align="right">139.02</td>
 </tr>
 <tr class="odd">
-<td>fsss2</td>
-<td align="right">11,881.4</td>
-<td align="right">84.2</td>
+<td align="left">jczsolve</td>
+<td align="right">12,710.4</td>
+<td align="right">78.7</td>
 <td align="right">0.0%</td>
-<td align="right">138.67</td>
+<td align="right">170.91</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">14,336.6</td>
+<td align="right">69.8</td>
+<td align="right">0.0%</td>
+<td align="right">122.60</td>
 </tr>
 </tbody>
 </table>
@@ -397,7 +432,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles5_forum_hardest_1106</th>
+<th align="left">data/puzzles5_forum_hardest_1106</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -406,25 +441,32 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">54.6</td>
-<td align="right">18,300.7</td>
+<td align="left"><em>tdoku_basic</em></td>
+<td align="right">49.8</td>
+<td align="right">20,082.6</td>
 <td align="right">0.0%</td>
-<td align="right">684,253.42</td>
+<td align="right">736,915.98</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">6,567.1</td>
-<td align="right">152.3</td>
+<td align="left">fsss2</td>
+<td align="right">6,511.4</td>
+<td align="right">153.6</td>
 <td align="right">0.0%</td>
-<td align="right">366.84</td>
+<td align="right">276.34</td>
 </tr>
 <tr class="odd">
-<td>fsss2</td>
-<td align="right">6,483.2</td>
-<td align="right">154.2</td>
+<td align="left">jczsolve</td>
+<td align="right">6,637.9</td>
+<td align="right">150.6</td>
 <td align="right">0.0%</td>
-<td align="right">277.75</td>
+<td align="right">367.22</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">7,260.1</td>
+<td align="right">137.7</td>
+<td align="right">0.0%</td>
+<td align="right">271.11</td>
 </tr>
 </tbody>
 </table>
@@ -432,18 +474,18 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 <h2 id="the-low-hanging-fruit">The Low Hanging Fruit</h2>
 <p>Somewhere in any presentation on constraint solving is a discussion of the impact of variable ordering on backtracking efficiency. Before Peter Norvig ever wrote a <a href="https://norvig.com/sudoku.html">Sudoku solver</a> he first wrote <a href="http://aima.cs.berkeley.edu/">the book</a>, and you can read all about it there. So far we've paid no heed to which cell we're assigning next, and an obvious heuristic if we're going to be more deliberate about it is to pick from among the most constrained cells (i.e., those with the fewest remaining candidates) in order to reduce the effective branching factor of our search.</p>
 <p>To achieve this, we'll add two functions and stick a call to MoveBestTodoTofront() at the top of SatisfyGivenPartialAssignment():</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="dt">int</span> NumCandidates(<span class="at">const</span> RowColBox &amp;row_col_box) {
-    <span class="dt">int</span> [row, col, box] = <span class="va">cells_todo_</span>[todo_index];
-    <span class="kw">auto</span> candidates = <span class="va">rows_</span>[row] &amp; <span class="va">cols_</span>[col] &amp; <span class="va">boxes_</span>[box];
-    <span class="cf">return</span> NumBitsSet(candidates);
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="dt">int</span> NumCandidates(<span class="dt">const</span> RowColBox &amp;row_col_box) {
+    <span class="dt">int</span> [row, col, box] = cells_todo_[todo_index];
+    <span class="kw">auto</span> candidates = rows_[row] &amp; cols_[col] &amp; boxes_[box];
+    <span class="kw">return</span> NumBitsSet(candidates);
 }
 
 <span class="dt">void</span> MoveBestTodoToFront(<span class="dt">int</span> todo_index) {
-    nth_element(<span class="va">cells_todo_</span>.begin() + todo_index,
-                <span class="va">cells_todo_</span>.begin() + todo_index,
-                <span class="va">cells_todo_</span>.end(),
-                [&amp;](<span class="at">const</span> RowColBox &amp;cell1, <span class="at">const</span> RowColBox &amp;cell2) {
-                    <span class="cf">return</span> NumCandidates(cell1) &lt; NumCandidates(cell2);
+    nth_element(cells_todo_.begin() + todo_index,
+                cells_todo_.begin() + todo_index,
+                cells_todo_.end(),
+                [&amp;](<span class="dt">const</span> RowColBox &amp;cell1, <span class="dt">const</span> RowColBox &amp;cell2) {
+                    <span class="kw">return</span> NumCandidates(cell1) &lt; NumCandidates(cell2);
                 });
 }</code></pre></div>
 <p>This simple change leads to a dramatic improvement. Let's compare on just one dataset:</p>
@@ -457,7 +499,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles2_magictour_top1465</th>
+<th align="left">data/puzzles2_magictour_top1465</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -466,37 +508,44 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">20.7</td>
-<td align="right">48,276.4</td>
+<td align="left">tdoku_basic</td>
+<td align="right">29.6</td>
+<td align="right">33,804.9</td>
 <td align="right">0.0%</td>
-<td align="right">2,008,517.38</td>
+<td align="right">1,371,524.66</td>
 </tr>
 <tr class="even">
-<td>tdoku_basic_heuristic</td>
-<td align="right">743.6</td>
-<td align="right">1,344.9</td>
+<td align="left"><em>tdoku_basic_heuristic</em></td>
+<td align="right">751.6</td>
+<td align="right">1,330.4</td>
 <td align="right">0.0%</td>
-<td align="right">652.51</td>
+<td align="right">646.99</td>
 </tr>
 <tr class="odd">
-<td>jczsolve</td>
-<td align="right">77,760.3</td>
-<td align="right">12.9</td>
-<td align="right">2.3%</td>
-<td align="right">20.77</td>
-</tr>
-<tr class="even">
-<td>fsss2</td>
-<td align="right">70,821.8</td>
+<td align="left">fsss2</td>
+<td align="right">71,065.9</td>
 <td align="right">14.1</td>
 <td align="right">1.7%</td>
-<td align="right">19.16</td>
+<td align="right">19.17</td>
+</tr>
+<tr class="even">
+<td align="left">jczsolve</td>
+<td align="right">78,476.5</td>
+<td align="right">12.7</td>
+<td align="right">2.3%</td>
+<td align="right">20.70</td>
+</tr>
+<tr class="odd">
+<td align="left">skbforce</td>
+<td align="right">86,743.8</td>
+<td align="right">11.5</td>
+<td align="right">3.6%</td>
+<td align="right">15.40</td>
 </tr>
 </tbody>
 </table>
-<p>With a speedup of ~35x and a reduction in guessing of ~1/3000x, this is a big step in the right direction. If this sounds like a surprisingly large improvement, consider that the most constrained cell in the todo list might have no remaining candidates, in which case we'll backtrack immediately where previously we might have exhaustively explored assignments for multiple other variables before reaching the same conflict on each branch. The most constrained cell in the todo list might also have just one candidate, in which case we'll immediately propagate that value as a consequence of prior assignments, which may in turn lead to other single-candidate cells and further propagation. And if neither of these cases obtain, then we'll still pick the cell with the lowest current branching factor.</p>
-<p>Now, despite all this our heuristic basic solver is still very slow and it still does quite a bit more guessing than JCZSolve or fsss2. Before really trying to optimize for performance let's look harder at why we do all this guessing and what we can do to reduce it.</p>
+<p>With a speedup of ~25x and a reduction in guessing of ~1/2000x, this is a big step in the right direction. If this sounds like a surprisingly large improvement, consider that the most constrained cell in the todo list might have no remaining candidates, in which case we'll backtrack immediately where previously we might have exhaustively explored assignments for multiple other variables before reaching the same conflict on each branch. The most constrained cell in the todo list might also have just one candidate, in which case we'll immediately propagate that value as a consequence of prior assignments, which may in turn lead to other single-candidate cells and further propagation. And if neither of these cases obtain, then we'll still pick the cell with the lowest current branching factor.</p>
+<p>Now, despite all this our heuristic basic solver is still very slow and it still does quite a bit more guessing than the other solvers. Before really trying to optimize for performance let's look harder at why we do all this guessing and what we can do to reduce it.</p>
 <p>If you have experience in constraint solving and you think about code we've written so far, your reaction may be &quot;that's crypto-DPLL&quot;, and so it is. Let's uncover this algorithm and see where it leads.</p>
 <h2 id="getting-propositional">Getting Propositional</h2>
 <p>If you've read this far, I'll assume some basic familiarity with propositional logic. Suppose <span class="math inline">\(x_{rcv}\)</span> is a variable expressing that the cell at row <span class="math inline">\(r\)</span> and column <span class="math inline">\(c\)</span> contains the digit <span class="math inline">\(v\)</span>, <i>D</i> is the set { 1,2,3,4,5,6,7,8,9 }, and R(<i>i,j</i>) and C(<i>i,j</i>) are functions returning the row and column respectively of the <i>j</i>th cell in the <i>i</i>th box. A minimal CNF formula representing the rules of Sudoku is a conjunction of the following clauses:</p>
@@ -621,7 +670,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles2_magictour_top1465</th>
+<th align="left">data/puzzles2_magictour_top1465</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -630,36 +679,43 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic_heuristic</td>
-<td align="right">743.6</td>
-<td align="right">1,344.9</td>
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">751.6</td>
+<td align="right">1,330.4</td>
 <td align="right">0.0%</td>
-<td align="right">652.51</td>
+<td align="right">646.99</td>
 </tr>
 <tr class="even">
-<td>tdoku_dpll_triad</td>
-<td align="right">3,506.2</td>
-<td align="right">285.2</td>
-<td align="right">8.0%</td>
+<td align="left"><em>tdoku_dpll_triad</em></td>
+<td align="right">3,403.0</td>
+<td align="right">293.9</td>
+<td align="right">7.9%</td>
 <td align="right">12.68</td>
 </tr>
 <tr class="odd">
-<td>jczsolve</td>
-<td align="right">77,760.3</td>
-<td align="right">12.9</td>
-<td align="right">2.3%</td>
-<td align="right">20.77</td>
-</tr>
-<tr class="even">
-<td>fsss2</td>
-<td align="right">70,821.8</td>
+<td align="left">fsss2</td>
+<td align="right">71,065.9</td>
 <td align="right">14.1</td>
 <td align="right">1.7%</td>
-<td align="right">19.16</td>
+<td align="right">19.17</td>
+</tr>
+<tr class="even">
+<td align="left">jczsolve</td>
+<td align="right">78,476.5</td>
+<td align="right">12.7</td>
+<td align="right">2.3%</td>
+<td align="right">20.70</td>
+</tr>
+<tr class="odd">
+<td align="left">skbforce</td>
+<td align="right">86,743.8</td>
+<td align="right">11.5</td>
+<td align="right">3.6%</td>
+<td align="right">15.40</td>
 </tr>
 </tbody>
 </table>
-<p>This is a little bit faster than our basic heuristic solver, which is nice, but the main thing we've been aiming for is a reduction in the amount of guessing and backtracking we're doing. We're now averaging 12.7 guesses per puzzle on MagicTour (vs. 20.8 for JCZSolve), and we're managing to solve 8% with no guesses at all (vs. 2.3% for JCZSolve).</p>
+<p>This is a little bit faster than our basic heuristic solver, which is nice, but the main thing we've been aiming for is a reduction in the amount of guessing and backtracking we're doing. We're now averaging 12.7 guesses per puzzle on MagicTour (vs. 15.4 for skbforce), and we're managing to solve 7.9% with no guesses at all (vs. 3.6% for skbforce).</p>
 <p>These are solid improvements, all achieved within the unified framework of unit propagation with no special algorithmic consideration for hidden singles, locked candidates, etc.</p>
 <p>Of course, that's just on one data set. If we look at a harder one it's clear that there's still room for improvement:</p>
 <table>
@@ -672,7 +728,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles4_forum_hardest_1905_11+</th>
+<th align="left">data/puzzles4_forum_hardest_1905_11+</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -681,36 +737,43 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic_heuristic</td>
-<td align="right">438.1</td>
-<td align="right">2,282.8</td>
+<td align="left">tdoku_basic_heuristic</td>
+<td align="right">438.5</td>
+<td align="right">2,280.3</td>
 <td align="right">0.0%</td>
-<td align="right">872.38</td>
+<td align="right">872.29</td>
 </tr>
 <tr class="even">
-<td>tdoku_dpll_triad</td>
-<td align="right">483.1</td>
-<td align="right">2,070.1</td>
+<td align="left"><em>tdoku_dpll_triad</em></td>
+<td align="right">466.2</td>
+<td align="right">2,144.8</td>
 <td align="right">0.0%</td>
-<td align="right">132.08</td>
+<td align="right">133.27</td>
 </tr>
 <tr class="odd">
-<td>jczsolve</td>
-<td align="right">12,564.5</td>
-<td align="right">79.6</td>
+<td align="left">fsss2</td>
+<td align="right">12,022.8</td>
+<td align="right">83.2</td>
 <td align="right">0.0%</td>
-<td align="right">170.99</td>
+<td align="right">139.02</td>
 </tr>
 <tr class="even">
-<td>fsss2</td>
-<td align="right">11,881.4</td>
-<td align="right">84.2</td>
+<td align="left">jczsolve</td>
+<td align="right">12,710.4</td>
+<td align="right">78.7</td>
 <td align="right">0.0%</td>
-<td align="right">138.67</td>
+<td align="right">170.91</td>
+</tr>
+<tr class="odd">
+<td align="left">skbforce</td>
+<td align="right">14,336.6</td>
+<td align="right">69.8</td>
+<td align="right">0.0%</td>
+<td align="right">122.60</td>
 </tr>
 </tbody>
 </table>
-<p>Can we do more to bring the guessing down without getting too ad hoc?</p>
+<p>Can we do more to bring the guessing down withoug going too far down the road if implementing a bunch of ad hoc strategies?</p>
 <h2 id="strongly-connected-components">Strongly Connected Components</h2>
 <p>So far we've spent a lot of time discussing unit resolution since this is at the heart of DPLL. However, unit resolution is not the only tractable form of propositional inference. Certainly the inference is bounded if our clauses must shrink, but it is also bounded if our clauses can't grow, a criterion that is also met if we restrict attention to binary clauses. It's worth noticing that the majority of our clauses are binary to begin with, and after the introduction of triads most of our other clauses are just one or two eliminations away from being binary. This hints that a substantial part of our reasoning can take place in the implication graph formed by just our binary clauses, a hint corroborated by the fact that a large fraction of advanced human puzzle solving strategies involve looking for cycles in exactly this graph.</p>
 <p>To explore what we can do here, we'll first update our unit propagation procedure to keep track of the binary clauses encountered during elimination. Each non-subsumed binary clause produces two binary implications, since <small><span class="math inline">\(a \lor b\)</span></small> can be written as <small><span class="math inline">\(\,\lnot a \rightarrow b\)</span></small> or as <small><span class="math inline">\(\,\lnot b \rightarrow a\)</span></small>, and these implications create a directed graph among our literals.</p>
@@ -735,7 +798,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles2_magictour_top1465</th>
+<th align="left">data/puzzles2_magictour_top1465</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -744,53 +807,53 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic_heuristic</td>
-<td align="right">743.6</td>
-<td align="right">1,344.9</td>
-<td align="right">0.0%</td>
-<td align="right">652.51</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad</td>
-<td align="right">3,506.2</td>
-<td align="right">285.2</td>
-<td align="right">8.0%</td>
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">3,403.0</td>
+<td align="right">293.9</td>
+<td align="right">7.9%</td>
 <td align="right">12.68</td>
 </tr>
+<tr class="even">
+<td align="left"><em>tdoku_dpll_triad_scc{0x1}</em></td>
+<td align="right">1,612.1</td>
+<td align="right">620.3</td>
+<td align="right">12.5%</td>
+<td align="right">6.24</td>
+</tr>
 <tr class="odd">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">1,630.3</td>
-<td align="right">613.4</td>
-<td align="right">12.8%</td>
-<td align="right">6.25</td>
+<td align="left"><em>tdoku_dpll_triad_scc{0x2}</em></td>
+<td align="right">2,361.1</td>
+<td align="right">423.5</td>
+<td align="right">7.8%</td>
+<td align="right">4.46</td>
 </tr>
 <tr class="even">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">2,405.0</td>
-<td align="right">415.8</td>
-<td align="right">7.9%</td>
-<td align="right">4.44</td>
+<td align="left"><em>tdoku_dpll_triad_scc{0x3}</em></td>
+<td align="right">2,381.3</td>
+<td align="right">419.9</td>
+<td align="right">12.5%</td>
+<td align="right">3.35</td>
 </tr>
 <tr class="odd">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">2,426.1</td>
-<td align="right">412.2</td>
-<td align="right">12.7%</td>
-<td align="right">3.33</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">77,760.3</td>
-<td align="right">12.9</td>
-<td align="right">2.3%</td>
-<td align="right">20.77</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">70,821.8</td>
+<td align="left">fsss2</td>
+<td align="right">71,065.9</td>
 <td align="right">14.1</td>
 <td align="right">1.7%</td>
-<td align="right">19.16</td>
+<td align="right">19.17</td>
+</tr>
+<tr class="even">
+<td align="left">jczsolve</td>
+<td align="right">78,476.5</td>
+<td align="right">12.7</td>
+<td align="right">2.3%</td>
+<td align="right">20.70</td>
+</tr>
+<tr class="odd">
+<td align="left">skbforce</td>
+<td align="right">86,743.8</td>
+<td align="right">11.5</td>
+<td align="right">3.6%</td>
+<td align="right">15.40</td>
 </tr>
 </tbody>
 </table>
@@ -804,7 +867,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles4_forum_hardest_1905_11+</th>
+<th align="left">data/puzzles4_forum_hardest_1905_11+</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -813,63 +876,63 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic_heuristic</td>
-<td align="right">438.1</td>
-<td align="right">2,282.8</td>
+<td align="left">tdoku_dpll_triad</td>
+<td align="right">466.2</td>
+<td align="right">2,144.8</td>
 <td align="right">0.0%</td>
-<td align="right">872.38</td>
+<td align="right">133.27</td>
 </tr>
 <tr class="even">
-<td>tdoku_dpll_triad</td>
-<td align="right">483.1</td>
-<td align="right">2,070.1</td>
+<td align="left"><em>tdoku_dpll_triad_scc{0x1}</em></td>
+<td align="right">189.3</td>
+<td align="right">5,283.0</td>
 <td align="right">0.0%</td>
-<td align="right">132.08</td>
+<td align="right">65.02</td>
 </tr>
 <tr class="odd">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">190.8</td>
-<td align="right">5,242.3</td>
+<td align="left"><em>tdoku_dpll_triad_scc{0x2}</em></td>
+<td align="right">267.0</td>
+<td align="right">3,744.9</td>
 <td align="right">0.0%</td>
-<td align="right">64.73</td>
+<td align="right">53.38</td>
 </tr>
 <tr class="even">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">269.9</td>
-<td align="right">3,705.6</td>
+<td align="left"><em>tdoku_dpll_triad_scc{0x3}</em></td>
+<td align="right">277.8</td>
+<td align="right">3,599.2</td>
 <td align="right">0.0%</td>
-<td align="right">53.09</td>
+<td align="right">39.53</td>
 </tr>
 <tr class="odd">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">279.8</td>
-<td align="right">3,573.7</td>
+<td align="left">fsss2</td>
+<td align="right">12,022.8</td>
+<td align="right">83.2</td>
 <td align="right">0.0%</td>
-<td align="right">39.42</td>
+<td align="right">139.02</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">12,564.5</td>
-<td align="right">79.6</td>
+<td align="left">jczsolve</td>
+<td align="right">12,710.4</td>
+<td align="right">78.7</td>
 <td align="right">0.0%</td>
-<td align="right">170.99</td>
+<td align="right">170.91</td>
 </tr>
 <tr class="odd">
-<td>fsss2</td>
-<td align="right">11,881.4</td>
-<td align="right">84.2</td>
+<td align="left">skbforce</td>
+<td align="right">14,336.6</td>
+<td align="right">69.8</td>
 <td align="right">0.0%</td>
-<td align="right">138.67</td>
+<td align="right">122.60</td>
 </tr>
 </tbody>
 </table>
-<p>In terms of guessing we've done pretty well. Both the inference and heuristic components of our SCC exploitation result in significant reductions in guessing, which gets us to levels significantly below JCZSolve and fsss2. On the magic tour dataset we've also increased to 12.8% the number of puzzles that can be solved without a guess. That said, all of our SCC-based solvers are slower than the base dpll+triad version that does not compute SCCs.</p>
+<p>In terms of guessing we've done pretty well. Both the inference and heuristic components of our SCC exploitation result in significant reductions in guessing, which gets us to levels significantly below the fastest solvers. On the magic tour dataset we've also increased to 12.5% the number of puzzles that can be solved without a guess. That said, all of our SCC-based solvers are slower than the base dpll+triad version that does not compute SCCs.</p>
 <p>It appears that the cost of computing SCCs, at least in its current form, is just too high. Its possible that there are remedies here. At the moment we have to re-run the SCC algorithm for the entire graph before each guess even if there have only been a few implications added. There do exist <a href="https://arxiv.org/pdf/1105.2397.pdf">incremental SCC algorithms</a> that exploit the topological order, and it's possible that this might make a material difference.</p>
 <p>But I think we've chased the reduction of guessing far enough. Now it's time to focus on being fast.</p>
 <h2 id="getting-vectorized">Getting Vectorized</h2>
 <p>In the interest of speed we'll set aside the strongly connected components and focus exclusively on how to represent our numerical clauses and triads in a way the supports efficient inference. In fact, we've already had a preview of how this can be done in the diagram above that depicts our propositional variables and their co-occurrence in clauses.</p>
 <p>Briefly, we'll organize our representation of state and our inference procedure around two concepts: the box and the band. Each of these will have it own method of elimination and update, and we'll batch- propagate inference between boxes and bands via message passing between peers.</p>
-<p>For boxes we've seen above that it's convenient to organize the positive cell literals and negative triad literals of a box as a 4x4 matrix with one unused extra cell. This gives a compact way to organize 3 out of our 5 varieties of numerical clause (1/9 positive cell clauses, 6/9 negative triad clauses, and 1/4 triad definition clauses). We'll store the box state in a 256-bit SIMD vector of packed 16-bit integers. Each 16-bit integer will store 9 bits representing candidate layers in the diagram above, with the top 7 bits unused. For platforms lacking AVX2 support we'll wrap two __m128i in a vector class.<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
+<p>For boxes we've seen above that it's convenient to organize the positive cell literals and negative triad literals of a box as a 4x4 matrix with one unused extra cell. This gives a compact way to organize 3 out of our 5 varieties of numerical clause (1/9 positive cell clauses, 6/9 negative triad clauses, and 1/4 triad definition clauses). We'll store the box state in a 256-bit SIMD vector of packed 16-bit integers. Each 16-bit integer will store 9 bits representing candidate layers in the diagram above, with the top 7 bits unused. For platforms lacking AVX2 support we'll wrap two __m128i in a vector class.<a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a></p>
 <p>This representation allows lets us use vector instructions to perform all eliminations within a box at once when assigning one or more digits to cells in that box. For example, in the diagram below the first matrix represents the initial state of a box with an empty board. All candidates are possible for each cell and negative triad. The second matrix is a mask representing eliminations that follow from the placement of a 5 and an 8 in the first two cells of the second row. Note that the placement of a value in a cell rules out negative triads in the corresponding rows and columns. The third matrix shows the state of the box after application of the mask with a single SIMD instruction.</p>
 <div class="figure">
 <img src="box_elimination.png" />
@@ -896,7 +959,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 <p>When determining the next guess to make instead of finding the most constrained cell or box, it turns out to be best to find the band with the fewest possible configurations across all values, and then to branch on the value that has the fewest configurations in the band.</p>
 <p>OK! Enough talk. If you've read all this I'm impressed! Time for some results.</p>
 <h2 id="the-fast-simd-solver">The Fast SIMD Solver</h2>
-<p>At long last it appears that our dpll-triad-simd solver compares quite favorably to JCZSolve and fsss2 on hard puzzles! It's around 44% faster on the magictour dataset, and relatively speaking it gets even faster as the datasets get harder, approaching 2x as fast on the hardest_1106 dataset!</p>
+<p>At long last it appears that our dpll-triad-simd solver compares quite favorably to other state-of-the-art solvers on hard puzzles! Compared to the geometric mean performance of the other solvers it's &gt;40% faster on the magictour dataset, and relatively speaking it gets even faster as the datasets get harder, approaching 2x as fast on the hardest_1106 dataset!</p>
 <table>
 <colgroup>
 <col width="41%" />
@@ -907,7 +970,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles2_magictour_top1465</th>
+<th align="left">data/puzzles2_magictour_top1465</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -916,66 +979,32 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">112,243.0</td>
-<td align="right">8.9</td>
+<td align="left"><em>tdoku_dpll_triad_simd</em></td>
+<td align="right">113,967.0</td>
+<td align="right">8.8</td>
 <td align="right">7.9%</td>
-<td align="right">9.07</td>
+<td align="right">9.06</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">77,760.3</td>
-<td align="right">12.9</td>
-<td align="right">2.3%</td>
-<td align="right">20.77</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">70,821.8</td>
+<td align="left">fsss2</td>
+<td align="right">71,065.9</td>
 <td align="right">14.1</td>
 <td align="right">1.7%</td>
-<td align="right">19.16</td>
+<td align="right">19.17</td>
 </tr>
-</tbody>
-</table>
-<table>
-<colgroup>
-<col width="41%" />
-<col width="14%" />
-<col width="13%" />
-<col width="12%" />
-<col width="17%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>puzzles3_forum_hardest_1905</th>
-<th align="right">puzzles/sec</th>
-<th align="right">usec/puzzle</th>
-<th align="right">%no_guess</th>
-<th align="right">guesses/puzzle</th>
-</tr>
-</thead>
-<tbody>
 <tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">24,335.7</td>
-<td align="right">41.1</td>
-<td align="right">0.0%</td>
-<td align="right">55.00</td>
+<td align="left">jczsolve</td>
+<td align="right">78,476.5</td>
+<td align="right">12.7</td>
+<td align="right">2.3%</td>
+<td align="right">20.70</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">16,197.5</td>
-<td align="right">61.7</td>
-<td align="right">0.0%</td>
-<td align="right">138.69</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">14,470.4</td>
-<td align="right">69.1</td>
-<td align="right">0.0%</td>
-<td align="right">117.71</td>
+<td align="left">skbforce</td>
+<td align="right">86,743.8</td>
+<td align="right">11.5</td>
+<td align="right">3.6%</td>
+<td align="right">15.40</td>
 </tr>
 </tbody>
 </table>
@@ -989,7 +1018,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles4_forum_hardest_1905_11+</th>
+<th align="left">data/puzzles3_forum_hardest_1905</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -998,78 +1027,35 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">20,277.9</td>
-<td align="right">49.3</td>
+<td align="left"><em>tdoku_dpll_triad_simd</em></td>
+<td align="right">24,263.1</td>
+<td align="right">41.2</td>
 <td align="right">0.0%</td>
-<td align="right">64.94</td>
+<td align="right">55.02</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">12,564.5</td>
-<td align="right">79.6</td>
+<td align="left">fsss2</td>
+<td align="right">14,704.9</td>
+<td align="right">68.0</td>
 <td align="right">0.0%</td>
-<td align="right">170.99</td>
+<td align="right">117.77</td>
 </tr>
 <tr class="odd">
-<td>fsss2</td>
-<td align="right">11,881.4</td>
-<td align="right">84.2</td>
+<td align="left">jczsolve</td>
+<td align="right">16,379.7</td>
+<td align="right">61.1</td>
 <td align="right">0.0%</td>
-<td align="right">138.67</td>
-</tr>
-</tbody>
-</table>
-<table>
-<colgroup>
-<col width="41%" />
-<col width="14%" />
-<col width="13%" />
-<col width="12%" />
-<col width="17%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>puzzles5_forum_hardest_1106</th>
-<th align="right">puzzles/sec</th>
-<th align="right">usec/puzzle</th>
-<th align="right">%no_guess</th>
-<th align="right">guesses/puzzle</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">12,944.1</td>
-<td align="right">77.3</td>
-<td align="right">0.0%</td>
-<td align="right">113.24</td>
+<td align="right">138.58</td>
 </tr>
 <tr class="even">
-<td>jczsolve</td>
-<td align="right">6,567.1</td>
-<td align="right">152.3</td>
+<td align="left">skbforce</td>
+<td align="right">18,158.5</td>
+<td align="right">55.1</td>
 <td align="right">0.0%</td>
-<td align="right">366.84</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">6,483.2</td>
-<td align="right">154.2</td>
-<td align="right">0.0%</td>
-<td align="right">277.75</td>
+<td align="right">103.17</td>
 </tr>
 </tbody>
 </table>
-<div class="figure">
-<img src="perfchart.png" />
-
-</div>
-<p><br> Of course, YMMV, various caveats apply, etc. It's not as portable as JCZSolve; it won't be as fast on a machine lacking AVX2 or with slow AVX2 (looking at you Threadripper); it won't be as fast if you compile with gcc instead clang; it's quite a bit slower than fsss2 for easy puzzles and invalid puzzles.</p>
-<p>But it's definitely fast. Which is what the world needs. Because, you know, who wants to wait? Who can <em>afford</em> to wait 78 microseconds to solve the hardest Sudoku? I know I can't.</p>
-<p>Thanks for reading!</p>
-<h2 id="appendix-1-all-the-data">Appendix 1: All the Data</h2>
-<p>In the tables above I've presented subsets of the benchmark results to highlight what we were talking about, but here's everything in one place reference.</p>
 <table>
 <colgroup>
 <col width="41%" />
@@ -1080,7 +1066,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles0_kaggle</th>
+<th align="left">data/puzzles4_forum_hardest_1905_11+</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -1089,67 +1075,134 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">382,436.4</td>
+<td align="left"><em>tdoku_dpll_triad_simd</em></td>
+<td align="right">20,218.7</td>
+<td align="right">49.5</td>
+<td align="right">0.0%</td>
+<td align="right">64.88</td>
+</tr>
+<tr class="even">
+<td align="left">fsss2</td>
+<td align="right">12,022.8</td>
+<td align="right">83.2</td>
+<td align="right">0.0%</td>
+<td align="right">139.02</td>
+</tr>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">12,710.4</td>
+<td align="right">78.7</td>
+<td align="right">0.0%</td>
+<td align="right">170.91</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">14,336.6</td>
+<td align="right">69.8</td>
+<td align="right">0.0%</td>
+<td align="right">122.60</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">data/puzzles5_forum_hardest_1106</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><em>tdoku_dpll_triad_simd</em></td>
+<td align="right">12,898.2</td>
+<td align="right">77.5</td>
+<td align="right">0.0%</td>
+<td align="right">113.30</td>
+</tr>
+<tr class="even">
+<td align="left">fsss2</td>
+<td align="right">6,511.4</td>
+<td align="right">153.6</td>
+<td align="right">0.0%</td>
+<td align="right">276.34</td>
+</tr>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">6,637.9</td>
+<td align="right">150.6</td>
+<td align="right">0.0%</td>
+<td align="right">367.22</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">7,260.1</td>
+<td align="right">137.7</td>
+<td align="right">0.0%</td>
+<td align="right">271.11</td>
+</tr>
+</tbody>
+</table>
+<p>Of course, YMMV, various caveats apply, etc. It's not as portable as JCZSolve. It runs best on a modern machine with AVX2. It's not as fast if you compile with gcc instead clang. It's slower than FSSS2 and SK_BFORCE2 for the easiest puzzles.</p>
+<p>But it's definitely fast. Which is what the world needs. Because, you know, who wants to wait? Who can <em>afford</em> to wait hundreds of microseconds to solve the hardest Sudoku? I know I can't.</p>
+<h2 id="practical-performance">Practical Performance</h2>
+<p>Joking aside, I hope I didn't give the impression that any of this would be practical. :-)</p>
+<p>While my interest was initially drawn to the problem of solving difficult Sudoku instances, it's been pointed out to me that this is not usually an important concern for users of fast Sudoku solvers. If you care about solving speed it's probably because you are doing vicinity search or some other systematic exploration of Sudoku space. In such cases a large proportion of tested puzzles have no solutions or have many solutions, and such puzzles are often easy to classify.</p>
+<p>To round out the picture, below are results for two datasets more germane to such use cases. The first is a dataset consisting of invalid puzzles that have multiple solutions, and the second is the raw output of a puzzle generator found <a href="http://www.enjoysudoku.com/gen_puzzles.zip">here</a> and consisting mostly of invalid puzzles with no solutions.</p>
+<table>
+<colgroup>
+<col width="41%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">data/puzzles6_serg_benchmark</th>
+<th align="right">puzzles/sec</th>
+<th align="right">usec/puzzle</th>
+<th align="right">%no_guess</th>
+<th align="right">guesses/puzzle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><em>tdoku_dpll_triad_simd</em></td>
+<td align="right">390,736.6</td>
 <td align="right">2.6</td>
 <td align="right">0.0%</td>
-<td align="right">54.48</td>
+<td align="right">7.13</td>
 </tr>
 <tr class="even">
-<td>tdoku_basic_heuristic</td>
-<td align="right">136,354.3</td>
-<td align="right">7.3</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="left">fsss2</td>
+<td align="right">380,670.5</td>
+<td align="right">2.6</td>
+<td align="right">0.0%</td>
+<td align="right">7.75</td>
 </tr>
 <tr class="odd">
-<td>tdoku_dpll_triad</td>
-<td align="right">10,018.7</td>
-<td align="right">99.8</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="left">jczsolve</td>
+<td align="right">309,644.1</td>
+<td align="right">3.2</td>
+<td align="right">0.0%</td>
+<td align="right">7.09</td>
 </tr>
 <tr class="even">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">9,522.8</td>
-<td align="right">105.0</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">9,548.1</td>
-<td align="right">104.7</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">9,520.2</td>
-<td align="right">105.0</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">623,855.8</td>
-<td align="right">1.6</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">596,311.1</td>
-<td align="right">1.7</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">1,456,305.4</td>
-<td align="right">0.7</td>
-<td align="right">100.0%</td>
-<td align="right">0.00</td>
+<td align="left">skbforce</td>
+<td align="right">347,354.2</td>
+<td align="right">2.9</td>
+<td align="right">0.0%</td>
+<td align="right">7.08</td>
 </tr>
 </tbody>
 </table>
@@ -1163,7 +1216,7 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </colgroup>
 <thead>
 <tr class="header">
-<th>puzzles1_17_clue</th>
+<th align="left">data/puzzles7_gen_puzzles</th>
 <th align="right">puzzles/sec</th>
 <th align="right">usec/puzzle</th>
 <th align="right">%no_guess</th>
@@ -1172,454 +1225,60 @@ vector&lt;RowColBox&gt; <span class="va">cells_todo_</span>;
 </thead>
 <tbody>
 <tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">1.9</td>
-<td align="right">539,197.7</td>
-<td align="right">0.0%</td>
-<td align="right">22,350,875.05</td>
+<td align="left"><em>tdoku_dpll_triad_simd</em></td>
+<td align="right">2,454,116.7</td>
+<td align="right">0.4</td>
+<td align="right">97.5%</td>
+<td align="right">0.28</td>
 </tr>
 <tr class="even">
-<td>tdoku_basic_heuristic</td>
-<td align="right">99.9</td>
-<td align="right">10,014.5</td>
-<td align="right">0.0%</td>
-<td align="right">5,947.18</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad</td>
-<td align="right">9,098.0</td>
-<td align="right">109.9</td>
-<td align="right">78.7%</td>
-<td align="right">0.82</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">7,936.9</td>
-<td align="right">126.0</td>
-<td align="right">86.8%</td>
-<td align="right">0.27</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">8,277.4</td>
-<td align="right">120.8</td>
-<td align="right">78.7%</td>
-<td align="right">0.27</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">8,357.1</td>
-<td align="right">119.7</td>
-<td align="right">86.8%</td>
-<td align="right">0.16</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">287,053.8</td>
-<td align="right">3.5</td>
-<td align="right">78.7%</td>
-<td align="right">0.62</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">289,520.0</td>
-<td align="right">3.5</td>
-<td align="right">69.6%</td>
-<td align="right">1.86</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">299,584.6</td>
-<td align="right">3.3</td>
-<td align="right">72.5%</td>
-<td align="right">1.32</td>
-</tr>
-</tbody>
-</table>
-<table>
-<colgroup>
-<col width="41%" />
-<col width="14%" />
-<col width="13%" />
-<col width="12%" />
-<col width="17%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>puzzles2_magictour_top1465</th>
-<th align="right">puzzles/sec</th>
-<th align="right">usec/puzzle</th>
-<th align="right">%no_guess</th>
-<th align="right">guesses/puzzle</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">20.7</td>
-<td align="right">48,276.4</td>
-<td align="right">0.0%</td>
-<td align="right">2,008,517.38</td>
-</tr>
-<tr class="even">
-<td>tdoku_basic_heuristic</td>
-<td align="right">743.6</td>
-<td align="right">1,344.9</td>
-<td align="right">0.0%</td>
-<td align="right">652.51</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad</td>
-<td align="right">3,506.2</td>
-<td align="right">285.2</td>
-<td align="right">8.0%</td>
-<td align="right">12.68</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">1,630.3</td>
-<td align="right">613.4</td>
-<td align="right">12.8%</td>
-<td align="right">6.25</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">2,405.0</td>
-<td align="right">415.8</td>
-<td align="right">7.9%</td>
-<td align="right">4.44</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">2,426.1</td>
-<td align="right">412.2</td>
-<td align="right">12.7%</td>
-<td align="right">3.33</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">112,243.0</td>
-<td align="right">8.9</td>
-<td align="right">7.9%</td>
-<td align="right">9.07</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">77,760.3</td>
-<td align="right">12.9</td>
-<td align="right">2.3%</td>
-<td align="right">20.77</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">70,821.8</td>
-<td align="right">14.1</td>
-<td align="right">1.7%</td>
-<td align="right">19.16</td>
-</tr>
-</tbody>
-</table>
-<table>
-<colgroup>
-<col width="41%" />
-<col width="14%" />
-<col width="13%" />
-<col width="12%" />
-<col width="17%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>puzzles3_forum_hardest_1905</th>
-<th align="right">puzzles/sec</th>
-<th align="right">usec/puzzle</th>
-<th align="right">%no_guess</th>
-<th align="right">guesses/puzzle</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">196.4</td>
-<td align="right">5,092.7</td>
-<td align="right">0.0%</td>
-<td align="right">184,166.12</td>
-</tr>
-<tr class="even">
-<td>tdoku_basic_heuristic</td>
-<td align="right">529.4</td>
-<td align="right">1,888.9</td>
-<td align="right">0.0%</td>
-<td align="right">745.29</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad</td>
-<td align="right">605.4</td>
-<td align="right">1,651.9</td>
-<td align="right">0.0%</td>
-<td align="right">110.68</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">244.2</td>
-<td align="right">4,094.6</td>
-<td align="right">0.0%</td>
-<td align="right">51.68</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">328.6</td>
-<td align="right">3,043.6</td>
-<td align="right">0.0%</td>
-<td align="right">45.64</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">347.3</td>
-<td align="right">2,879.0</td>
-<td align="right">0.0%</td>
-<td align="right">32.65</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">24,335.7</td>
-<td align="right">41.1</td>
-<td align="right">0.0%</td>
-<td align="right">55.00</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">16,197.5</td>
-<td align="right">61.7</td>
-<td align="right">0.0%</td>
-<td align="right">138.69</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">14,470.4</td>
-<td align="right">69.1</td>
-<td align="right">0.0%</td>
-<td align="right">117.71</td>
-</tr>
-</tbody>
-</table>
-<table>
-<colgroup>
-<col width="41%" />
-<col width="14%" />
-<col width="13%" />
-<col width="12%" />
-<col width="17%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>puzzles4_forum_hardest_1905_11+</th>
-<th align="right">puzzles/sec</th>
-<th align="right">usec/puzzle</th>
-<th align="right">%no_guess</th>
-<th align="right">guesses/puzzle</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">142.1</td>
-<td align="right">7,036.3</td>
-<td align="right">0.0%</td>
-<td align="right">256,410.60</td>
-</tr>
-<tr class="even">
-<td>tdoku_basic_heuristic</td>
-<td align="right">438.1</td>
-<td align="right">2,282.8</td>
-<td align="right">0.0%</td>
-<td align="right">872.38</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad</td>
-<td align="right">483.1</td>
-<td align="right">2,070.1</td>
-<td align="right">0.0%</td>
-<td align="right">132.08</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">190.8</td>
-<td align="right">5,242.3</td>
-<td align="right">0.0%</td>
-<td align="right">64.73</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">269.9</td>
-<td align="right">3,705.6</td>
-<td align="right">0.0%</td>
-<td align="right">53.09</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">279.8</td>
-<td align="right">3,573.7</td>
-<td align="right">0.0%</td>
-<td align="right">39.42</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">20,277.9</td>
-<td align="right">49.3</td>
-<td align="right">0.0%</td>
-<td align="right">64.94</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">12,564.5</td>
-<td align="right">79.6</td>
-<td align="right">0.0%</td>
-<td align="right">170.99</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">11,881.4</td>
-<td align="right">84.2</td>
-<td align="right">0.0%</td>
-<td align="right">138.67</td>
-</tr>
-</tbody>
-</table>
-<table>
-<colgroup>
-<col width="41%" />
-<col width="14%" />
-<col width="13%" />
-<col width="12%" />
-<col width="17%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>puzzles5_forum_hardest_1106</th>
-<th align="right">puzzles/sec</th>
-<th align="right">usec/puzzle</th>
-<th align="right">%no_guess</th>
-<th align="right">guesses/puzzle</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>tdoku_basic</td>
-<td align="right">54.6</td>
-<td align="right">18,300.7</td>
-<td align="right">0.0%</td>
-<td align="right">684,253.42</td>
-</tr>
-<tr class="even">
-<td>tdoku_basic_heuristic</td>
-<td align="right">209.1</td>
-<td align="right">4,781.3</td>
-<td align="right">0.0%</td>
-<td align="right">1,943.07</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad</td>
-<td align="right">263.6</td>
-<td align="right">3,794.1</td>
-<td align="right">0.0%</td>
-<td align="right">272.07</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x1}</td>
-<td align="right">114.5</td>
-<td align="right">8,731.8</td>
-<td align="right">0.0%</td>
-<td align="right">110.65</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_scc{0x2}</td>
-<td align="right">137.7</td>
-<td align="right">7,264.1</td>
-<td align="right">0.0%</td>
-<td align="right">110.47</td>
-</tr>
-<tr class="even">
-<td>tdoku_dpll_triad_scc{0x3}</td>
-<td align="right">146.3</td>
-<td align="right">6,834.7</td>
-<td align="right">0.0%</td>
-<td align="right">78.35</td>
-</tr>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">12,944.1</td>
-<td align="right">77.3</td>
-<td align="right">0.0%</td>
-<td align="right">113.24</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">6,567.1</td>
-<td align="right">152.3</td>
-<td align="right">0.0%</td>
-<td align="right">366.84</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">6,483.2</td>
-<td align="right">154.2</td>
-<td align="right">0.0%</td>
-<td align="right">277.75</td>
-</tr>
-</tbody>
-</table>
-<h2 id="appendix-2-practical-performance">Appendix 2: Practical Performance</h2>
-<p>Joking aside, I hope I didn't give the impression that any of this would be practical. :-)</p>
-<p>While my interest was attracted to the problem of solving difficult Sudoku instances, it's been pointed out to me that this is not usually an important concern for users of fast Sudoku solvers. If you care about solving speed it's probably because you are doing vicinity search or some other systematic exploration of Sudoku space. In such cases a large proportion of tested puzzles have no solutions or many solutions, and such puzzles are often easy to classify.</p>
-<p>To round out the picture on a dataset that may be more germane for such use cases, here are results from testing the raw output of a puzzle generator found <a href="http://www.enjoysudoku.com/gen_puzzles.zip">here</a>. This file contains many invalid puzzles, multiple-solution puzzles, and rarely single-solution ones.</p>
-<table>
-<colgroup>
-<col width="41%" />
-<col width="14%" />
-<col width="13%" />
-<col width="12%" />
-<col width="17%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>gen_puzzles</th>
-<th align="right">puzzles/sec</th>
-<th align="right">usec/puzzle</th>
-<th align="right">%no_guess</th>
-<th align="right">guesses/puzzle</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>tdoku_dpll_triad_simd</td>
-<td align="right">1,592,351.2</td>
-<td align="right">0.6</td>
-<td align="right">97.4%</td>
-<td align="right">0.29</td>
-</tr>
-<tr class="even">
-<td>jczsolve</td>
-<td align="right">1,779,151.9</td>
-<td align="right">0.6</td>
-<td align="right">97.4%</td>
-<td align="right">0.31</td>
-</tr>
-<tr class="odd">
-<td>fsss2</td>
-<td align="right">2,337,581.1</td>
+<td align="left">fsss2</td>
+<td align="right">2,510,898.5</td>
 <td align="right">0.4</td>
 <td align="right">97.4%</td>
-<td align="right">0.03</td>
+<td align="right">0.30</td>
+</tr>
+<tr class="odd">
+<td align="left">jczsolve</td>
+<td align="right">1,788,842.8</td>
+<td align="right">0.6</td>
+<td align="right">97.5%</td>
+<td align="right">0.32</td>
+</tr>
+<tr class="even">
+<td align="left">skbforce</td>
+<td align="right">2,051,304.8</td>
+<td align="right">0.5</td>
+<td align="right">97.6%</td>
+<td align="right">0.29</td>
 </tr>
 </tbody>
 </table>
+<p>For these datasets the performance of tdoku_dpll_triad_simd is roughly equivalent to that of FSSS2, the fastest of the three other solvers.</p>
+<h2 id="benchmark-summary">Benchmark Summary</h2>
+<p>Below are some charts summarizing benchmarking results for all datasets discussed above. For full details of benchmarks using a few different machines and compilers, see:<br> <a href="https://github.com/t-dillon/tdoku/tree/master/benchmarks" class="uri">https://github.com/t-dillon/tdoku/tree/master/benchmarks</a>.</p>
+<p>Thanks for reading!</p>
+<div class="figure">
+<img src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR58Y3aNoz57dQJYDh37c4gvKU_I2E8uOllVHs8xrr0sC52GoUTaC2AXKwUpySG-zFIKynjiM-wN3cX/pubchart?oid=1929162374&amp;format=image" />
+
+</div>
+<div class="figure">
+<img src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR58Y3aNoz57dQJYDh37c4gvKU_I2E8uOllVHs8xrr0sC52GoUTaC2AXKwUpySG-zFIKynjiM-wN3cX/pubchart?oid=1298913250&amp;format=image" />
+
+</div>
+<div class="figure">
+<img src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR58Y3aNoz57dQJYDh37c4gvKU_I2E8uOllVHs8xrr0sC52GoUTaC2AXKwUpySG-zFIKynjiM-wN3cX/pubchart?oid=1085609822&amp;format=image" />
+
+</div>
 </div>
 <div class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p>All benchmarks run on i5-8600k@3.6GHz; Ubuntu 18.04; <a href="https://github.com/t-dillon/tdoku/blob/master/src/run_benchmark.cc">benchmark program</a> compiled with clang++-8 -O3 -mavx2 -march=native, except for testing fsss2, which was compiled with gcc-6 and the same flags. (of several compilers tested clang-8 produced fastest code for jczsolve and various tdoku while gcc-6 produced fastest code for fsss2). All benchmarks look for up to 2 solutions (i.e., to find a solution and confirm it is unique).<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>fsss2 can be configured to use or not use locked candidates and pairs. The results here are based on a version compiled to use locked candidates but not pairs. This is not the default configuration, but it is the fastest configuration on the datasets we focus on.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>Our vector implemention can work with SSE2 which has been around since 2000. However, we rely heavily on shuffles that appeared in 2006 with SSSE3 and there is a large penalty for the SSE2 workaround. The code performs well for an SSE4.1 target and a little better with AVX2. It will probably be better still with Ice Lake whose AVX512BITALG will supply a single-instruction vector popcount.<a href="#fnref3">↩</a></p></li>
+<li id="fn1"><p>All benchmarks run on i5-8600k@3.6GHz; Ubuntu 18.04; <a href="https://github.com/t-dillon/tdoku/blob/master/src/run_benchmark.cc">benchmark program</a> compiled with clang++-8 -O3 -march=native, except for testing fsss2, which was compiled with gcc-6 and the same flags. (of several compilers tested clang-8 produced fastest code for jczsolve, skbforce, and various tdoku while gcc-6 produced fastest code for fsss2). All benchmarks look for up to 2 solutions (i.e., to find a solution and confirm it is unique).<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>FSSS2 can be configured to use or not use locked candidates and pairs. The results presented here for each dataset will be based on whichever fsss2 configuration is faster.<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>JCZSolve is the work of multiple collaborators from the New Sudoku Player's Forum. I don't think it's hosted as a project anywhere, but the code I'm using comes from the file JCZSolve1.0.zip attached to <a href="http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309">this post</a>.<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>SK_BFORCE2 is a Sudoku solver and puzzle generation toolkit derived from JCZSolve with further optimization by GPenet.<a href="#fnref4">↩</a></p></li>
+<li id="fn5"><p>Our vector implemention can work with SSE2 which has been around since 2000. However, we rely heavily on byte shuffles that appeared in 2006 with SSSE3 and there is a large penalty for the SSE2 workaround. The code performs well for an SSE4.1 target and a little better with AVX2. It will probably be better still with Ice Lake whose AVX512BITALG will supply a single-instruction vector popcount.<a href="#fnref5">↩</a></p></li>
 </ol>
 </div>
 </body>
