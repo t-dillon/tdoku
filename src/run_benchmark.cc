@@ -167,6 +167,11 @@ struct Benchmark {
                 solvers.emplace_back(
                         Solver(OtherSolverFsss2, options, "fsss2", 2));
 #endif
+#ifdef KUDOKU
+            } else if (solver == "kudoku") {
+                solvers.emplace_back(
+                        Solver(OtherSolverKudoku, options, "kudoku", 3));
+#endif
 #ifdef MINISAT
             } else if (solver == "minisat") {
                 solvers.emplace_back(
@@ -317,6 +322,9 @@ int main(int argc, char **argv) {
 #ifdef FSSS2
     benchmark.solvers_.append(",fsss2");
     benchmark.solvers_.append(",fsss2:1");
+#endif
+#ifdef KUDOKU
+    benchmark.solvers_.append(",kudoku");
 #endif
 #ifdef MINISAT
     benchmark.solvers_.append(",minisat");

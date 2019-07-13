@@ -70,11 +70,17 @@ vector<Solver> GetSolvers() {
 #ifdef JSOLVE
     solvers.emplace_back(Solver(OtherSolverJSolve,            0, "jsolve"));
 #endif
+#ifdef KUDOKU
+    solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku", 3));
+#endif
 #ifdef MINISAT
     solvers.emplace_back(Solver(TdokuSolverMiniSat,           0, "minisat", 1));
 #endif
 #ifdef SKBFORCE
     solvers.emplace_back(Solver(OtherSolverSKBFORCE,          0, "skbforce", 2));
+#endif
+#ifdef MYSOLVER
+    solvers.emplace_back(Solver(OtherSolverMySolver,          0, "mysolver"));
 #endif
     // @formatter:on
     return solvers;
