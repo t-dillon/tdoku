@@ -1,9 +1,0 @@
-TDOKU: A Sudoku Solver
-
-See https://t-dillon.github.io/tdoku for the why and how.
-
-To run benchmarks:
-
-unzip data.zip
-./BUILD.sh
-./build/run_benchmark data/*
