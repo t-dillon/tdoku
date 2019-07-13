@@ -29,6 +29,8 @@ header-includes:
 ![](i-should-write-a-sudoku-solver.png)
 
 ## [Nerd Sniped](https://xkcd.com/356/): A Sudoku Story
+[https://www.github.com/t-dillon/tdoku](https://www.github.com/t-dillon/tdoku)
+
 Who doesn't love [Sudoku](https://en.wikipedia.org/wiki/Sudoku)? 
 
 Judging from the number of websites, apps, and books on the topic, lots of people love it; judging
