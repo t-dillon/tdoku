@@ -28,6 +28,6 @@ size_t SolveSudoku(const char *input, size_t limit, uint32_t flags,
                    char *solution, size_t *num_guesses) {
     *num_guesses = 0;
     return TdokuSolverDpllTriadSimd(input, limit, flags, solution, num_guesses);
-};
+}
 
 #endif //TDOKU_H

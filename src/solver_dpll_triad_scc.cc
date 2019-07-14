@@ -55,7 +55,7 @@ struct SolverDpllTriadScc {
     // initial state with the correct implication counts. we'll clone this when we begin
     // solving each new puzzle, but this will not change after setup.
     State clean_slate_{};
-    // whether to use strongy connected component size as a heuristic for variable selection.
+    // whether to use strongly connected component size as a heuristic for variable selection.
     bool scc_heuristic_ = true;
     // whether to apply inferences reached during strongly connected component evaluation.
     bool scc_inference_ = true;
@@ -160,7 +160,7 @@ struct SolverDpllTriadScc {
 
     void SetupConstraints() {
         for (int box = 0; box < 9; box++) {
-            // ExactlyN contraints over values for a given cell or triad [1/9] and [3/9]
+            // ExactlyN constraints over values for a given cell or triad [1/9] and [3/9]
             for (int elem = 0; elem < 15; elem++) {
                 vector<LiteralId> literals;
                 for (int val = 0; val < 9; val++) {
@@ -441,11 +441,11 @@ struct SolverDpllTriadScc {
         }
     }
 
-    int SolveSudoku(const char *input, size_t limit, uint32_t flags,
+    size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
                     char *solution, size_t *num_guesses) {
         limit_ = limit;
-        scc_inference_ = flags & 1u;
-        scc_heuristic_ = flags & 2u;
+        scc_inference_ = (configuration & 1u) > 0;
+        scc_heuristic_ = (configuration & 2u) > 0;
         num_solutions_ = 0;
         num_guesses_ = 0;
 
@@ -481,8 +481,8 @@ struct SolverDpllTriadScc {
 
 
 extern "C"
-size_t TdokuSolverDpllTriadScc(const char *input, size_t limit, uint32_t flags,
+size_t TdokuSolverDpllTriadScc(const char *input, size_t limit, uint32_t configuration,
                                char *solution, size_t *num_guesses) {
     static SolverDpllTriadScc solver;
-    return solver.SolveSudoku(input, limit, flags, solution, num_guesses);
+    return solver.SolveSudoku(input, limit, configuration, solution, num_guesses);
 }

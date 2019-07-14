@@ -9,7 +9,7 @@
 size_t SKBFORCE_guesses;
 
 extern "C"
-size_t OtherSolverSKBFORCE(const char *input, size_t limit, uint32_t /*unused_flags*/,
+size_t OtherSolverSKBFORCE(const char *input, size_t limit, uint32_t /*unused_configuration*/,
                            char *solution, size_t *num_guesses) {
     SKBFORCE_guesses = 0;
     int result = zhou[0].CheckValidityQuick((char*)input);
@@ -24,10 +24,10 @@ size_t OtherSolverSKBFORCE(const char *input, size_t limit, uint32_t /*unused_fl
 size_t JCZSolve_guesses;
 
 extern "C"
-size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_flags*/,
+size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_configuration*/,
                            char *solution, size_t *num_guesses) {
     JCZSolve_guesses = 0;
-    int count = JCZSolver(input, solution, limit);
+    size_t count = JCZSolver(input, solution, limit);
     *num_guesses = JCZSolve_guesses;
     return count;
 }
@@ -39,7 +39,7 @@ size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_fl
 size_t JSolve_guesses;
 
 extern "C"
-size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_flags*/,
+size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_configuration*/,
                          char *solution, size_t *num_guesses) {
     JSolve_guesses = 0;
     int count = JSolve(input, solution, limit);
@@ -54,10 +54,10 @@ int nTrials;
 bool do_locked_candidates;
 
 extern "C"
-size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t flags,
+size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t configuration,
                         char *solution, size_t *num_guesses) {
     nTrials = 0;
-    do_locked_candidates = flags > 0;
+    do_locked_candidates = configuration > 0;
     char zero_based_input[81];
     char zero_based_output[81];
     for (int i = 0; i < 9; i++) {

@@ -1,7 +1,7 @@
 #ifndef TDOKU_BIT_TWIDDLING_H
 #define TDOKU_BIT_TWIDDLING_H
 
-#include <stdint.h>
+#include <cstdint>
 
 inline int NumBitsSet(uint32_t x) {
     return __builtin_popcount(x);

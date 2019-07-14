@@ -38,29 +38,29 @@ extern "C" {
 class Solver {
 private:
     SolverFn *solve_;
-    uint32_t flags_;
+    uint32_t configuration_;
     std::string name_;
     bool returns_solution_;
     bool returns_count_;
     bool returns_full_count_;
 
 public:
-    Solver(SolverFn *solver_fn, uint32_t flags, std::string name, uint32_t features=7)
-            : solve_(solver_fn), flags_(flags), name_(std::move(name)),
-              returns_solution_(features & 1u),
-              returns_count_(features & 2u),
-              returns_full_count_(features & 4u) {}
+    Solver(SolverFn *solver_fn, uint32_t configuration, std::string name, uint32_t features=7)
+            : solve_(solver_fn), configuration_(configuration), name_(std::move(name)),
+              returns_solution_((features & 1u) > 0),
+              returns_count_((features & 2u) > 0),
+              returns_full_count_((features & 4u) > 0) {}
 
-    inline int Solve(const char *input, int limit,
-                     char *solution, size_t *num_guesses) const {
-        return solve_(input, limit, flags_, solution, num_guesses);
+    inline size_t Solve(const char *input, size_t limit,
+                        char *solution, size_t *num_guesses) const {
+        return solve_(input, limit, configuration_, solution, num_guesses);
     }
 
     inline std::string Id() const {
         std::ostringstream os;
         os << name_;
-        if (flags_) {
-            os << "{0x" << std::hex << flags_ << "}";
+        if (configuration_) {
+            os << "{0x" << std::hex << configuration_ << "}";
         }
         return os.str();
     }

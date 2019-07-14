@@ -33,7 +33,7 @@ struct Box {
     Cells16 cells{Cells16::All(kAll)};
     uint32_t box_idx, box_i, box_j;
 
-    Box(int box_idx) : box_idx(box_idx), box_i(box_idx / 3), box_j(box_idx % 3) {}
+    Box(uint32_t box_idx) : box_idx(box_idx), box_i(box_idx / 3), box_j(box_idx % 3) {}
 };
 
 // For a given value there are only 6 possible configurations for how that value can be
@@ -161,8 +161,6 @@ struct Tables {
             {0,    0,    0,    0,    kAll, 0,    0, 0},
             {0,    0,    0,    0,    0,    kAll, 0, 0},
     };
-
-    const Cells16 box_minimums{1, 1, 1, 6, 1, 1, 1, 6, 1, 1, 1, 6, 6, 6, 6, 0};
     // @formatter:on
 
     BoxIndexing box_indexing[81]{};
@@ -394,9 +392,9 @@ struct SolverDpllTriadSimd {
         uint32_t best_band = UINT32_MAX, best_band_count = UINT32_MAX;
         uint32_t best_value = UINT32_MAX, best_value_count = UINT32_MAX;
         // first find the unfixed band with the fewest possible configurations across all values.
-        for (int i = 0; i < 6; i++) {
+        for (auto i = 0u; i < 6; i++) {
             const Band &band = state.bands[div3[i]][mod3[i]];
-            uint32_t band_count = band.configurations.Popcount();
+            auto band_count = (uint32_t) band.configurations.Popcount();
             if (band_count > 9 && band_count < best_band_count) {
                 best_band_count = band_count;
                 best_band = i;
@@ -406,7 +404,7 @@ struct SolverDpllTriadSimd {
         if (best_band < UINT32_MAX) {
             const Band &band = state.bands[div3[best_band]][mod3[best_band]];
             for (uint32_t i = 0; i < 9; i++) {
-                uint32_t value_count = (band.configurations & tables.one_value_mask[i]).Popcount();
+                auto value_count = (uint32_t) (band.configurations & tables.one_value_mask[i]).Popcount();
                 if (value_count > 1 && value_count < best_value_count) {
                     best_value_count = value_count;
                     best_value = i;
@@ -486,7 +484,7 @@ struct SolverDpllTriadSimd {
 
     // We could set the initial clues in other ways, including one box update for each clue, or
     // one batch box update for each box. But it's fastest to start with 6 batched band updates.
-    bool InitBandBatch(const char *input, State &state) {
+    static bool InitBandBatch(const char *input, State &state) {
         Cells08 h_eliminations[3]{};
         Cells08 v_eliminations[3]{};
 
@@ -495,7 +493,7 @@ struct SolverDpllTriadSimd {
             __m128i str16 = _mm_loadu_si128((const __m128i *) &input[i * 16]);
             uint32_t clues = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(str16, dots)) ^0xffffu;
             while (clues) {
-                uint32_t cell_idx = i * 16 + LowOrderBitIndex(clues);
+                int cell_idx = i * 16 + LowOrderBitIndex(clues);
                 InitClue(input, state, cell_idx, h_eliminations, v_eliminations);
                 clues = ClearLowBit(clues);
             }
@@ -528,7 +526,7 @@ struct SolverDpllTriadSimd {
         }
     }
 
-    int SolveSudoku(const char *input, size_t limit,
+    size_t SolveSudoku(const char *input, size_t limit,
                     char *solution, size_t *const num_guesses) {
         limit_ = limit;
         num_solutions_ = 0;
@@ -549,7 +547,8 @@ SolverDpllTriadSimd solver{};
 } // namespace
 
 extern "C"
-size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit, uint32_t /* unused_flags */,
+size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit,
+                                uint32_t /* unused_configuration */,
                                 char *solution, size_t *num_guesses) {
     return solver.SolveSudoku(input, limit, solution, num_guesses);
 }

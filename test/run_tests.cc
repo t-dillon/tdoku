@@ -26,13 +26,13 @@ void Run(const string &testdata_filename, const Solver &solver) {
         string puzzle, expect_str, solution;
         getline(ss, puzzle, ':');
         getline(ss, expect_str, ':');
-        int expect = strtol(expect_str.c_str(), nullptr, 10);
+        int expect = stoi(expect_str);
         if (expect > 0 && !solver.ReturnsCount()) expect = 1;
         if (expect > 1 && !solver.ReturnsFullCount()) expect = 2;
 
         char output[82]{};
         size_t backtracks;
-        int count = solver.Solve(puzzle.c_str(), 100000, output, &backtracks);
+        size_t count = solver.Solve(puzzle.c_str(), 100000, output, &backtracks);
         if (count != expect) {
             cout << "FAIL: " << solver.Id() << "\n"
                  << "      puzzle:   " << puzzle << "\n"
@@ -84,7 +84,7 @@ vector<Solver> GetSolvers() {
 #endif
     // @formatter:on
     return solvers;
-};
+}
 
 int main(int argc, char **argv) {
     string testdata_filename = "test/test_puzzles";

@@ -56,9 +56,9 @@
    constraint with a binary vector of 729 elements. Thus we have a 729x324
    binary matrix M with M(r,c)=1 indicating the constraint c involves choice r.
    Solving a Sudoku is reduced to finding a subset of choices such that no
-   choices are present in the same constaint. This is equivalent to finding the
+   choices are present in the same constraint. This is equivalent to finding the
    minimal subset of choices intersecting all constraints, a minimum hitting
-   set problem or a eqivalence of the exact cover problem.
+   set problem or a equivalence of the exact cover problem.
 
    The 729x324 binary matrix is a sparse matrix, with each row containing 4
    non-zero elements and each column 9 non-zero elements. In practical

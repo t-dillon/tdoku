@@ -67,7 +67,7 @@ struct Bitvec08x16 {
     // non-explicit conversions intended
     Bitvec08x16(const __m128i &m128i) noexcept : vec{m128i} {}
 
-    Bitvec08x16(const Bitvec08x16 &other) noexcept : vec(other.vec) {}
+    Bitvec08x16(const Bitvec08x16 &other) noexcept = default;
 
     Bitvec08x16(uint16_t x00, uint16_t x01, uint16_t x02, uint16_t x03,
                 uint16_t x04, uint16_t x05, uint16_t x06, uint16_t x07) :
@@ -100,7 +100,7 @@ struct Bitvec08x16 {
 
     inline bool AllZero() const {
 #ifdef __SSE4_1__
-        return _mm_test_all_zeros(vec, vec);
+        return _mm_test_all_zeros(vec, vec) != 0;
 #else
         return _mm_movemask_epi8(_mm_cmpeq_epi16(vec, _mm_setzero_si128())) == 0xffff;
 #endif
@@ -157,14 +157,14 @@ struct Bitvec08x16 {
     inline int Popcount() const {
         // unpackhi_epi64+cvtsi128_si64 compiles to the same instructions as extract_epi64,
         // but works on windows where extract_epi64 is missing.
-        return NumBitsSet64(_mm_cvtsi128_si64(vec)) +
-               NumBitsSet64(_mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec)));
+        return NumBitsSet64((uint64_t) _mm_cvtsi128_si64(vec)) +
+               NumBitsSet64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec)));
     }
 
     inline std::pair<uint16_t, uint16_t> MinPos() const {
-        std::pair<uint16_t, uint16_t> result;
+        std::pair<uint16_t, uint16_t> result{};
 #ifdef __SSE4_1__
-        uint32_t pair = _mm_extract_epi32(_mm_minpos_epu16(vec), 0);
+        auto pair = (uint32_t )_mm_extract_epi32(_mm_minpos_epu16(vec), 0);
         memcpy(&result, &pair, sizeof(pair)); // optimizes nicely
 #else
         result.first = 0xffffu;

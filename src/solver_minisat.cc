@@ -17,18 +17,18 @@ struct SolverMiniSat {
     }
 
     // normal cell literals, of which we have 9*9*9
-    Lit Literal(int row, int column, int value) {
+    static Lit Literal(int row, int column, int value) {
         return mkLit(value + 9 * (column + 9 * row), true);
     }
 
     // horizontal triad literals, of which we have 9*3*9, starting after the cell literals
-    Lit HTriadLiteral(int row, int column, int value) {
+    static Lit HTriadLiteral(int row, int column, int value) {
         int base = 81 * 9;
         return mkLit(base + value + 9 * (column + 3 * row));
     }
 
-    // vertical triad litearls, of which we have 3*9*9, starting after the h_triad literals
-    Lit VTriadLiteral(int row, int column, int value) {
+    // vertical triad literals, of which we have 3*9*9, starting after the h_triad literals
+    static Lit VTriadLiteral(int row, int column, int value) {
         int base = (81 + 27) * 9;
         return mkLit(base + value + 9 * (row + 3 * column));
     }
