@@ -35,7 +35,7 @@ struct Benchmark {
     bool validate_ = true;
     bool allow_zero_ = false;
 
-    long seed = std::chrono::system_clock::now().time_since_epoch().count();
+    uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
     mt19937 rng{seed};
     uniform_int_distribution<uint32_t> random_uint;
 
