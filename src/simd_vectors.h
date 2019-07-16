@@ -16,13 +16,15 @@
  * sse2 - pentium4 2000
  *   has most of the instructions we'll use, with exceptions noted below
  *
- * ssse3 2006 - core 2006
+ * ssse3 2006 - core2 2006
  *   _mm_shuffle_epi8      // sse2 alt: kind of a mess. see below.
  *
  * sse4_1 - penryn 2007
  *   _mm_testz_si128       // sse2 alt: movemask(cmpeq(setzero())) in sse2
- *   _mm_min_epu16         // sse2 alt: iterate & extract 9 cells
  *   _mm_blend_epi16       // sse2 alt: &| with masks
+ *
+ * sse4_2 - nehalem 2007
+ *   _mm_cmpgt_epi64
  *
  * avx2 - haswell 2013
  *   _mm256 versions of most everything
@@ -30,6 +32,12 @@
  * avx-512 - coming with ice lake (for bitalg) 2019/2020
  *   _mm256_popcnt_epi16   // avx512bitalg + avx512vl
  *                         // this might give an interesting boost when available.
+ *
+ * June 2019 Steam monthly hardware survey:
+ *   SSE2        100.00%  +0.00%
+ *   SSSE3        97.74%  +0.17%
+ *   SSE4.1       96.61%  +0.31%
+ *   SSE4.2       95.60%  +0.40%
  */
 
 // for functions like extract below where we use switches to determine which immediate to use
@@ -52,10 +60,14 @@ struct FourBy64 {
 
 namespace {
 
-const __m128i popcount_lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-const __m128i popcount_mask4 = _mm_set1_epi16(0x0f);
-const __m128i rotate_rows1 = _mm_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9);
-const __m128i rotate_rows2 = _mm_setr_epi8(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
+struct Consts {
+    __m128i popcount_lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+    __m128i popcount_mask4 = _mm_set1_epi16(0x0f);
+    __m128i rotate_rows1 = _mm_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9);
+    __m128i rotate_rows2 = _mm_setr_epi8(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
+};
+
+const Consts consts{};
 
 } // namespace
 
@@ -67,7 +79,7 @@ struct Bitvec08x16 {
     // non-explicit conversions intended
     Bitvec08x16(const __m128i &m128i) noexcept : vec{m128i} {}
 
-    Bitvec08x16(const Bitvec08x16 &other) noexcept = default;
+    Bitvec08x16(const Bitvec08x16 &other) noexcept : vec(other.vec) {}
 
     Bitvec08x16(uint16_t x00, uint16_t x01, uint16_t x02, uint16_t x03,
                 uint16_t x04, uint16_t x05, uint16_t x06, uint16_t x07) :
@@ -124,13 +136,26 @@ struct Bitvec08x16 {
         return !which_less_than.AllZero();
     }
 
+    inline Bitvec08x16 ClearLowBit() const {
+#ifdef __SSE4_2__
+        __m128i cmp = _mm_cmpgt_epi64(vec, _mm_setzero_si128());
+#else
+        __m128i cmp = _mm_cmpgt_epi32(vec, _mm_setzero_si128());
+        cmp = _mm_or_si128(cmp, _mm_shuffle_epi32(cmp, 0b10110001));
+#endif
+        __m128i one = _mm_andnot_si128(_mm_slli_si128(cmp, 1), _mm_srli_epi64(cmp, 63));
+        return _mm_and_si128(vec, _mm_sub_epi64(vec, one));
+    }
+
     // counts the number of bits set among the 9 lowest order bits of each packed 16-bit integer
     // subject to the assumption that the 7 high bits are zero. results are undefined if any of
     // the 7 high bits are nonzero.
     inline Bitvec08x16 Popcounts9() const {
-#ifdef __SSE4_1__
-        Bitvec08x16 sum_0_3 = Bitvec08x16{popcount_lookup}.Shuffle(*this & popcount_mask4);
-        Bitvec08x16 sum_4_7 = Bitvec08x16{popcount_lookup}.Shuffle(_mm_srli_epi16(vec, 4));
+#ifdef __SSSE3__
+        Bitvec08x16 sum_0_3 = Bitvec08x16{consts.popcount_lookup}.Shuffle(
+                *this & consts.popcount_mask4);
+        Bitvec08x16 sum_4_7 = Bitvec08x16{consts.popcount_lookup}.Shuffle(
+                _mm_srli_epi16(vec, 4));
         Bitvec08x16 sum_0_7 = _mm_add_epi16(sum_0_3.vec, sum_4_7.vec);
         Bitvec08x16 result = _mm_add_epi16(sum_0_7.vec, _mm_srli_epi16(vec, 8));
         return result;
@@ -161,36 +186,8 @@ struct Bitvec08x16 {
                NumBitsSet64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec)));
     }
 
-    inline std::pair<uint16_t, uint16_t> MinPos() const {
-        std::pair<uint16_t, uint16_t> result{};
-#ifdef __SSE4_1__
-        auto pair = (uint32_t )_mm_extract_epi32(_mm_minpos_epu16(vec), 0);
-        memcpy(&result, &pair, sizeof(pair)); // optimizes nicely
-#else
-        result.first = 0xffffu;
-        auto rows = As_2x64();
-        for (int i = 0; i < 4; i++) {
-            uint16_t val = rows.x0 & 0xffffu;
-            if (result.first > val) {
-                result.first = val;
-                result.second = i;
-            }
-            rows.x0 >>= 16u;
-        }
-        for (int i = 4; i < 8; i++) {
-            uint16_t val = rows.x1 & 0xffffu;
-            if (result.first > val) {
-                result.first = val;
-                result.second = i;
-            }
-            rows.x1 >>= 16u;
-        }
-#endif
-        return result;
-    }
-
     inline Bitvec08x16 Shuffle(const Bitvec08x16 &control) const {
-#ifdef __SSE4_1__
+#ifdef __SSSE3__
         return _mm_shuffle_epi8(vec, control.vec);
 #else
         // we'll rely on the assumption that all requested shuffles are for epi16s so each
@@ -218,8 +215,8 @@ struct Bitvec08x16 {
     }
 
     inline Bitvec08x16 RotateRows() const {
-#ifdef __SSE4_1__
-        return Shuffle(rotate_rows1);
+#ifdef __SSSE3__
+        return Shuffle(consts.rotate_rows1);
 #else
         __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0xffff, 0x0, 0xffff, 0xffff, 0xffff, 0x0);
         __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0x0, 0xffff, 0x0, 0x0, 0x0, 0xffff);
@@ -230,8 +227,8 @@ struct Bitvec08x16 {
     }
 
     inline Bitvec08x16 RotateRows2() const {
-#ifdef __SSE4_1__
-        return Shuffle(rotate_rows2);
+#ifdef __SSSE3__
+        return Shuffle(consts.rotate_rows2);
 #else
         __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0);
         __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff);

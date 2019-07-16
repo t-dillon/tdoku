@@ -152,15 +152,6 @@ struct Tables {
             Cells08::All(1u << 3u), Cells08::All(1u << 4u), Cells08::All(1u << 5u),
             Cells08::All(1u << 6u), Cells08::All(1u << 7u), Cells08::All(1u << 8u),
     };
-
-    const Cells08 one_cell_mask[6]{
-            {kAll, 0,    0,    0,    0,    0,    0, 0},
-            {0,    kAll, 0,    0,    0,    0,    0, 0},
-            {0,    0,    kAll, 0,    0,    0,    0, 0},
-            {0,    0,    0,    kAll, 0,    0,    0, 0},
-            {0,    0,    0,    0,    kAll, 0,    0, 0},
-            {0,    0,    0,    0,    0,    kAll, 0, 0},
-    };
     // @formatter:on
 
     BoxIndexing box_indexing[81]{};
@@ -417,37 +408,23 @@ struct SolverDpllTriadSimd {
 
     void BranchOnBandAndValue(int orientation, int band_idx, int value, State &state) {
         Band &band = state.bands[orientation][band_idx];
+        // we enter with two or more possible configurations for this value
         Cells08 configurations = band.configurations & tables.one_value_mask[value];
-        // we enter with two or more possible configurations for this value; pick one to assign.
-        int assignment1_idx = (configurations ^ Cells08::All(kAll)).MinPos().second;
-        Cells08 assignment1_mask = configurations.and_not(tables.one_cell_mask[assignment1_idx]);
 
         num_guesses_++;
         State state_copy = state;
+        Cells08 assignment1_mask = configurations.ClearLowBit();
         if (BandEliminate(state_copy, orientation, band_idx, assignment1_mask)) {
             CountSolutionsConsistentWithPartialAssignment(state_copy);
             if (num_solutions_ == limit_) return;
         }
 
-        if (assignment1_mask.Popcount() == 1) {
-            // in most cases we'll have had only two configurations, so now assign the second.
-            Cells08 assignment2_mask = configurations ^assignment1_mask;
-            if (BandEliminate(state, orientation, band_idx, assignment2_mask)) {
+        Cells08 negation1_mask = configurations ^assignment1_mask;
+        if (BandEliminate(state, orientation, band_idx, negation1_mask)) {
+            if ((band.configurations & tables.one_value_mask[value]).Popcount() == 1) {
                 CountSolutionsConsistentWithPartialAssignment(state);
-                if (num_solutions_ == limit_) return;
-            }
-        } else {
-            // but if there were three or more then negate the first and recurse.
-            Cells08 negation1_mask = configurations & tables.one_cell_mask[assignment1_idx];
-            if (BandEliminate(state, orientation, band_idx, negation1_mask)) {
-                // but note: when there are three or more configurations it may arise that negating
-                // one can lead to elimination of others, possibly narrowing to one, in which case
-                // there's no need to branch again.
-                if ((band.configurations & tables.one_value_mask[value]).Popcount() == 1) {
-                    CountSolutionsConsistentWithPartialAssignment(state);
-                } else {
-                    BranchOnBandAndValue(orientation, band_idx, value, state);
-                }
+            } else {
+                BranchOnBandAndValue(orientation, band_idx, value, state);
             }
         }
     }
