@@ -25,11 +25,12 @@ extern "C" {
     SolverFn TdokuSolverDpllTriadSimd;
     SolverFn TdokuSolverMiniSat;
 
-    SolverFn OtherSolverJCZSolve;
+    SolverFn OtherSolverBBSudoku;
     SolverFn OtherSolverJSolve;
-    SolverFn OtherSolverFsss2;
-    SolverFn OtherSolverSKBFORCE;
     SolverFn OtherSolverKudoku;
+    SolverFn OtherSolverFsss2;
+    SolverFn OtherSolverJCZSolve;
+    SolverFn OtherSolverSKBFORCE;
 #ifdef __cplusplus
 }
 #endif
@@ -43,13 +44,15 @@ private:
     bool returns_solution_;
     bool returns_count_;
     bool returns_full_count_;
+    bool returns_guess_count_;
 
 public:
     Solver(SolverFn *solver_fn, uint32_t configuration, std::string name, uint32_t features=7)
             : solve_(solver_fn), configuration_(configuration), name_(std::move(name)),
               returns_solution_((features & 1u) > 0),
               returns_count_((features & 2u) > 0),
-              returns_full_count_((features & 4u) > 0) {}
+              returns_full_count_((features & 4u) > 0),
+              returns_guess_count_((features & 8u) == 0) {}
 
     inline size_t Solve(const char *input, size_t limit,
                         char *solution, size_t *num_guesses) const {
@@ -75,6 +78,10 @@ public:
 
     inline bool ReturnsFullCount() const {
         return returns_full_count_;
+    }
+
+    inline bool ReturnsGuessCount() const {
+        return returns_guess_count_;
     }
 };
 #endif

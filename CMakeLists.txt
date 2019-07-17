@@ -7,18 +7,18 @@ set(OPT "O3" CACHE STRING "Optimization level")
 # e.g., cmake . -DARCH=sandybridge
 set(ARCH "native" CACHE STRING "Target architecture")
 # these options specify maximum SSE level and override ARCH
-option(SSE2     "Compile with SSE2 support" OFF)
-option(SSSE3    "Compile with SSSE3 support" OFF)
-option(SSE4_1   "Compile with SSE4.1 support" OFF)
-option(SSE4_2   "Compile with SSE4.2 support" OFF)
-option(AVX2     "Compile with AVX2 support" OFF)
+option(SSE2     "Compile with SSE2 support"         OFF)
+option(SSSE3    "Compile with SSSE3 support"        OFF)
+option(SSE4_1   "Compile with SSE4.1 support"       OFF)
+option(SSE4_2   "Compile with SSE4.2 support"       OFF)
+option(AVX2     "Compile with AVX2 support"         OFF)
 option(AVX512   "Compile with AVX512BITALG support" OFF)
 
-option(FSSS2    "Include fsss2"    OFF)
-option(JCZSOLVE "Include JCZSolve" OFF)
-option(JSOLVE   "Include JSolve"   OFF)
-option(KUDOKU   "Include KUDOKU"   OFF)
-option(MINISAT  "Include MiniSat"  OFF)
+option(FSSS2    "Include fsss2"      OFF)
+option(JCZSOLVE "Include JCZSolve"   OFF)
+option(JSOLVE   "Include JSolve"     OFF)
+option(KUDOKU   "Include KUDOKU"     OFF)
+option(MINISAT  "Include MiniSat"    OFF)
 option(SKBFORCE "Include SK_BFORCE2" OFF)
 
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -${OPT}")
@@ -55,37 +55,51 @@ set(BENCHMARK_SOLVER_SOURCES
         src/solver_basic.cc
         src/solver_dpll_triad_scc.cc
         src/solver_dpll_triad_simd.cc
-        src/other_solvers.cc)
+        other/other_solvers.cc)
+
+if (BB_SUDOKU)
+    add_definitions(-DBB_SUDOKU)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/bb_sudoku/bb_sudoku_solver.cpp)
+endif()
+
+if (JSOLVE)
+    add_definitions(-DJSOLVE)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/JSolve/JSolve.c)
+endif()
+
+if (KUDOKU)
+    add_definitions(-DKUDOKU)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/kudoku/kudoku.c)
+endif()
 
 if (FSSS2)
     add_definitions(-DFSSS2)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES} other/fsss2.cpp other/t_128.cpp)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/fsss2/fsss2.cpp
+            other/fsss2/t_128.cpp)
     set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
 endif()
 
 if (JCZSOLVE)
     add_definitions(-DJCZSOLVE)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES} other/JCZSolve.c)
-endif()
-
-if (JSOLVE)
-    add_definitions(-DJSOLVE)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES} other/JSolve.c)
-endif()
-
-if (KUDOKU)
-    add_definitions(-DKUDOKU)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES} other/kudoku.c)
-endif()
-
-if (MINISAT)
-    add_definitions(-DMINISAT)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES} src/solver_minisat.cc)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/JCZSolve/JCZSolve.c)
 endif()
 
 if (SKBFORCE)
   add_definitions(-DSKBFORCE)
-  set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES} other/sk_bitfields.cpp other/sk_t.cpp)
+  set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+          other/SK_BFORCE2/sk_bitfields.cpp
+          other/SK_BFORCE2/sk_t.cpp)
+endif()
+
+if (MINISAT)
+    add_definitions(-DMINISAT)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            src/solver_minisat.cc)
 endif()
 
 add_executable(run_benchmark src/run_benchmark.cc ${BENCHMARK_SOLVER_SOURCES})

@@ -16,6 +16,6 @@
     echo "# BENCHMARK"
     echo "###########################################"
     set -x
-    taskset 0x20 build/run_benchmark -t30 -t10 -n500000 -sfsss2,fsss2:1,jczsolve,skbforce,tdoku data/*
+    taskset 0x20 build/run_benchmark -t30 -w10 -n500000 -sfsss2,fsss2:1,jczsolve,skbforce,tdoku data/*
 
 ) | tee $1

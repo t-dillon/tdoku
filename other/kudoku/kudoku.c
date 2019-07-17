@@ -181,7 +181,8 @@ int sd_solve(const sdaux_t *aux, const char *_s, char *solution)
 
 sdaux_t *aux = NULL;
 
-size_t OtherSolverKudoku(const char *input, size_t limit, uint32_t flags,
+size_t OtherSolverKudoku(const char *input, size_t limit /* unused */,
+                         uint32_t configuration /* unused */,
                          char *solution, size_t *num_guesses) {
     if (aux == NULL)  aux = sd_genmat();
     *num_guesses = 0;

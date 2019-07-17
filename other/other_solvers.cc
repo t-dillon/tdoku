@@ -1,10 +1,11 @@
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #ifdef SKBFORCE
-#include "../other/sk_t.h"
-#include "../other/Zhn.h"
-#include "../other/Zhn_cpp.h"
+#include "SK_BFORCE2/sk_t.h"
+#include "SK_BFORCE2/Zhn.h"
+#include "SK_BFORCE2/Zhn_cpp.h"
 
 size_t SKBFORCE_guesses;
 
@@ -19,7 +20,7 @@ size_t OtherSolverSKBFORCE(const char *input, size_t limit, uint32_t /*unused_co
 #endif
 
 #ifdef JCZSOLVE
-#include "../other/JCZSolve.h"
+#include "JCZSolve/JCZSolve.h"
 // apply patch JCZSolve.c.diff so JCZSolve uses this extern.
 size_t JCZSolve_guesses;
 
@@ -34,7 +35,7 @@ size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_co
 #endif
 
 #ifdef JSOLVE
-#include "../other/JSolve.h"
+#include "JSolve/JSolve.h"
 // apply patch JSolve.c.diff so JSolve uses this extern
 size_t JSolve_guesses;
 
@@ -49,7 +50,7 @@ size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_conf
 #endif
 
 #ifdef FSSS2
-#include "../other/fsss2.h"
+#include "fsss2/fsss2.h"
 int nTrials;
 bool do_locked_candidates;
 
@@ -79,6 +80,25 @@ size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t configuration,
         count = gss.solve(zero_based_input, zero_based_output);
     }
     *num_guesses = nTrials;
+    return count;
+}
+#endif
+
+#ifdef BB_SUDOKU
+extern int Solver(char num_search, unsigned int use_methods, char ret_puzzle,
+                  int initp, char* buffer);
+extern bool InitTables();
+extern int GCnt;
+
+extern "C"
+size_t OtherSolverBBSudoku(const char *input, size_t limit, uint32_t /*unused_configuration*/,
+                           char *solution, size_t *num_guesses) {
+    static bool initialized = InitTables();
+    GCnt = 0;
+    unsigned methods = 0x03; /* guesses & locked candidates */
+    memcpy(solution, input, 81); /* BB_SUDOKU uses a single in/out buffer */
+    int count = Solver(limit, methods, 1 /* return solution */, 0, solution);
+    *num_guesses = GCnt - 1;
     return count;
 }
 #endif

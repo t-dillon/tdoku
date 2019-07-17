@@ -1,27 +1,52 @@
 
-To compile with support for FSSS2:
--- Clone https://github.com/t-dillon/fsss2 (a branch of dobrichev/fsss2 with some changes to
-   work with the benchmark program here) to the location of your choice.
--- Link required files using:
-   $ other/ln_fsss2.sh path/to/fsss2
--- build with -DFSSS2=on   
+To facilitate benchmarking several solvers of current or historical interest can be
+configured here.
 
-To compile with support for SK_BFORCE2:
--- Clone https://github.com/t-dillon/SK_BFORCE2 (a branch of GPenet/SK_BFORCE2 with some
-   changes to work with the benchmark program here) to the location of your choice.
--- Link required files using:
-   $ other/ln_SK_BFORCE2.sh path/to/SK_BFORCE2
--- build with -DSKBFORCE=on   
 
-To compile with support for JCZSolve:
--- Find JCZSolve10.zip here:
+1. bb_sudoku (B.Turner 2009)
+
+-- Patched sources are included (from https://sites.google.com/site/bbsudokufiles).
+-- Annnounced: http://programmers.enjoysudoku.com/www.setbb.com/sudoku/viewtopic4cf4.html
+-- Build with -DBB_SUDOKU=on
+
+
+2. JSolve (J.Linhart 2010)
+
+-- Patched sources are included (from http://www.enjoysudoku.com/JSolve12.zip).
+-- Announced: http://programmers.enjoysudoku.com/www.setbb.com/sudoku/viewtopic42ef.html
+-- build with -DJSOLVE=on
+
+
+3. kudoku (AttractiveChaos 2011)
+
+-- Patched sources are included
+   (from https://raw.githubusercontent.com/attractivechaos/plb/master/sudoku/sudoku_v1.c)
+-- build with -DKUDOKU=on
+
+
+4. FSSS2 (M.Dobrichev 2014-2015)
+
+-- To the location of your choice clone https://github.com/t-dillon/fsss2 (a branch of
+   dobrichev/fsss2 with some patches to work with the benchmark program here).
+-- Link required files using:
+   $ other/fsss2/link.sh path/to/fsss2
+-- build with -DFSSS2=on
+
+
+5. JCZSolve (Zhouyundong et al. 2012-2016)
+
+-- Copyright unspecified. Find the source in JCZSolve10.zip attached to this post:
    http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309
--- From JCZSolve10.zip place files JCZSolve.c, JCZSolve.h in this directory
+-- From JCZSolve10.zip place files JCZSolve.c, JCZSolve.h in other/JCZSolve
 -- $ patch JCZSolve.c JCZSolve.c.diff
 -- build with -DJCZSOLVE=on
 
-To compile with support for JSolve:
--- From http://www.enjoysudoku.com/JSolve12.zip
-   place files JSolve.c, JSolve.h in this directory
--- $ patch JSolve.c JSolve.c.diff
--- build with -DJSOLVE=on
+
+6. SK_BFORCE2 (GPenet 2018 based on JCZSolve)
+
+-- To the location of your choice clone https://github.com/t-dillon/SK_BFORCE2 (a branch
+   of GPenet/SK_BFORCE2 with some patches to work with the benchmark program here)
+-- Link required files using:
+   $ other/SK_BFORCE2/link.sh path/to/SK_BFORCE2
+-- build with -DSKBFORCE=on
+

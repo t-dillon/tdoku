@@ -152,35 +152,40 @@ struct Benchmark {
             } else if (solver == "tdoku_dpll_triad_simd" || solver == "tdoku") {
                 solvers.emplace_back(
                         Solver(TdokuSolverDpllTriadSimd, configuration, "tdoku_dpll_triad_simd"));
+#ifdef BB_SUDOKU
+                } else if (solver == "bb_sudoku") {
+                solvers.emplace_back(
+                        Solver(OtherSolverBBSudoku, configuration, "bb_sudoku"));
+#endif
+#ifdef JSOLVE
+                } else if (solver == "jsolve") {
+                solvers.emplace_back(
+                        Solver(OtherSolverJSolve, configuration, "jsolve"));
+#endif
+#ifdef KUDOKU
+            } else if (solver == "kudoku") {
+                solvers.emplace_back(
+                        Solver(OtherSolverKudoku, configuration, "kudoku", 11));
+#endif
+#ifdef FSSS2
+                } else if (solver == "fsss2") {
+                solvers.emplace_back(
+                        Solver(OtherSolverFsss2, configuration, "fsss2", 2));
+#endif
 #ifdef JCZSOLVE
             } else if (solver == "jczsolve") {
                 solvers.emplace_back(
                         Solver(OtherSolverJCZSolve, configuration, "jczsolve"));
 #endif
-#ifdef JSOLVE
-            } else if (solver == "jsolve") {
-                solvers.emplace_back(
-                        Solver(OtherSolverJSolve, configuration, "jsolve"));
-#endif
-#ifdef FSSS2
-            } else if (solver == "fsss2") {
-                solvers.emplace_back(
-                        Solver(OtherSolverFsss2, configuration, "fsss2", 2));
-#endif
-#ifdef KUDOKU
-            } else if (solver == "kudoku") {
-                solvers.emplace_back(
-                        Solver(OtherSolverKudoku, configuration, "kudoku", 3));
-#endif
-#ifdef MINISAT
-            } else if (solver == "minisat") {
-                solvers.emplace_back(
-                        Solver(TdokuSolverMiniSat, configuration, "minisat", 1));
-#endif
 #ifdef SKBFORCE
             } else if (solver == "skbforce") {
                 solvers.emplace_back(
                         Solver(OtherSolverSKBFORCE, configuration, "skbforce", 2));
+#endif
+#ifdef MINISAT
+                } else if (solver == "minisat") {
+                solvers.emplace_back(
+                        Solver(TdokuSolverMiniSat, configuration, "minisat", 1));
 #endif
             }
         }
@@ -299,8 +304,13 @@ struct Benchmark {
                 cout << "|" << left << setw(38) << solver.Id();
                 printf("| %" COMMAS "11.1f |", puzzles_todo / seconds);
                 printf("%" COMMAS "12.1f |", us_per_puzzle);
-                printf("%10.1f%% |", 100.0 * num_no_guess / puzzles_todo);
-                printf("%" COMMAS "15.2f |", bt_per_puzzle);
+                if (solver.ReturnsGuessCount()) {
+                    printf("%10.1f%% |", 100.0 * num_no_guess / puzzles_todo);
+                    printf("%" COMMAS "15.2f |", bt_per_puzzle);
+                } else {
+                    printf("%11s |", "N/A");
+                    printf("%15s |", "N/A");
+                }
                 cout << endl;
             }
         }
@@ -313,24 +323,27 @@ struct Benchmark {
 int main(int argc, char **argv) {
     Benchmark benchmark;
 
-#ifdef JCZSOLVE
-    benchmark.solvers_.append(",jczsolve");
-#endif
-#ifdef JSOLVE
-    benchmark.solvers_.append(",jsolve");
-#endif
-#ifdef FSSS2
-    benchmark.solvers_.append(",fsss2");
-    benchmark.solvers_.append(",fsss2:1");
-#endif
-#ifdef KUDOKU
-    benchmark.solvers_.append(",kudoku");
-#endif
+    // order the solver list roughly in chronological order of development
 #ifdef MINISAT
-    benchmark.solvers_.append(",minisat");
+    benchmark.solvers_.insert(0, "minisat,");
 #endif
 #ifdef SKBFORCE
-    benchmark.solvers_.append(",skbforce");
+    benchmark.solvers_.insert(0, "skbforce,");
+#endif
+#ifdef JCZSOLVE
+    benchmark.solvers_.insert(0, "jczsolve,");
+#endif
+#ifdef FSSS2
+    benchmark.solvers_.insert(0, "fsss2,fsss2:1,");
+#endif
+#ifdef KUDOKU
+    benchmark.solvers_.insert(0, "kudoku,");
+#endif
+#ifdef JSOLVE
+    benchmark.solvers_.insert(0, "jsolve,");
+#endif
+#ifdef BB_SUDOKU
+    benchmark.solvers_.insert(0, "bb_sudoku,");
 #endif
 
     ketopt_t opt = KETOPT_INIT;

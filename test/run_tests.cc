@@ -58,14 +58,8 @@ void Run(const string &testdata_filename, const Solver &solver) {
 vector<Solver> GetSolvers() {
     vector<Solver> solvers;
     // @formatter:off
-    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "tdoku_basic"));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "tdoku_dpll_triad_scc"));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadSimd,     0, "tdoku_dpll_triad_simd"));
-#ifdef FSSS2
-    solvers.emplace_back(Solver(OtherSolverFsss2,             0, "fsss2", 2));
-#endif
-#ifdef JCZSOLVE
-    solvers.emplace_back(Solver(OtherSolverJCZSolve,          0, "jczsolve"));
+#ifdef BB_SUDOKU
+    solvers.emplace_back(Solver(OtherSolverBBSudoku,          0, "bb_sudoku"));
 #endif
 #ifdef JSOLVE
     solvers.emplace_back(Solver(OtherSolverJSolve,            0, "jsolve"));
@@ -73,15 +67,21 @@ vector<Solver> GetSolvers() {
 #ifdef KUDOKU
     solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku", 3));
 #endif
-#ifdef MINISAT
-    solvers.emplace_back(Solver(TdokuSolverMiniSat,           0, "minisat", 1));
+#ifdef FSSS2
+    solvers.emplace_back(Solver(OtherSolverFsss2,             0, "fsss2", 2));
+#endif
+#ifdef JCZSOLVE
+    solvers.emplace_back(Solver(OtherSolverJCZSolve,          0, "jczsolve"));
 #endif
 #ifdef SKBFORCE
     solvers.emplace_back(Solver(OtherSolverSKBFORCE,          0, "skbforce", 2));
 #endif
-#ifdef MYSOLVER
-    solvers.emplace_back(Solver(OtherSolverMySolver,          0, "mysolver"));
+#ifdef MINISAT
+    solvers.emplace_back(Solver(TdokuSolverMiniSat,           0, "minisat", 1));
 #endif
+    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "tdoku_basic"));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "tdoku_dpll_triad_scc"));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadSimd,     0, "tdoku_dpll_triad_simd"));
     // @formatter:on
     return solvers;
 }
