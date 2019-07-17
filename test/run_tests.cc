@@ -73,8 +73,8 @@ vector<Solver> GetSolvers() {
 #ifdef JCZSOLVE
     solvers.emplace_back(Solver(OtherSolverJCZSolve,          0, "jczsolve"));
 #endif
-#ifdef SKBFORCE
-    solvers.emplace_back(Solver(OtherSolverSKBFORCE,          0, "skbforce", 2));
+#ifdef SK_BFORCE2
+    solvers.emplace_back(Solver(OtherSolverSKBFORCE2,         0, "skbforce", 2));
 #endif
 #ifdef MINISAT
     solvers.emplace_back(Solver(TdokuSolverMiniSat,           0, "minisat", 1));

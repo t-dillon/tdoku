@@ -216,7 +216,8 @@ struct SolverDpllTriadSimd {
             eliminating = box.cells & self_eliminations;
         } while (!eliminating.AllZero());
 
-        // send elimination messages to peers
+        // send elimination messages to horizontal and vertical peers. Prefer to send the first
+        // of these messages to the peer whose orientation is opposite that of the inbound peer.
         if (from_vertical) {
             return BandEliminate(state, 0, box.box_i, h_band_eliminations, box.box_j) &&
                    BandEliminate(state, 1, box.box_j, v_band_eliminations, box.box_i);
@@ -350,7 +351,8 @@ struct SolverDpllTriadSimd {
                 hi.RotateCols().Shuffle(tables.shuffle_peer_x_shift_to_config_mask[2][2]));
         triads = ConfigurationsToPositiveTriads(band.configurations);
 
-        // convert positive triads to box elimination messages and send to peers
+        // convert positive triads to box elimination messages and send to the three box peers.
+        // send these messages in order so that we return to the inbound peer last.
         const Cells16 box_eliminations[3]{
                 PositiveTriadsToBoxEliminations(triads.GetLo(), vertical),
                 PositiveTriadsToBoxEliminations(triads.GetLo().RotateCols(), vertical),
@@ -362,12 +364,16 @@ struct SolverDpllTriadSimd {
                BoxEliminate(state, band.box_peers[peer[2]], box_eliminations[peer[2]], vertical);
     }
 
+    // convert band configuration into an equivalent 3x3 matrix of positive triad candidates,
+    // where each row represents the constraints the band imposes on a given box peer.
     static inline Cells16 ConfigurationsToPositiveTriads(const Cells08 &configurations) {
         Cells16 tmp{configurations, configurations};
         return tmp.Shuffle(tables.shuffle_configs_to_triads[0]) |
                tmp.Shuffle(tables.shuffle_configs_to_triads[1]);
     }
 
+    // convert a row of 3 positive triads (in positions 0,1,2 of the given Cells08) into an
+    // elimination message for the corresponding box peer.
     static inline Cells16 PositiveTriadsToBoxEliminations(const Cells08 &triads, int orientation) {
         Cells08 tmp1 = Cells08::All(kAll) ^(triads.Shuffle(tables.shuffle_triads_temp[0]) |
                                             triads.Shuffle(tables.shuffle_triads_temp[1]));
@@ -410,7 +416,7 @@ struct SolverDpllTriadSimd {
         Band &band = state.bands[orientation][band_idx];
         // we enter with two or more possible configurations for this value
         Cells08 configurations = band.configurations & tables.one_value_mask[value];
-
+        // assert the first configuration
         num_guesses_++;
         State state_copy = state;
         Cells08 assignment1_mask = configurations.ClearLowBit();
@@ -418,12 +424,15 @@ struct SolverDpllTriadSimd {
             CountSolutionsConsistentWithPartialAssignment(state_copy);
             if (num_solutions_ == limit_) return;
         }
-
+        // now negate the first configuration
         Cells08 negation1_mask = configurations ^assignment1_mask;
         if (BandEliminate(state, orientation, band_idx, negation1_mask)) {
             if ((band.configurations & tables.one_value_mask[value]).Popcount() == 1) {
                 CountSolutionsConsistentWithPartialAssignment(state);
             } else {
+                // rarely after negating the first configuration we may still have more than one
+                // left. in this case branch again on the same band and value, instead of going
+                // through the process of choosing again.
                 BranchOnBandAndValue(orientation, band_idx, value, state);
             }
         }
@@ -478,7 +487,6 @@ struct SolverDpllTriadSimd {
         if (input[80] != '.') {
             InitClue(input, state, 80, h_eliminations, v_eliminations);
         }
-
         return BandEliminate(state, 0, 0, h_eliminations[0], 1) &&
                BandEliminate(state, 1, 0, v_eliminations[0], 1) &&
                BandEliminate(state, 0, 1, h_eliminations[1], 2) &&

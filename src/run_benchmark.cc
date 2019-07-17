@@ -31,8 +31,19 @@ struct Benchmark {
             "tdoku_dpll_triad_scc:1,tdoku_dpll_triad_scc:2,tdoku_dpll_triad_scc:3,"
             "tdoku_dpll_triad_simd";
     bool csv_output_ = false;
+    // when randomize_ is true we'll randomly sample loaded puzzles in constructing the
+    // test dataset AND we'll randomly permute those puzzles. this is desirable to avoid
+    // bias and test data dependence when comparing between solvers or when comparing
+    // different heuristics for the same solver. if you are running benchmarks to optimize
+    // a given solver and you are not changing heuristics or ordering, then it's OK to
+    // turn off randomization to get lower benchmark variance.
     bool randomize_ = true;
+    // whether to validate puzzle solutions during warmup. we don't validate results during
+    // actual benchmarking.
     bool validate_ = true;
+    // when validating puzzles during warmup it is an error if the solver can not find a
+    // solution, UNLESS the dataset indicates that it contains puzzles with no solutions
+    // via a comment at the top of the file containing the string 'ALLOWZERO'.
     bool allow_zero_ = false;
 
     uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -67,7 +78,8 @@ struct Benchmark {
             }
         }
     }
-
+    // permute rows, columns, bands, and digits to produce a randomly transformed but
+    // equivalent puzzle.
     static string PermuteSudoku(const string &input) {
         static std::random_device rd;
         string digit_permutation = "123456789";
@@ -153,12 +165,12 @@ struct Benchmark {
                 solvers.emplace_back(
                         Solver(TdokuSolverDpllTriadSimd, configuration, "tdoku_dpll_triad_simd"));
 #ifdef BB_SUDOKU
-                } else if (solver == "bb_sudoku") {
+            } else if (solver == "bb_sudoku") {
                 solvers.emplace_back(
                         Solver(OtherSolverBBSudoku, configuration, "bb_sudoku"));
 #endif
 #ifdef JSOLVE
-                } else if (solver == "jsolve") {
+            } else if (solver == "jsolve") {
                 solvers.emplace_back(
                         Solver(OtherSolverJSolve, configuration, "jsolve"));
 #endif
@@ -168,7 +180,7 @@ struct Benchmark {
                         Solver(OtherSolverKudoku, configuration, "kudoku", 11));
 #endif
 #ifdef FSSS2
-                } else if (solver == "fsss2") {
+            } else if (solver == "fsss2") {
                 solvers.emplace_back(
                         Solver(OtherSolverFsss2, configuration, "fsss2", 2));
 #endif
@@ -177,13 +189,13 @@ struct Benchmark {
                 solvers.emplace_back(
                         Solver(OtherSolverJCZSolve, configuration, "jczsolve"));
 #endif
-#ifdef SKBFORCE
-            } else if (solver == "skbforce") {
+#ifdef SK_BFORCE2
+            } else if (solver == "sk_bforce2") {
                 solvers.emplace_back(
-                        Solver(OtherSolverSKBFORCE, configuration, "skbforce", 2));
+                        Solver(OtherSolverSKBFORCE2, configuration, "sk_bforce2", 2));
 #endif
 #ifdef MINISAT
-                } else if (solver == "minisat") {
+            } else if (solver == "minisat") {
                 solvers.emplace_back(
                         Solver(TdokuSolverMiniSat, configuration, "minisat", 1));
 #endif
@@ -327,8 +339,8 @@ int main(int argc, char **argv) {
 #ifdef MINISAT
     benchmark.solvers_.insert(0, "minisat,");
 #endif
-#ifdef SKBFORCE
-    benchmark.solvers_.insert(0, "skbforce,");
+#ifdef SK_BFORCE2
+    benchmark.solvers_.insert(0, "sk_bforce2,");
 #endif
 #ifdef JCZSOLVE
     benchmark.solvers_.insert(0, "jczsolve,");
@@ -383,12 +395,11 @@ int main(int argc, char **argv) {
                 cout << "usage: run_benchmark <options> puzzle_file_1 [...] " << endl;
                 cout << "options:" << endl;
                 cout << "  -c [0|1]            // output csv instead of table [default 0]" << endl;
-                cout << "  -m [0|1]            // check for multiple solutions [default 0]" << endl;
                 cout << "  -n <size>           // test set size [default 2500000]" << endl;
                 cout << "  -r [0|1]            // randomly permute puzzles [default 1]" << endl;
                 cout << "  -s solver_1,...     // which solvers to run [default all]" << endl;
                 cout << "  -t <secs>           // target test time [default 20]" << endl;
-                cout << "  -v [0|1]            // validate solutions [default 1]" << endl;
+                cout << "  -v [0|1]            // validate during warmup [default 1]" << endl;
                 cout << "  -w <secs>           // target warmup time [default 10]" << endl;
                 cout << "solvers: " << endl << benchmark.solvers_ << endl;
                 cout << "build info: " << CXX_COMPILER_ID << " " << CXX_COMPILER_VERSION

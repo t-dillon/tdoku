@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <cstring>
 
-#ifdef SKBFORCE
+#ifdef SK_BFORCE2
 #include "SK_BFORCE2/sk_t.h"
 #include "SK_BFORCE2/Zhn.h"
 #include "SK_BFORCE2/Zhn_cpp.h"
@@ -10,7 +10,7 @@
 size_t SKBFORCE_guesses;
 
 extern "C"
-size_t OtherSolverSKBFORCE(const char *input, size_t limit, uint32_t /*unused_configuration*/,
+size_t OtherSolverSKBFORCE2(const char *input, size_t limit, uint32_t /*unused_configuration*/,
                            char *solution, size_t *num_guesses) {
     SKBFORCE_guesses = 0;
     int result = zhou[0].CheckValidityQuick((char*)input);
