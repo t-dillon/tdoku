@@ -1,0 +1,101 @@
+###########################################
+# BUILD INFO
+###########################################
+build info: GNU 6.5.0 -O3 -march=native
+
+###########################################
+# CPU INFO
+###########################################
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              6
+On-line CPU(s) list: 0-5
+Thread(s) per core:  1
+Core(s) per socket:  6
+Socket(s):           1
+NUMA node(s):        1
+Vendor ID:           GenuineIntel
+CPU family:          6
+Model:               158
+Model name:          Intel(R) Core(TM) i5-8600K CPU @ 3.60GHz
+Stepping:            10
+CPU MHz:             800.148
+CPU max MHz:         4300.0000
+CPU min MHz:         800.0000
+BogoMIPS:            7200.00
+Virtualization:      VT-x
+L1d cache:           32K
+L1i cache:           32K
+L2 cache:            256K
+L3 cache:            9216K
+NUMA node0 CPU(s):   0-5
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d
+
+###########################################
+# BENCHMARK
+###########################################
+
+|data/puzzles0_kaggle                  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 | 1,477,910.9 |         0.7 |     100.0% |           0.00 |
+|fsss2{0x1}                            | 1,477,283.1 |         0.7 |     100.0% |           0.00 |
+|jczsolve                              |   536,986.6 |         1.9 |     100.0% |           0.00 |
+|sk_bforce2                            | 1,196,910.9 |         0.8 |     100.0% |           0.00 |
+|tdoku_dpll_triad_simd                 |   848,899.4 |         1.2 |     100.0% |           0.00 |
+
+|data/puzzles1_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |   224,277.4 |         4.5 |      44.6% |           4.46 |
+|fsss2{0x1}                            |   300,984.5 |         3.3 |      72.5% |           1.30 |
+|jczsolve                              |   273,288.1 |         3.7 |      69.6% |           1.87 |
+|sk_bforce2                            |   371,127.7 |         2.7 |      73.8% |           1.01 |
+|tdoku_dpll_triad_simd                 |   303,292.8 |         3.3 |      78.7% |           0.62 |
+
+|data/puzzles2_magictour_top1465       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |    43,431.0 |        23.0 |       0.0% |          37.42 |
+|fsss2{0x1}                            |    69,752.5 |        14.3 |       1.7% |          19.21 |
+|jczsolve                              |    74,466.0 |        13.4 |       2.2% |          20.77 |
+|sk_bforce2                            |    86,309.5 |        11.6 |       3.6% |          15.44 |
+|tdoku_dpll_triad_simd                 |   108,385.8 |         9.2 |       7.9% |           9.06 |
+
+|data/puzzles3_forum_hardest_1905      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |    14,406.1 |        69.4 |       0.0% |         117.90 |
+|fsss2{0x1}                            |    14,270.6 |        70.1 |       0.0% |         117.52 |
+|jczsolve                              |    15,548.1 |        64.3 |       0.0% |         138.51 |
+|sk_bforce2                            |    18,034.3 |        55.4 |       0.0% |         103.20 |
+|tdoku_dpll_triad_simd                 |    22,865.3 |        43.7 |       0.0% |          54.95 |
+
+|data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |    11,765.5 |        85.0 |       0.0% |         139.30 |
+|fsss2{0x1}                            |    11,682.7 |        85.6 |       0.0% |         138.70 |
+|jczsolve                              |    12,084.9 |        82.7 |       0.0% |         171.03 |
+|sk_bforce2                            |    14,293.2 |        70.0 |       0.0% |         122.63 |
+|tdoku_dpll_triad_simd                 |    19,030.5 |        52.5 |       0.0% |          64.91 |
+
+|data/puzzles5_forum_hardest_1106      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |     6,335.3 |       157.8 |       0.0% |         280.00 |
+|fsss2{0x1}                            |     6,390.7 |       156.5 |       0.0% |         276.70 |
+|jczsolve                              |     6,288.5 |       159.0 |       0.0% |         365.50 |
+|sk_bforce2                            |     7,235.8 |       138.2 |       0.0% |         270.77 |
+|tdoku_dpll_triad_simd                 |    12,105.0 |        82.6 |       0.0% |         112.94 |
+
+|data/puzzles6_serg_benchmark          |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |   373,760.2 |         2.7 |       0.0% |           7.75 |
+|fsss2{0x1}                            |   285,302.9 |         3.5 |       0.0% |           7.72 |
+|jczsolve                              |   284,810.1 |         3.5 |       0.0% |           7.09 |
+|sk_bforce2                            |   332,269.3 |         3.0 |       0.0% |           7.08 |
+|tdoku_dpll_triad_simd                 |   354,656.1 |         2.8 |       0.0% |           7.13 |
+
+|data/puzzles7_gen_puzzles             |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 | 2,526,334.1 |         0.4 |      97.5% |           0.30 |
+|fsss2{0x1}                            | 2,378,499.1 |         0.4 |      97.5% |           0.30 |
+|jczsolve                              | 1,635,140.0 |         0.6 |      97.5% |           0.31 |
+|sk_bforce2                            | 1,973,536.2 |         0.5 |      97.5% |           0.30 |
+|tdoku_dpll_triad_simd                 | 2,389,267.4 |         0.4 |      97.5% |           0.28 |
