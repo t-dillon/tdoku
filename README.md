@@ -23,38 +23,40 @@ spectrum, here are results for the full set of benchmarked solvers on a dataset 
 difficult puzzles with Sudoku Explainer ratings of 11 or higher:
 
 <pre>
-|forum_hardest_1905_11+      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
-|----------------------------|------------:| -----------:| ----------:| --------------:|
-|minisat                     |       712.1 |     1,404.3 |       0.0% |          65.13 |
-|kudoku                      |     2,246.3 |       445.2 |        N/A |            N/A |
-|bb_sudoku                   |     6,202.2 |       161.2 |       0.0% |         200.78 |
-|jsolve                      |     7,557.6 |       132.3 |       0.0% |         213.29 |
-|fsss2                       |    11,848.0 |        84.4 |       0.0% |         139.37 |
-|jczsolve                    |    12,678.8 |        78.9 |       0.0% |         170.88 |
-|skbforce                    |    14,321.2 |        69.8 |       0.0% |         122.59 |
-|<b>tdoku                       |    20,401.7 |        49.0 |       0.0% |          64.81 </b>|
+|forum_hardest_1905_11+        |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|------------------------------|------------:| -----------:| ----------:| --------------:|
+|minisat[*]                    |       713.2 |     1,402.2 |       0.0% |          65.31 |
+|kudoku                        |     2,255.6 |       443.3 |        N/A |            N/A |
+|bb_sudoku                     |     6,318.4 |       158.3 |       0.0% |         200.49 |
+|jsolve                        |     7,589.9 |       131.8 |       0.0% |         213.24 |
+|fsss2                         |    11,765.5 |        85.0 |       0.0% |         139.30 |
+|jczsolve                      |    12,599.9 |        79.4 |       0.0% |         171.21 |
+|sk_bforce2                    |    14,334.1 |        69.8 |       0.0% |         122.66 |
+|<b>tdoku                         |    20,295.9 |        49.3 |       0.0% |          64.96 </b>|
 </pre>
-
+<small>[*] Note: minisat has an unfair advantage in this comparison because the minisat-based solver 
+is only looking for the first solution, while the others are all finding the solution <b>and</b> 
+confirming that the solution is unique.</small>
 
 And here are results on the well-known and commonly-benchmarked dataset of ~49,000 generally very easy 17-clue puzzles:
 
 <pre>
-|17_clue                     |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
-|----------------------------|------------:| -----------:| ----------:| --------------:|
-|minisat                     |     4,460.5 |       224.2 |      76.2% |           0.83 |
-|kudoku                      |    37,772.5 |        26.5 |        N/A |            N/A |
-|bb_sudoku                   |   145,576.7 |         6.9 |      76.1% |           1.55 |
-|jsolve                      |   171,279.2 |         5.8 |      50.2% |           3.20 |
-|fsss2                       |   301,726.3 |         3.3 |      72.6% |           1.31 |
-|jczsolve                    |   290,428.9 |         3.4 |      69.5% |           1.90 |
-|skbforce                    |   377,337.9 |         2.7 |      73.7% |           0.98 |
-|<b>tdoku                       |   304,720.0 |         3.3 |      78.7% |           0.61 </b>|
+|17_clue                       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|------------------------------|------------:| -----------:| ----------:| --------------:|
+|minisat[*]                    |     4,443.4 |       225.1 |      76.2% |           0.83 |
+|kudoku                        |    37,930.2 |        26.4 |        N/A |            N/A |
+|bb_sudoku                     |   145,132.1 |         6.9 |      76.1% |           1.54 |
+|jsolve                        |   173,017.6 |         5.8 |      50.2% |           3.18 |
+|fsss2                         |   300,984.5 |         3.3 |      72.5% |           1.30 |
+|jczsolve                      |   291,835.7 |         3.4 |      69.6% |           1.84 |
+|sk_bforce2                    |   379,375.8 |         2.6 |      73.8% |           1.00 |
+|<b>tdoku                         |   328,803.6 |         3.0 |      78.7% |           0.62 </b>|
 </pre>
 
 And here is a chart comparing a narrower set of the fastest solvers on a wider range of datasets 
 ordered roughly from easiest to hardest:
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vR58Y3aNoz57dQJYDh37c4gvKU_I2E8uOllVHs8xrr0sC52GoUTaC2AXKwUpySG-zFIKynjiM-wN3cX/pubchart?oid=1929162374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQVFAqgn-rmIieo-k2lqf68l0PpMwVAzi9Jgx5V5r2S7X2_WC66an7B1jA12sPk7K-6pNWXga0QOzwl/pubchart?oid=1929162374&format=image)
 
 #### Building and Running
 
@@ -85,9 +87,9 @@ and set up sources where necessary.
 With sources set up, the benchmarks [found here](https://github.com/t-dillon/tdoku/tree/master/benchmarks) were run as follows:
 
 ```bash
-$ CC=clang-8 CXX=clang++-8 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSKBFORCE=on
+$ CC=clang-8 CXX=clang++-8 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on
 $ benchmarks/bench.sh benchmarks/benchmark-clang8.log
-$ CC=gcc-6 CXX=g++-6 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSKBFORCE=on
+$ CC=gcc-6 CXX=g++-6 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on
 $ benchmarks/bench.sh benchmarks/benchmark-gcc6.log
 ```
 
@@ -100,7 +102,6 @@ $ build/run_benchmark -h
 usage: run_benchmark <options> puzzle_file_1 [...] 
 options:
   -c [0|1]            // output csv instead of table [default 0]
-  -m [0|1]            // check for multiple solutions [default 0]
   -n size             // test set size [default 2500000]
   -r [0|1]            // randomly permute puzzles [default 1]
   -s solver_1,...     // which solvers to run [default all]

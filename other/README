@@ -48,5 +48,5 @@ configured here.
    of GPenet/SK_BFORCE2 with some patches to work with the benchmark program here)
 -- Link required files using:
    $ other/SK_BFORCE2/link.sh path/to/SK_BFORCE2
--- build with -DSKBFORCE=on
+-- build with -DSK_BFORCE2=on
 

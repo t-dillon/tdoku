@@ -195,13 +195,14 @@ I'm aware of:
 |data/puzzles0_kaggle                  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |*tdoku_basic*                           |   362,635.9 |         2.8 |       0.0% |          54.49 |
-|[fsss2](https://github.com/dobrichev/fsss2)[^2]                                                               | 1,473,728.1 |         0.7 |     100.0% |           0.00 |
-|[jczsolve](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309)[^3] |   595,962.4 |         1.7 |     100.0% |           0.00 |
-|[skbforce](https://github.com/GPenet/SK_BFORCE2)[^4]                                                          | 1,238,719.4 |         0.8 |     100.0% |           0.00 |
+|[fsss2](https://github.com/dobrichev/fsss2)[^2]                                                               | 1,477,910.9 |         0.7 |     100.0% |           0.00 |
+|[jczsolve](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309)[^3] |   597,074.2 |         1.7 |     100.0% |           0.00 |
+|[sk_bforce2](https://github.com/GPenet/SK_BFORCE2)[^4]                                                        | 1,234,240.0 |         0.8 |     100.0% |           0.00 |
+
 
 [^1]: All benchmarks run on i5-8600k@3.6GHz; Ubuntu 18.04; [benchmark program](https://github.com/t-dillon/tdoku/blob/master/src/run_benchmark.cc)
 compiled with clang++-8 -O3 -march=native, except for testing fsss2, which was compiled with gcc-6 and the same
-flags. (of several compilers tested clang-8 produced fastest code for jczsolve, skbforce, and various tdoku while gcc-6
+flags. (of several compilers tested clang-8 produced fastest code for jczsolve, sk_bforce2, and various tdoku while gcc-6
 produced fastest code for fsss2). All benchmarks look for up to 2 solutions (i.e., to find a solution and confirm
 it is unique).
 
@@ -231,9 +232,10 @@ of the University of Western Australia:
 |data/puzzles1_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |*tdoku_basic*                           |         1.9 |   527,905.4 |       0.0% |  22,231,848.78 |
-|fsss2                                 |   305,446.5 |         3.3 |      72.6% |           1.32 |
-|jczsolve                              |   289,951.4 |         3.4 |      69.5% |           1.91 |
-|skbforce                              |   378,385.5 |         2.6 |      73.7% |           1.00 |
+|fsss2                                 |   300,984.5 |         3.3 |      72.5% |           1.30 |
+|jczsolve                              |   291,835.7 |         3.4 |      69.6% |           1.84 |
+|sk_bforce2                            |   379,375.8 |         2.6 |      73.8% |           1.00 |
+
 
 At a pathetic 1.9 puzzles per second and 22 million guesses per puzzle our basic solver is not
 looking so fast anymore.
@@ -281,30 +283,30 @@ a bit and do more guessing as we go from the easiest to the hardest of these dat
 |data/puzzles2_magictour_top1465       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |*tdoku_basic*                           |        29.6 |    33,804.9 |       0.0% |   1,371,524.66 |
-|fsss2                                 |    71,065.9 |        14.1 |       1.7% |          19.17 |
-|jczsolve                              |    78,476.5 |        12.7 |       2.3% |          20.70 |
-|skbforce                              |    86,743.8 |        11.5 |       3.6% |          15.40 |
+|fsss2                                 |    69,752.5 |        14.3 |       1.7% |          19.21 |
+|jczsolve                              |    77,888.4 |        12.8 |       2.3% |          20.79 |
+|sk_bforce2                            |    86,535.4 |        11.6 |       3.6% |          15.44 |
 
 |data/puzzles3_forum_hardest_1905      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |*tdoku_basic*                           |       185.6 |     5,388.4 |       0.0% |     191,717.34 |
-|fsss2                                 |    14,704.9 |        68.0 |       0.0% |         117.77 |
-|jczsolve                              |    16,379.7 |        61.1 |       0.0% |         138.58 |
-|skbforce                              |    18,158.5 |        55.1 |       0.0% |         103.17 |
+|fsss2                                 |    14,406.1 |        69.4 |       0.0% |         117.90 |
+|jczsolve                              |    16,275.9 |        61.4 |       0.0% |         138.46 |
+|sk_bforce2                            |    18,121.4 |        55.2 |       0.0% |         103.45 |
 
 |data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |*tdoku_basic*                           |       147.4 |     6,782.7 |       0.0% |     241,327.57 |
-|fsss2                                 |    12,022.8 |        83.2 |       0.0% |         139.02 |
-|jczsolve                              |    12,710.4 |        78.7 |       0.0% |         170.91 |
-|skbforce                              |    14,336.6 |        69.8 |       0.0% |         122.60 |
+|fsss2                                 |    11,765.5 |        85.0 |       0.0% |         139.30 |
+|jczsolve                              |    12,599.9 |        79.4 |       0.0% |         171.21 |
+|sk_bforce2                            |    14,334.1 |        69.8 |       0.0% |         122.66 |
 
 |data/puzzles5_forum_hardest_1106      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |*tdoku_basic*                           |        49.8 |    20,082.6 |       0.0% |     736,915.98 |
-|fsss2                                 |     6,511.4 |       153.6 |       0.0% |         276.34 |
-|jczsolve                              |     6,637.9 |       150.6 |       0.0% |         367.22 |
-|skbforce                              |     7,260.1 |       137.7 |       0.0% |         271.11 |
+|fsss2                                 |     6,390.7 |       156.5 |       0.0% |         276.70 |
+|jczsolve                              |     6,596.4 |       151.6 |       0.0% |         366.46 |
+|sk_bforce2                            |     7,248.3 |       138.0 |       0.0% |         271.74 |
 
 Cleary to improve on the performance of our basic solver we're going to have reduce the amount of
 guessing. We're doing orders of magnitude more of it than the fastest solvers, and this is not at all in the
@@ -345,9 +347,9 @@ This simple change leads to a dramatic improvement. Let's compare on just one da
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |tdoku_basic                           |        29.6 |    33,804.9 |       0.0% |   1,371,524.66 |
 |*tdoku_basic_heuristic*                 |       751.6 |     1,330.4 |       0.0% |         646.99 |
-|fsss2                                 |    71,065.9 |        14.1 |       1.7% |          19.17 |
-|jczsolve                              |    78,476.5 |        12.7 |       2.3% |          20.70 |
-|skbforce                              |    86,743.8 |        11.5 |       3.6% |          15.40 |
+|fsss2                                 |    69,752.5 |        14.3 |       1.7% |          19.21 |
+|jczsolve                              |    77,888.4 |        12.8 |       2.3% |          20.79 |
+|sk_bforce2                            |    86,535.4 |        11.6 |       3.6% |          15.44 |
 
 With a speedup of ~25x and a reduction in guessing of ~1/2000x, this is a big step in the right
 direction. If this sounds like a surprisingly large improvement, consider that the most constrained
@@ -735,14 +737,14 @@ and here are the results.
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
 |tdoku_basic_heuristic                 |       751.6 |     1,330.4 |       0.0% |         646.99 |
 |*tdoku_dpll_triad*                      |     3,403.0 |       293.9 |       7.9% |          12.68 |
-|fsss2                                 |    71,065.9 |        14.1 |       1.7% |          19.17 |
-|jczsolve                              |    78,476.5 |        12.7 |       2.3% |          20.70 |
-|skbforce                              |    86,743.8 |        11.5 |       3.6% |          15.40 |
+|fsss2                                 |    69,752.5 |        14.3 |       1.7% |          19.21 |
+|jczsolve                              |    77,888.4 |        12.8 |       2.3% |          20.79 |
+|sk_bforce2                            |    86,535.4 |        11.6 |       3.6% |          15.44 |
 
 This is a little bit faster than our basic heuristic solver, which is nice, but the main thing
 we've been aiming for is a reduction in the amount of guessing and backtracking we're doing. We're 
-now averaging 12.7 guesses per puzzle on MagicTour (vs. 15.4 for skbforce), and we're managing to
-solve 7.9% with no guesses at all (vs. 3.6% for skbforce).
+now averaging 12.7 guesses per puzzle on MagicTour (vs. 15.4 for sk_bforce2), and we're managing to
+solve 7.9% with no guesses at all (vs. 3.6% for sk_bforce2).
 
 These are solid improvements, all achieved within the unified framework of unit propagation with no
 special algorithmic consideration for hidden singles, locked candidates, etc.
@@ -752,11 +754,11 @@ room for improvement:
 
 |data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|tdoku_basic_heuristic                   |       438.5 |     2,280.3 |       0.0% |         872.29 |
+|tdoku_basic_heuristic                 |       438.5 |     2,280.3 |       0.0% |         872.29 |
 |*tdoku_dpll_triad*                      |       466.2 |     2,144.8 |       0.0% |         133.27 |
-|fsss2                                 |    12,022.8 |        83.2 |       0.0% |         139.02 |
-|jczsolve                              |    12,710.4 |        78.7 |       0.0% |         170.91 |
-|skbforce                              |    14,336.6 |        69.8 |       0.0% |         122.60 |
+|fsss2                                 |    11,765.5 |        85.0 |       0.0% |         139.30 |
+|jczsolve                              |    12,599.9 |        79.4 |       0.0% |         171.21 |
+|sk_bforce2                            |    14,334.1 |        69.8 |       0.0% |         122.66 |
 
 Can we do more to bring the guessing down withoug going too far down the road if implementing a
 bunch of ad hoc strategies?
@@ -816,9 +818,9 @@ using SCCs for both purposes.
 |*tdoku_dpll_triad_scc{0x1}*             |     1,612.1 |       620.3 |      12.5% |           6.24 |
 |*tdoku_dpll_triad_scc{0x2}*             |     2,361.1 |       423.5 |       7.8% |           4.46 |
 |*tdoku_dpll_triad_scc{0x3}*             |     2,381.3 |       419.9 |      12.5% |           3.35 |
-|fsss2                                 |    71,065.9 |        14.1 |       1.7% |          19.17 |
-|jczsolve                              |    78,476.5 |        12.7 |       2.3% |          20.70 |
-|skbforce                              |    86,743.8 |        11.5 |       3.6% |          15.40 |
+|fsss2                                 |    69,752.5 |        14.3 |       1.7% |          19.21 |
+|jczsolve                              |    77,888.4 |        12.8 |       2.3% |          20.79 |
+|sk_bforce2                            |    86,535.4 |        11.6 |       3.6% |          15.44 |
 
 |data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
@@ -826,9 +828,9 @@ using SCCs for both purposes.
 |*tdoku_dpll_triad_scc{0x1}*             |       189.3 |     5,283.0 |       0.0% |          65.02 |
 |*tdoku_dpll_triad_scc{0x2}*             |       267.0 |     3,744.9 |       0.0% |          53.38 |
 |*tdoku_dpll_triad_scc{0x3}*             |       277.8 |     3,599.2 |       0.0% |          39.53 |
-|fsss2                                 |    12,022.8 |        83.2 |       0.0% |         139.02 |
-|jczsolve                              |    12,710.4 |        78.7 |       0.0% |         170.91 |
-|skbforce                              |    14,336.6 |        69.8 |       0.0% |         122.60 |
+|fsss2                                 |    11,765.5 |        85.0 |       0.0% |         139.30 |
+|jczsolve                              |    12,599.9 |        79.4 |       0.0% |         171.21 |
+|sk_bforce2                            |    14,334.1 |        69.8 |       0.0% |         122.66 |
 
 In terms of guessing we've done pretty well. Both the inference and heuristic components of our 
 SCC exploitation result in significant reductions in guessing, which gets us to levels significantly
@@ -940,36 +942,36 @@ OK! Enough talk. If you've read all this I'm impressed! Time for some results.
 
 At long last it appears that our dpll-triad-simd solver compares quite favorably to other 
 state-of-the-art solvers on hard puzzles! Compared to the geometric mean performance of the other
-solvers it's >40% faster on the magictour dataset, and relatively speaking it gets even faster as the
+solvers it's ~50% faster on the magictour dataset, and relatively speaking it gets even faster as the
 datasets get harder, approaching 2x as fast on the hardest_1106 dataset!
 
 |data/puzzles2_magictour_top1465       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|*tdoku_dpll_triad_simd*                 |   113,967.0 |         8.8 |       7.9% |           9.06 |
-|fsss2                                 |    71,065.9 |        14.1 |       1.7% |          19.17 |
-|jczsolve                              |    78,476.5 |        12.7 |       2.3% |          20.70 |
-|skbforce                              |    86,743.8 |        11.5 |       3.6% |          15.40 |
+|*tdoku_dpll_triad_simd*                 |   117,068.5 |         8.5 |       7.9% |           9.08 |
+|fsss2                                 |    69,752.5 |        14.3 |       1.7% |          19.21 |
+|jczsolve                              |    77,888.4 |        12.8 |       2.3% |          20.79 |
+|sk_bforce2                            |    86,535.4 |        11.6 |       3.6% |          15.44 |
 
 |data/puzzles3_forum_hardest_1905      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|*tdoku_dpll_triad_simd*                 |    24,263.1 |        41.2 |       0.0% |          55.02 |
-|fsss2                                 |    14,704.9 |        68.0 |       0.0% |         117.77 |
-|jczsolve                              |    16,379.7 |        61.1 |       0.0% |         138.58 |
-|skbforce                              |    18,158.5 |        55.1 |       0.0% |         103.17 |
+|*tdoku_dpll_triad_simd*                 |    24,414.1 |        41.0 |       0.0% |          55.04 |
+|fsss2                                 |    14,406.1 |        69.4 |       0.0% |         117.90 |
+|jczsolve                              |    16,275.9 |        61.4 |       0.0% |         138.46 |
+|sk_bforce2                            |    18,121.4 |        55.2 |       0.0% |         103.45 |
 
 |data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|*tdoku_dpll_triad_simd*                 |    20,218.7 |        49.5 |       0.0% |          64.88 |
-|fsss2                                 |    12,022.8 |        83.2 |       0.0% |         139.02 |
-|jczsolve                              |    12,710.4 |        78.7 |       0.0% |         170.91 |
-|skbforce                              |    14,336.6 |        69.8 |       0.0% |         122.60 |
+|*tdoku_dpll_triad_simd*                 |    20,295.9 |        49.3 |       0.0% |          64.96 |
+|fsss2                                 |    11,765.5 |        85.0 |       0.0% |         139.30 |
+|jczsolve                              |    12,599.9 |        79.4 |       0.0% |         171.21 |
+|sk_bforce2                            |    14,334.1 |        69.8 |       0.0% |         122.66 |
 
 |data/puzzles5_forum_hardest_1106      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|*tdoku_dpll_triad_simd*                 |    12,898.2 |        77.5 |       0.0% |         113.30 |
-|fsss2                                 |     6,511.4 |       153.6 |       0.0% |         276.34 |
-|jczsolve                              |     6,637.9 |       150.6 |       0.0% |         367.22 |
-|skbforce                              |     7,260.1 |       137.7 |       0.0% |         271.11 |
+|*tdoku_dpll_triad_simd*                 |    12,907.9 |        77.5 |       0.0% |         113.26 |
+|fsss2                                 |     6,390.7 |       156.5 |       0.0% |         276.70 |
+|jczsolve                              |     6,596.4 |       151.6 |       0.0% |         366.46 |
+|sk_bforce2                            |     7,248.3 |       138.0 |       0.0% |         271.74 |
 
 Of course, YMMV, various caveats apply, etc. It's not as portable as JCZSolve. It runs best on
 a modern machine with AVX2. It's not as fast if you compile with gcc instead clang. It's slower 
@@ -995,20 +997,21 @@ consisting mostly of invalid puzzles with no solutions.
 
 |data/puzzles6_serg_benchmark          |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|*tdoku_dpll_triad_simd*                 |   390,736.6 |         2.6 |       0.0% |           7.13 |
-|fsss2                                 |   380,670.5 |         2.6 |       0.0% |           7.75 |
-|jczsolve                              |   309,644.1 |         3.2 |       0.0% |           7.09 |
-|skbforce                              |   347,354.2 |         2.9 |       0.0% |           7.08 |
+|*tdoku_dpll_triad_simd*                 |   396,221.7 |         2.5 |       0.0% |           7.13 |
+|fsss2                                 |   373,760.2 |         2.7 |       0.0% |           7.75 |
+|jczsolve                              |   309,070.0 |         3.2 |       0.0% |           7.08 |
+|sk_bforce2                            |   346,767.4 |         2.9 |       0.0% |           7.08 |
 
 |data/puzzles7_gen_puzzles             |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
-|*tdoku_dpll_triad_simd*                 | 2,454,116.7 |         0.4 |      97.5% |           0.28 |
-|fsss2                                 | 2,510,898.5 |         0.4 |      97.4% |           0.30 |
-|jczsolve                              | 1,788,842.8 |         0.6 |      97.5% |           0.32 |
-|skbforce                              | 2,051,304.8 |         0.5 |      97.6% |           0.29 |
+|*tdoku_dpll_triad_simd*                 | 3,041,862.7 |         0.3 |      97.4% |           0.29 |
+|fsss2                                 | 2,526,334.1 |         0.4 |      97.5% |           0.30 |
+|jczsolve                              | 1,788,447.3 |         0.6 |      97.4% |           0.32 |
+|sk_bforce2                            | 2,039,782.1 |         0.5 |      97.5% |           0.31 |
 
-For these datasets the performance of tdoku_dpll_triad_simd is roughly equivalent to that of FSSS2,
-the fastest of the three other solvers.
+For the first of these datasets the performance of tdoku_dpll_triad_simd is roughly equivalent to 
+that of FSSS2, the fastest of the three other solvers. On the second dataset tdoku_dpll_triad_simd
+leads the pack, at least on modern hardware.
 
 ## Benchmark Summary
 
@@ -1018,11 +1021,10 @@ details of benchmarks using a few different machines and compilers, see:<br>
 
 Thanks for reading!
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vR58Y3aNoz57dQJYDh37c4gvKU_I2E8uOllVHs8xrr0sC52GoUTaC2AXKwUpySG-zFIKynjiM-wN3cX/pubchart?oid=1929162374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQVFAqgn-rmIieo-k2lqf68l0PpMwVAzi9Jgx5V5r2S7X2_WC66an7B1jA12sPk7K-6pNWXga0QOzwl/pubchart?oid=1929162374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vR58Y3aNoz57dQJYDh37c4gvKU_I2E8uOllVHs8xrr0sC52GoUTaC2AXKwUpySG-zFIKynjiM-wN3cX/pubchart?oid=1298913250&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQVFAqgn-rmIieo-k2lqf68l0PpMwVAzi9Jgx5V5r2S7X2_WC66an7B1jA12sPk7K-6pNWXga0QOzwl/pubchart?oid=1085609822&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vR58Y3aNoz57dQJYDh37c4gvKU_I2E8uOllVHs8xrr0sC52GoUTaC2AXKwUpySG-zFIKynjiM-wN3cX/pubchart?oid=1085609822&format=image)
-
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQVFAqgn-rmIieo-k2lqf68l0PpMwVAzi9Jgx5V5r2S7X2_WC66an7B1jA12sPk7K-6pNWXga0QOzwl/pubchart?oid=1298913250&format=image)
 
 </div>
