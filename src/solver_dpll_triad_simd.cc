@@ -58,9 +58,20 @@ struct Box {
 // box peers along the rows of 4x4 matrix in a 16 uint16_t   peer2  | t | t | t |   |
 // vector (for both horizontal and vertical bands).                 +---+---+---+---+
 //                                                                  |   |   |   |   |
-//                                                                  +---+---+---+---+
+// We'll also store with the Band a vector of eliminations          +---+---+---+---+
+// to be applied to the Band's configurations on the next
+// call to BandEliminate. This allows us to apply all pending updates to a band at
+// the first opportunity instead of individually depending on where in the call stack
+// the update originates.
+//
+// Note that we might do the same thing for Boxes, and doing so is beneficial for easy
+// puzzles. Unfortunately, it's a net loss for hard puzzles. The cost in State size
+// is higher, and the benefit is lower (the benefit for Bands chiefly arises from the
+// way we do puzzle initialization).
+//
 struct Band {
     Cells08 configurations{kAll, kAll, kAll, kAll, kAll, kAll, 0, 0};
+    Cells08 eliminations{};
     uint32_t box_peers[3]{};
 
     Band(int orientation, int idx) {
@@ -190,7 +201,8 @@ struct SolverDpllTriadSimd {
         auto eliminating = box.cells & eliminations;
         if (eliminating.AllZero()) return true;
 
-        Cells08 h_band_eliminations, v_band_eliminations;
+        Band &h_band = state.bands[0][box.box_i];
+        Band &v_band = state.bands[1][box.box_j];
         do {
             // apply eliminations and check that no cell clause now violates its minimum
             box.cells ^= eliminating;
@@ -210,7 +222,7 @@ struct SolverDpllTriadSimd {
             // construct elimination messages for this box and for our band peers
             Cells16 self_eliminations;
             AssertionsToEliminations(all_assertions, box.box_i, box.box_j, self_eliminations,
-                                     h_band_eliminations, v_band_eliminations);
+                                     h_band.eliminations, v_band.eliminations);
 
             // repeat if we're propagating new eliminations in this box
             eliminating = box.cells & self_eliminations;
@@ -219,11 +231,11 @@ struct SolverDpllTriadSimd {
         // send elimination messages to horizontal and vertical peers. Prefer to send the first
         // of these messages to the peer whose orientation is opposite that of the inbound peer.
         if (from_vertical) {
-            return BandEliminate(state, 0, box.box_i, h_band_eliminations, box.box_j) &&
-                   BandEliminate(state, 1, box.box_j, v_band_eliminations, box.box_i);
+            return BandEliminate(state, 0, box.box_i, box.box_j) &&
+                   BandEliminate(state, 1, box.box_j, box.box_i);
         } else {
-            return BandEliminate(state, 1, box.box_j, v_band_eliminations, box.box_i) &&
-                   BandEliminate(state, 0, box.box_i, h_band_eliminations, box.box_j);
+            return BandEliminate(state, 1, box.box_j, box.box_i) &&
+                   BandEliminate(state, 0, box.box_i, box.box_j);
         }
     }
 
@@ -321,10 +333,9 @@ struct SolverDpllTriadSimd {
         assertions |= one_or_more.and_not(two_or_more) & cells;
     }
 
-    static bool BandEliminate(State &state, int vertical, int band_idx,
-                              const Cells08 &eliminations, int from_peer = 0) {
+    static bool BandEliminate(State &state, int vertical, int band_idx, int from_peer = 0) {
         Band &band = state.bands[vertical][band_idx];
-        const Cells08 eliminating = band.configurations & eliminations;
+        const Cells08 eliminating = band.configurations & band.eliminations;
         if (eliminating.AllZero()) return true;
         // after eliminating we might check that every value is still consistent with some
         // configuration, but the check is a net loss.
@@ -420,13 +431,15 @@ struct SolverDpllTriadSimd {
         num_guesses_++;
         State state_copy = state;
         Cells08 assignment1_mask = configurations.ClearLowBit();
-        if (BandEliminate(state_copy, orientation, band_idx, assignment1_mask)) {
+        state_copy.bands[orientation][band_idx].eliminations |= assignment1_mask;
+        if (BandEliminate(state_copy, orientation, band_idx)) {
             CountSolutionsConsistentWithPartialAssignment(state_copy);
             if (num_solutions_ == limit_) return;
         }
         // now negate the first configuration
         Cells08 negation1_mask = configurations ^assignment1_mask;
-        if (BandEliminate(state, orientation, band_idx, negation1_mask)) {
+        state.bands[orientation][band_idx].eliminations |= negation1_mask;
+        if (BandEliminate(state, orientation, band_idx)) {
             if ((band.configurations & tables.one_value_mask[value]).Popcount() == 1) {
                 CountSolutionsConsistentWithPartialAssignment(state);
             } else {
@@ -451,8 +464,7 @@ struct SolverDpllTriadSimd {
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    static inline void InitClue(const char *input, State &state, int pos,
-                                Cells08 (&h_eliminations)[3], Cells08 (&v_eliminations)[3]) {
+    static inline void InitClue(const char *input, State &state, int pos) {
         const BoxIndexing &indexing = tables.box_indexing[pos];
         char digit = input[pos];
         uint16_t candidate = 1u << (uint32_t) (digit - '1');
@@ -460,10 +472,10 @@ struct SolverDpllTriadSimd {
         state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
                 tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
         // merge all band eliminations; we'll propagate these below.
-        h_eliminations[indexing.box_i] |=
+        state.bands[0][indexing.box_i].eliminations |=
                 tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i] &
                 Cells08::All(candidate);
-        v_eliminations[indexing.box_j] |=
+        state.bands[1][indexing.box_j].eliminations |=
                 tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j] &
                 Cells08::All(candidate);
     }
@@ -471,28 +483,22 @@ struct SolverDpllTriadSimd {
     // We could set the initial clues in other ways, including one box update for each clue, or
     // one batch box update for each box. But it's fastest to start with 6 batched band updates.
     static bool InitBandBatch(const char *input, State &state) {
-        Cells08 h_eliminations[3]{};
-        Cells08 v_eliminations[3]{};
-
         __m128i dots = _mm_set1_epi8('.');
         for (int i = 0; i < 5; i++) {
             __m128i str16 = _mm_loadu_si128((const __m128i *) &input[i * 16]);
             uint32_t clues = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(str16, dots)) ^0xffffu;
             while (clues) {
                 int cell_idx = i * 16 + LowOrderBitIndex(clues);
-                InitClue(input, state, cell_idx, h_eliminations, v_eliminations);
+                InitClue(input, state, cell_idx);
                 clues = ClearLowBit(clues);
             }
         }
         if (input[80] != '.') {
-            InitClue(input, state, 80, h_eliminations, v_eliminations);
+            InitClue(input, state, 80);
         }
-        return BandEliminate(state, 0, 0, h_eliminations[0], 1) &&
-               BandEliminate(state, 1, 0, v_eliminations[0], 1) &&
-               BandEliminate(state, 0, 1, h_eliminations[1], 2) &&
-               BandEliminate(state, 1, 1, v_eliminations[1], 2) &&
-               BandEliminate(state, 0, 2, h_eliminations[2], 0) &&
-               BandEliminate(state, 1, 2, v_eliminations[2], 0);
+        return BandEliminate(state, 0, 0, 1) && BandEliminate(state, 1, 0, 1) &&
+               BandEliminate(state, 0, 1, 2) && BandEliminate(state, 1, 1, 2) &&
+               BandEliminate(state, 0, 2, 0) && BandEliminate(state, 1, 2, 0);
     }
 
     static inline void ExtractTriad(uint64_t triad, int triad_base, char *solution) {
