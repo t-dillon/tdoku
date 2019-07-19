@@ -31,6 +31,7 @@ extern "C" {
     SolverFn OtherSolverFsss2;
     SolverFn OtherSolverJCZSolve;
     SolverFn OtherSolverSKBFORCE2;
+    SolverFn OtherSolverRustSudoku;
 #ifdef __cplusplus
 }
 #endif

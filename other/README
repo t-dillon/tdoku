@@ -6,7 +6,7 @@ configured here.
 1. bb_sudoku (B.Turner 2009)
 
 -- Patched sources are included (from https://sites.google.com/site/bbsudokufiles).
--- Annnounced: http://programmers.enjoysudoku.com/www.setbb.com/sudoku/viewtopic4cf4.html
+-- Announced: http://programmers.enjoysudoku.com/www.setbb.com/sudoku/viewtopic4cf4.html
 -- Build with -DBB_SUDOKU=on
 
 
@@ -26,10 +26,10 @@ configured here.
 
 4. FSSS2 (M.Dobrichev 2014-2015)
 
--- To the location of your choice clone https://github.com/t-dillon/fsss2 (a branch of
+-- To the location of your choice clone https://github.com/t-dillon/fsss2_bench (a fork of
    dobrichev/fsss2 with some patches to work with the benchmark program here).
 -- Link required files using:
-   $ other/fsss2/link.sh path/to/fsss2
+   $ other/fsss2/link.sh path/to/fsss2_bench
 -- build with -DFSSS2=on
 
 
@@ -42,11 +42,24 @@ configured here.
 -- build with -DJCZSOLVE=on
 
 
-6. SK_BFORCE2 (GPenet 2018 based on JCZSolve)
+6. rust_sudoku (Emerentius 2017-2019)
 
--- To the location of your choice clone https://github.com/t-dillon/SK_BFORCE2 (a branch
+-- To the location of your choice clone https://github.com/t-dillon/rust_sudoku_bench (a fork of
+   Emerentius/sudoku modified to build a dynamic library the benchmark program can call).
+-- Build the rust project using:
+   $ cd path/to/rust_sudoku_bench
+   $ cargo build --release
+-- Link shared library where tdoku looks for it:
+   $ cd path/to/tdoku
+   $ other/rust_sudoku/link.sh path/to/rust_sudoku_bench
+-- Build with -DRUST_SUDOKU=on
+
+
+7. SK_BFORCE2 (GPenet 2018 based on JCZSolve)
+
+-- To the location of your choice clone https://github.com/t-dillon/SK_BFORCE2_bench (a fork
    of GPenet/SK_BFORCE2 with some patches to work with the benchmark program here)
 -- Link required files using:
-   $ other/SK_BFORCE2/link.sh path/to/SK_BFORCE2
+   $ other/SK_BFORCE2/link.sh path/to/SK_BFORCE2_bench
 -- build with -DSK_BFORCE2=on
 

@@ -7,20 +7,21 @@ set(OPT "O3" CACHE STRING "Optimization level")
 # e.g., cmake . -DARCH=sandybridge
 set(ARCH "native" CACHE STRING "Target architecture")
 # these options specify maximum SSE level and override ARCH
-option(SSE2       "Compile with SSE2 support"         OFF)
-option(SSSE3      "Compile with SSSE3 support"        OFF)
-option(SSE4_1     "Compile with SSE4.1 support"       OFF)
-option(SSE4_2     "Compile with SSE4.2 support"       OFF)
-option(AVX2       "Compile with AVX2 support"         OFF)
-option(AVX512     "Compile with AVX512BITALG support" OFF)
+option(SSE2        "Compile with SSE2 support"         OFF)
+option(SSSE3       "Compile with SSSE3 support"        OFF)
+option(SSE4_1      "Compile with SSE4.1 support"       OFF)
+option(SSE4_2      "Compile with SSE4.2 support"       OFF)
+option(AVX2        "Compile with AVX2 support"         OFF)
+option(AVX512      "Compile with AVX512BITALG support" OFF)
 
-option(BB_SUDOKU  "Include BB_SUDOKU"  OFF)
-option(JSOLVE     "Include JSolve"     OFF)
-option(KUDOKU     "Include KUDOKU"     OFF)
-option(FSSS2      "Include fsss2"      OFF)
-option(JCZSOLVE   "Include JCZSolve"   OFF)
-option(SK_BFORCE2 "Include SK_BFORCE2" OFF)
-option(MINISAT    "Include MiniSat"    OFF)
+option(BB_SUDOKU   "Include BB_SUDOKU"   OFF)
+option(JSOLVE      "Include JSolve"      OFF)
+option(KUDOKU      "Include KUDOKU"      OFF)
+option(FSSS2       "Include fsss2"       OFF)
+option(JCZSOLVE    "Include JCZSolve"    OFF)
+option(RUST_SUDOKU "Include rust_sudoku" OFF)
+option(SK_BFORCE2  "Include SK_BFORCE2"  OFF)
+option(MINISAT     "Include MiniSat"     OFF)
 
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -${OPT}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -${OPT}")
@@ -51,6 +52,10 @@ configure_file (
 # a gcc-linkable library with just the fast solver
 add_library(tdoku STATIC src/solver_dpll_triad_simd.cc)
 target_compile_options(tdoku PUBLIC -fno-exceptions -fno-rtti)
+
+add_library(rust_sudoku SHARED IMPORTED)
+set_target_properties(rust_sudoku PROPERTIES IMPORTED_LOCATION
+        ${CMAKE_SOURCE_DIR}/other/rust_sudoku/libsudoku.so)
 
 set(BENCHMARK_SOLVER_SOURCES
         src/solver_basic.cc
@@ -90,6 +95,10 @@ if (JCZSOLVE)
             other/JCZSolve/JCZSolve.c)
 endif()
 
+if (RUST_SUDOKU)
+    add_definitions(-DRUST_SUDOKU)
+endif()
+
 if (SK_BFORCE2)
   add_definitions(-DSK_BFORCE2)
   set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
@@ -104,11 +113,14 @@ if (MINISAT)
 endif()
 
 add_executable(run_benchmark src/run_benchmark.cc ${BENCHMARK_SOLVER_SOURCES})
+add_executable(run_tests test/run_tests.cc ${BENCHMARK_SOLVER_SOURCES})
+
 if (MINISAT)
     target_link_libraries(run_benchmark minisat)
+    target_link_libraries(run_tests minisat)
 endif()
 
-add_executable(run_tests test/run_tests.cc ${BENCHMARK_SOLVER_SOURCES})
-if (MINISAT)
-    target_link_libraries(run_tests minisat)
+if (RUST_SUDOKU)
+    target_link_libraries(run_benchmark rust_sudoku)
+    target_link_libraries(run_tests rust_sudoku)
 endif()

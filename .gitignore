@@ -24,8 +24,10 @@ src/build_info.h
 
 run_benchmark
 run_tests
-libtdoku.a
 Makefile
 cmake_install.cmake
 CMakeCache.txt
 CMakeFiles/
+
+*.so
+*.a

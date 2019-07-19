@@ -189,6 +189,11 @@ struct Benchmark {
                 solvers.emplace_back(
                         Solver(OtherSolverJCZSolve, configuration, "jczsolve"));
 #endif
+#ifdef RUST_SUDOKU
+                } else if (solver == "rust_sudoku") {
+                solvers.emplace_back(
+                        Solver(OtherSolverRustSudoku, configuration, "rust_sudoku", 14));
+#endif
 #ifdef SK_BFORCE2
             } else if (solver == "sk_bforce2") {
                 solvers.emplace_back(
@@ -341,6 +346,9 @@ int main(int argc, char **argv) {
 #endif
 #ifdef SK_BFORCE2
     benchmark.solvers_.insert(0, "sk_bforce2,");
+#endif
+#ifdef RUST_SUDOKU
+    benchmark.solvers_.insert(0, "rust_sudoku,");
 #endif
 #ifdef JCZSOLVE
     benchmark.solvers_.insert(0, "jczsolve,");

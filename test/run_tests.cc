@@ -76,6 +76,9 @@ vector<Solver> GetSolvers() {
 #ifdef SK_BFORCE2
     solvers.emplace_back(Solver(OtherSolverSKBFORCE2,         0, "skbforce", 2));
 #endif
+#ifdef RUST_SUDOKU
+    solvers.emplace_back(Solver(OtherSolverRustSudoku,        0, "rust_sudoku", 6));
+#endif
 #ifdef MINISAT
     solvers.emplace_back(Solver(TdokuSolverMiniSat,           0, "minisat", 1));
 #endif

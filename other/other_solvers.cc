@@ -2,6 +2,18 @@
 #include <cstdint>
 #include <cstring>
 
+#ifdef RUST_SUDOKU
+extern "C"
+size_t rust_solve_sudoku(const char *input, size_t limit);
+
+extern "C"
+size_t OtherSolverRustSudoku(const char *input, size_t limit, uint32_t /*unused_configuration*/,
+                             char *solution, size_t *num_guesses) {
+    *num_guesses = 0;
+    return rust_solve_sudoku(input, limit);
+}
+#endif
+
 #ifdef SK_BFORCE2
 #include "SK_BFORCE2/sk_t.h"
 #include "SK_BFORCE2/Zhn.h"
