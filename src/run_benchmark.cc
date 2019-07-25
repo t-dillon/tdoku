@@ -22,7 +22,6 @@ using chrono::duration_cast;
 namespace {
 
 struct Benchmark {
-    size_t max_puzzles_to_load_ = 2500000;
     size_t test_dataset_size_ = 1000000;
     int min_seconds_test_ = 20;
     int min_seconds_warmup_ = 10;
@@ -36,7 +35,8 @@ struct Benchmark {
     // bias and test data dependence when comparing between solvers or when comparing
     // different heuristics for the same solver. if you are running benchmarks to optimize
     // a given solver and you are not changing heuristics or ordering, then it's OK to
-    // turn off randomization to get lower benchmark variance.
+    // turn off randomization to get lower benchmark variance, but it may be better to get
+    // lower benchmark variance by setting a fixed seed and keeping randomization on.
     bool randomize_ = true;
     // whether to validate puzzle solutions during warmup. we don't validate results during
     // actual benchmarking.
@@ -46,9 +46,11 @@ struct Benchmark {
     // via a comment at the top of the file containing the string 'ALLOWZERO'.
     bool allow_zero_ = false;
 
-    uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-    mt19937 rng{seed};
+    random_device rd;
+    mt19937_64 rng{rd()};
     uniform_int_distribution<uint32_t> random_uint;
+    uniform_real_distribution<> random_double{0.0, 1.0};
+    uint64_t rng_seed = 0;
 
     vector<Solver> solvers;
     vector<string> testing_data_;
@@ -66,13 +68,12 @@ struct Benchmark {
         PrintSudoku(board, one_line, cout);
     }
 
-    static void BlockShuffle(vector<int> *vec) {
-        static std::random_device rd;
+    void BlockShuffle(vector<int> *vec) {
         vector<int> blocks{0, 1, 2};
-        shuffle(blocks.begin(), blocks.end(), rd);
+        shuffle(blocks.begin(), blocks.end(), rng);
         for (int i = 0; i < 3; i++) {
             vector<int> block{0, 1, 2};
-            shuffle(block.begin(), block.end(), rd);
+            shuffle(block.begin(), block.end(), rng);
             for (int j = 0; j < 3; j++) {
                 (*vec)[i * 3 + j] = blocks[i] * 3 + block[j];
             }
@@ -80,12 +81,11 @@ struct Benchmark {
     }
     // permute rows, columns, bands, and digits to produce a randomly transformed but
     // equivalent puzzle.
-    static string PermuteSudoku(const string &input) {
-        static std::random_device rd;
+    string PermuteSudoku(const string &input) {
         string digit_permutation = "123456789";
         vector<int> row_permutation{0, 1, 2, 3, 4, 5, 6, 7, 8};
         vector<int> col_permutation{0, 1, 2, 3, 4, 5, 6, 7, 8};
-        shuffle(digit_permutation.begin(), digit_permutation.end(), rd);
+        shuffle(digit_permutation.begin(), digit_permutation.end(), rng);
         BlockShuffle(&col_permutation);
         BlockShuffle(&row_permutation);
 
@@ -100,31 +100,41 @@ struct Benchmark {
             }
             copy(out_row.begin(), out_row.end(), begin(output) + row_permutation[r] * 9);
         }
-        return string(output);
+        return string(output, 81);
     }
 
+    // generate a dataset of the requested size from the input file in a way that maximizes
+    // representativeness and minimizes benchmark variance.
     void Load(const string &dataset_filename) {
-        allow_zero_ = false;
-        vector<string> puzzles;
-        puzzles.reserve(max_puzzles_to_load_);
-
         ifstream file;
         file.open(dataset_filename);
         if (file.fail()) {
             cout << "Error opening " << dataset_filename << endl;
             exit(1);
         }
+
+        allow_zero_ = false;
+        testing_data_.clear();
+        testing_data_.reserve(test_dataset_size_);
+
+        // load input file; if there are more puzzles in the input file than we want in our
+        // test dataset then sample such that each input puzzle has the same probability of
+        // being in the test dataset.
         string line;
+        int input_count = 0;
         while (getline(file, line)) {
             if (line.length() > 0 && line[0] != '#') {
-                if (max_puzzles_to_load_-- == 0) {
-                    break;
-                }
                 if (line[line.size() - 1] == '\r') {
                     line.erase(line.size() - 1);
                 }
                 if (line.length() == 81) {
-                    puzzles.push_back(line);
+                    input_count++;
+                    if (input_count <= test_dataset_size_) {
+                        testing_data_.push_back(randomize_ ? PermuteSudoku(line) : line);
+                    } else if (random_double(rng) < (double)test_dataset_size_ / input_count) {
+                        auto replace = random_uint(rng) % test_dataset_size_;
+                        testing_data_[replace] = randomize_ ? PermuteSudoku(line) : line;
+                    }
                 }
             } else if (line.find("ALLOWZERO") != string::npos) {
                 allow_zero_ = true;
@@ -132,14 +142,19 @@ struct Benchmark {
         }
         file.close();
 
-        testing_data_.clear();
-        testing_data_.reserve(test_dataset_size_);
-        for (int i = 0; i < test_dataset_size_; i++) {
-            if (randomize_) {
-                testing_data_.push_back(PermuteSudoku(puzzles[random_uint(rng) % puzzles.size()]));
-            } else {
-                testing_data_.push_back(puzzles[i % puzzles.size()]);
+        // if we've requested a test dataset larger than the input file, then fit as many full
+        // copies of the input file as we can.
+        int num_full_copies = test_dataset_size_ / input_count;
+        for (int i = 1; i < num_full_copies; i++) {
+            for (int j = 0; j < input_count; j++) {
+                string puzzle = testing_data_[j];
+                testing_data_.push_back(randomize_ ? PermuteSudoku(puzzle) : puzzle);
             }
+        }
+        // then complete the dataset by sampling from loaded puzzles with uniform probability.
+        for (int i = testing_data_.size(); i < test_dataset_size_; i++) {
+            string puzzle = testing_data_[random_uint(rng) % input_count];
+            testing_data_.push_back(randomize_ ? PermuteSudoku(puzzle) : puzzle);
         }
     }
 
@@ -190,7 +205,7 @@ struct Benchmark {
                         Solver(OtherSolverJCZSolve, configuration, "jczsolve"));
 #endif
 #ifdef RUST_SUDOKU
-                } else if (solver == "rust_sudoku") {
+            } else if (solver == "rust_sudoku") {
                 solvers.emplace_back(
                         Solver(OtherSolverRustSudoku, configuration, "rust_sudoku", 14));
 #endif
@@ -231,6 +246,9 @@ struct Benchmark {
     // comparable. but for the slow solvers we'll run over just a fraction of the dataset if
     // necessary to finish in a reasonable time.
     int Test(const string &dataset_filename) {
+        if (rng_seed > 0) {
+            rng.seed(rng_seed);
+        }
         Load(dataset_filename);
 
         if (!csv_output_) {
@@ -245,12 +263,12 @@ struct Benchmark {
 
         for (Solver &solver : solvers) {
             // warm caches, branch predictor, etc. and estimate solving speed on this data
-            int n = 0;
+            int warmup_count = 0;
             microseconds start =
                     duration_cast<microseconds>(system_clock::now().time_since_epoch());
             microseconds end = start;
             while ((end - start).count() < min_seconds_warmup_ * 1000000) {
-                string &puzzle = testing_data_[n % test_dataset_size_];
+                string &puzzle = testing_data_[warmup_count % test_dataset_size_];
                 output[0] = '.'; // make sure we won't validate a previous solution
                 size_t count = solver.Solve(puzzle.c_str(), 1, output, &num_guesses);
                 if ((!allow_zero_ && !count) ||
@@ -260,11 +278,11 @@ struct Benchmark {
                     PrintSudoku(puzzle.c_str(), false);
                     exit(1);
                 }
-                n++;
+                warmup_count++;
                 end = duration_cast<microseconds>(system_clock::now().time_since_epoch());
             }
 
-            double puzzles_per_second = 1000000.0 * n / (end - start).count();
+            double puzzles_per_second = 1000000.0 * warmup_count / (end - start).count();
             double est_seconds_full_pass = test_dataset_size_ / puzzles_per_second;
 
             size_t puzzles_todo;
@@ -368,10 +386,14 @@ int main(int argc, char **argv) {
 
     ketopt_t opt = KETOPT_INIT;
     char c;
-    while ((c = ketopt(&opt, argc, argv, 1, "c::hn:r::s:t:v::w:z::", nullptr)) != -1) {
+    while ((c = ketopt(&opt, argc, argv, 1, "c::e:hn:r::s:t:v::w:z::", nullptr)) != -1) {
         switch (c) {
             case 'c': {
                 benchmark.csv_output_ = opt.arg == nullptr ? true : stoi(opt.arg) > 0;
+                break;
+            }
+            case 'e': {
+                benchmark.rng_seed = stoi(opt.arg);
                 break;
             }
             case 'n': {
@@ -403,6 +425,7 @@ int main(int argc, char **argv) {
                 cout << "usage: run_benchmark <options> puzzle_file_1 [...] " << endl;
                 cout << "options:" << endl;
                 cout << "  -c [0|1]            // output csv instead of table [default 0]" << endl;
+                cout << "  -e <seed>           // random seed [default random_device{}()]" << endl;
                 cout << "  -n <size>           // test set size [default 2500000]" << endl;
                 cout << "  -r [0|1]            // randomly permute puzzles [default 1]" << endl;
                 cout << "  -s solver_1,...     // which solvers to run [default all]" << endl;
