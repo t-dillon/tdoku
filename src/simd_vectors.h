@@ -97,7 +97,8 @@ struct Bitvec08x16 {
     inline Bitvec08x16 &operator=(const Bitvec08x16 &other) = default;
 
     inline bool operator==(const Bitvec08x16 &other) const {
-        return (*this ^ other).AllZero();
+        Bitvec08x16 which_equal = WhichEqual(other);
+        return _mm_movemask_epi8(which_equal.vec) == 0xffff;
     }
 
     inline bool operator!=(const Bitvec08x16 &other) const {
@@ -110,30 +111,30 @@ struct Bitvec08x16 {
         return out;
     }
 
+    inline Bitvec08x16 WhichEqual(const Bitvec08x16 &other) const {
+        return _mm_cmpeq_epi16(vec, other.vec);
+    }
+
+    inline Bitvec08x16 WhichNonZero() const {
+        return _mm_cmpgt_epi16(vec, _mm_setzero_si128());
+    }
+
     inline bool AllZero() const {
 #ifdef __SSE4_1__
         return _mm_test_all_zeros(vec, vec) != 0;
 #else
-        return _mm_movemask_epi8(_mm_cmpeq_epi16(vec, _mm_setzero_si128())) == 0xffff;
+        return _mm_movemask_epi8(WhichEqual(_mm_setzero_si128())) == 0xffff;
 #endif
     }
 
-    inline Bitvec08x16 Equal(const Bitvec08x16 &other) const {
-        return _mm_cmpeq_epi16(vec, other.vec);
-    }
-
-    inline Bitvec08x16 NonZero() const {
-        return _mm_cmpgt_epi16(vec, _mm_setzero_si128());
-    }
-
     inline bool AnyZero() const {
-        Bitvec08x16 which_equal_zero = _mm_cmpeq_epi16(vec, _mm_setzero_si128());
-        return !which_equal_zero.AllZero();
+        Bitvec08x16 which_equal_zero = WhichEqual(_mm_setzero_si128());
+        return _mm_movemask_epi8(which_equal_zero.vec) != 0;
     }
 
     inline bool AnyLessThan(const Bitvec08x16 &other) const {
         Bitvec08x16 which_less_than = _mm_cmpgt_epi16(other.vec, vec);
-        return !which_less_than.AllZero();
+        return _mm_movemask_epi8(which_less_than.vec) != 0;
     }
 
     inline Bitvec08x16 ClearLowBit() const {
@@ -362,16 +363,16 @@ struct Bitvec16x16 {
         return out;
     }
 
+    inline Bitvec16x16 WhichEqual(const Bitvec16x16 &other) const {
+        return Bitvec16x16{lo_.WhichEqual(other.lo_), hi_.WhichEqual(other.hi_)};
+    }
+
+    inline Bitvec16x16 WhichNonZero() const {
+        return Bitvec16x16{lo_.WhichNonZero(), hi_.WhichNonZero()};
+    }
+
     inline bool AllZero() const {
         return lo_.AllZero() && hi_.AllZero();
-    }
-
-    inline Bitvec16x16 Equal(const Bitvec16x16 &other) const {
-        return Bitvec16x16{lo_.Equal(other.lo_), hi_.Equal(other.hi_)};
-    }
-
-    inline Bitvec16x16 NonZero() const {
-        return Bitvec16x16{lo_.NonZero(), hi_.NonZero()};
     }
 
     inline bool AnyZero() const {
@@ -520,26 +521,26 @@ struct Bitvec16x16 {
         return out;
     }
 
+    inline Bitvec16x16 WhichEqual(const Bitvec16x16 &other) const {
+        return _mm256_cmpeq_epi16(vec, other.vec);
+    }
+
+    inline Bitvec16x16 WhichNonZero() const {
+        return _mm256_cmpgt_epi16(vec, _mm256_setzero_si256());
+    }
+
     inline bool AllZero() const {
         return _mm256_testz_si256(vec, vec);
     }
 
-    inline Bitvec16x16 Equal(const Bitvec16x16 &other) const {
-        return _mm256_cmpeq_epi16(vec, other.vec);
-    }
-
-    inline Bitvec16x16 NonZero() const {
-        return _mm256_cmpgt_epi16(vec, _mm256_setzero_si256());
-    }
-
     inline bool AnyZero() const {
-        __m256i tmp = _mm256_cmpeq_epi16(vec, _mm256_setzero_si256());
-        return !_mm256_testz_si256(tmp, tmp);
+        Bitvec16x16 which_equal_zero = WhichEqual(_mm256_setzero_si256());
+        return _mm256_movemask_epi8(which_equal_zero.vec) != 0;
     }
 
     inline bool AnyLessThan(const Bitvec16x16 &other) const {
-        auto tmp = _mm256_cmpgt_epi16(other.vec, vec);
-        return !_mm256_testz_si256(tmp, tmp);
+        Bitvec16x16 which_less_than = _mm256_cmpgt_epi16(other.vec, vec);
+        return _mm256_movemask_epi8(which_less_than.vec) != 0;
     }
 
     // counts the number of bits set among the 9 lowest order bits of each packed 16-bit integer
@@ -570,15 +571,15 @@ struct Bitvec16x16 {
         return _mm256_shuffle_epi8(vec, shuffle_control);
     }
 
-    inline Bitvec16x16 RotateCols() const {
-        return _mm256_permute4x64_epi64(vec, 0b00111001);
-    }
-
     inline Bitvec16x16 RotateRows2() const {
         __m256i shuffle_control =
                 _mm256_setr_epi8(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11,
                                  4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
         return _mm256_shuffle_epi8(vec, shuffle_control);
+    }
+
+    inline Bitvec16x16 RotateCols() const {
+        return _mm256_permute4x64_epi64(vec, 0b00111001);
     }
 
     inline Bitvec16x16 RotateCols2() const {

@@ -9,8 +9,8 @@ using namespace std;
 
 namespace {
 
-typedef Bitvec08x16 Cells08;
-typedef Bitvec16x16 Cells16;
+using Cells08 = Bitvec08x16;
+using Cells16 = Bitvec16x16;
 
 constexpr uint16_t kAll = 0x1ff;
 
@@ -25,7 +25,7 @@ constexpr uint16_t kAll = 0x1ff;
 //  in one three regular cells to which the triad corresponds.      +---+---+---+---+
 //
 //  For each value bit there is an exactly-one constraint over the 4 cells in a row
-//  or column of the matrix, which corresponds to the biconditional defining the triad.
+//  or column of the matrix corresponding to the biconditional defining the triad.
 //
 //  Each cell also has a minimum. So there are three sets of clauses represented here.
 //
@@ -82,9 +82,9 @@ struct Band {
 };
 
 struct State {
-    Box boxen[9]{0, 1, 2, 3, 4, 5, 6, 7, 8};
     Band bands[2][3]{{{0, 0}, {0, 1}, {0, 2}},
                      {{1, 0}, {1, 1}, {1, 2}}};
+    Box boxen[9]{0, 1, 2, 3, 4, 5, 6, 7, 8};
 };
 
 struct BoxIndexing {
@@ -103,42 +103,89 @@ struct BoxIndexing {
                                      elem(elem_i * 4 + elem_j) {}
 };
 
+// We depend on low-level shuffle operations that address packed 8-bit integers, but we're
+// always shuffling 16-bit logical cells. These constants are used for constructing shuffle
+// control vectors that address these cells. We only require 8 of them since even 256-bit
+// shuffles operate within 128-bit lanes.
 constexpr uint16_t shuf00 = 0x0100, shuf01 = 0x0302, shuf02 = 0x0504, shuf03 = 0x0706;
 constexpr uint16_t shuf04 = 0x0908, shuf05 = 0x0b0a, shuf06 = 0x0d0c, shuf07 = 0x0f0e;
 
 struct Tables {
-    // used when assigning a single candidate during search
+    // @formatter:off
+
+    // used when assigning a candidate during initialization
     Cells16 cell_assignment_eliminations[16][16]{};
 
-    // @formatter:off
-    const Cells08 shuffle_peer_x_shift_to_config_mask[3][3]{
-            {{shuf04, shuf05, shuf06, shuf06, shuf04, shuf05, 0xffff, 0xffff},
-             {shuf05, shuf06, shuf04, shuf04, shuf05, shuf06, 0xffff, 0xffff},
-             {shuf06, shuf04, shuf05, shuf05, shuf06, shuf04, 0xffff, 0xffff}},
-            {{shuf05, shuf06, shuf04, shuf05, shuf06, shuf04, 0xffff, 0xffff},
-             {shuf06, shuf04, shuf05, shuf06, shuf04, shuf05, 0xffff, 0xffff},
-             {shuf04, shuf05, shuf06, shuf04, shuf05, shuf06, 0xffff, 0xffff}},
-            {{shuf06, shuf04, shuf05, shuf04, shuf05, shuf06, 0xffff, 0xffff},
-             {shuf04, shuf05, shuf06, shuf05, shuf06, shuf04, 0xffff, 0xffff},
-             {shuf05, shuf06, shuf04, shuf06, shuf04, shuf05, 0xffff, 0xffff}},
+    //   config       0       1       2       3       4       5
+    //    elem      0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
+    //            +-------+-------+-------+-------+-------+-------+
+    //   peer0    | X . . | . X . | . . X | . . X | X . . | . X . |
+    //   peer1    | . X . | . . X | X . . | . X . | . . X | X . . |
+    //   peer2    | . . X | X . . | . X . | X . . | . X . | . . X |
+    //            +-------+-------+-------+-------+-------+-------+
+    //
+    // tables for constructing band elimination messages from Cells08 containing
+    // positive or negative triad views of a box stored positions 4, 5, and 6.
+    // each table has three shuffle control vectors, one for each of the band's box
+    // peers. there are three tables, each corresponding to a rotation of elements
+    // in the peer. look first at the shift0 table to see the correspondence with
+    // the configuration diagram reproduced above.
+    //
+    const Cells08 triads_shift0_to_config_elims[3]{
+            {shuf04, shuf05, shuf06, shuf06, shuf04, shuf05, 0xffff, 0xffff},
+            {shuf05, shuf06, shuf04, shuf05, shuf06, shuf04, 0xffff, 0xffff},
+            {shuf06, shuf04, shuf05, shuf04, shuf05, shuf06, 0xffff, 0xffff}
     };
+    const Cells08 triads_shift1_to_config_elims[3]{
+            {shuf05, shuf06, shuf04, shuf04, shuf05, shuf06, 0xffff, 0xffff},
+            {shuf06, shuf04, shuf05, shuf06, shuf04, shuf05, 0xffff, 0xffff},
+            {shuf04, shuf05, shuf06, shuf05, shuf06, shuf04, 0xffff, 0xffff}
+    };
+    const Cells08 triads_shift2_to_config_elims[3]{
+            {shuf06, shuf04, shuf05, shuf05, shuf06, shuf04, 0xffff, 0xffff},
+            {shuf04, shuf05, shuf06, shuf04, shuf05, shuf06, 0xffff, 0xffff},
+            {shuf05, shuf06, shuf04, shuf06, shuf04, shuf05, 0xffff, 0xffff}
+    };
+
+    // two Cells16 shuffle control vectors whose results are or'ed together to convert
+    // a vector of configurations (reproduced across 128 bit lanes) into a 3x3 matrix of
+    // positive triads (refer again to the configuration diagram above).
     const Cells16 shuffle_configs_to_triads[2]{
-            {{shuf00, shuf01, shuf02, 0xffff, shuf02, shuf00, shuf01, 0xffff},
-             {shuf01, shuf02, shuf00, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff}},
-            {{shuf04, shuf05, shuf03, 0xffff, shuf05, shuf03, shuf04, 0xffff},
-             {shuf03, shuf04, shuf05, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff}}
+            {{shuf00, shuf01, shuf02, 0xffff,
+              shuf02, shuf00, shuf01, 0xffff},
+             {shuf01, shuf02, shuf00, 0xffff,
+              0xffff, 0xffff, 0xffff, 0xffff}},
+            {{shuf04, shuf05, shuf03, 0xffff,
+              shuf05, shuf03, shuf04, 0xffff},
+             {shuf03, shuf04, shuf05, 0xffff,
+              0xffff, 0xffff, 0xffff, 0xffff}}
     };
-    const Cells08 shuffle_triads_temp[2]{
-            {shuf00, shuf01, shuf02, shuf01, shuf00, shuf00, 0xffff, 0xffff},
-            {shuf00, shuf01, shuf02, shuf02, shuf02, shuf01, 0xffff, 0xffff}
-    };
-    const Cells16 shuffle_temp_to_box_mask[2]{
-            // for horizontal bands/triads
-            {{shuf00, shuf00, shuf00, shuf03, shuf01, shuf01, shuf01, shuf04},
-             {shuf02, shuf02, shuf02, shuf05, 0xffff, 0xffff, 0xffff, 0xffff}},
-            // for vertical bands/triads
-            {{shuf00, shuf01, shuf02, 0xffff, shuf00, shuf01, shuf02, 0xffff},
-             {shuf00, shuf01, shuf02, 0xffff, shuf03, shuf04, shuf05, 0xffff}}
+
+    // two pairs of two Cells16 shuffle control vectors whose results are or'ed together to
+    // convert vectors of positive triads in positions 0, 1, and 2 (reproduced across 128 bit
+    // lanes) into box candidate sets. it is necessary to combine two shuffles because box
+    // negative triads are eliminated when band positive triads have been eliminated in the
+    // other two shifted positions. the shuffled input has 0xffff in position 3 to allow a
+    // no-op for triads with opposite orientation.
+    const Cells16 pos_triads_to_candidates[2][2]{
+            // horizontal
+            {{{shuf00, shuf00, shuf00, shuf01,
+               shuf01, shuf01, shuf01, shuf02},
+              {shuf02, shuf02, shuf02, shuf00,
+               shuf03, shuf03, shuf03, shuf03}},
+             {{shuf00, shuf00, shuf00, shuf02,
+               shuf01, shuf01, shuf01, shuf00},
+              {shuf02, shuf02, shuf02, shuf01,
+               shuf03, shuf03, shuf03, shuf03}}},
+            // vertical
+            {{{shuf00, shuf01, shuf02, shuf03,
+               shuf00, shuf01, shuf02, shuf03},
+              {shuf00, shuf01, shuf02, shuf03,
+               shuf01, shuf02, shuf00, shuf03}},
+             {{shuf00, shuf01, shuf02, shuf03,
+               shuf00, shuf01, shuf02, shuf03},
+              {shuf00, shuf01, shuf02, shuf03,
+               shuf02, shuf00, shuf01, shuf03}}}
     };
 
     const Cells16 cell3x3_mask{ kAll, kAll, kAll,    0,
@@ -146,6 +193,20 @@ struct Tables {
                                 kAll, kAll, kAll,    0,
                                    0,    0,    0,    0
     };
+
+
+    //   config       0       1       2       3       4       5
+    //    elem      0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
+    //            +-------+-------+-------+-------+-------+-------+
+    //   peer0    | X . . | . X . | . . X | . . X | X . . | . X . |
+    //   peer1    | . X . | . . X | X . . | . X . | . . X | X . . |
+    //   peer2    | . . X | X . . | . X . | X . . | . X . | . . X |
+    //            +-------+-------+-------+-------+-------+-------+
+    //
+    // A set of masks for eliminating band configurations inconsistent with the placement
+    // of a digit in an element (minirow or minicol) of a box peer. Refer again to the
+    // configuration diagram.
+    //
     const Cells08 peer_x_elem_to_config_mask[3][3]{
             {{   0,   kAll,   kAll,   kAll,      0,   kAll,    0,    0},
              {kAll,      0,   kAll,   kAll,   kAll,      0,    0,    0},
@@ -194,11 +255,13 @@ struct SolverDpllTriadSimd {
     size_t num_solutions_ = 0;
     size_t num_guesses_ = 0;
 
-    static bool BoxEliminate(State &state, int box_idx, const Cells16 &eliminations,
-                             int from_vertical = 0) {
+    // restrict the cell, minirow, and minicol clauses of the box to contain only the given
+    // cell and triad candidates.
+    static bool BoxRestrict(State &state, int box_idx, const Cells16 &candidates,
+                            int from_vertical = 0) {
         // return immediately if there are no new eliminations
         Box &box = state.boxen[box_idx];
-        auto eliminating = box.cells & eliminations;
+        auto eliminating = box.cells.and_not(candidates);
         if (eliminating.AllZero()) return true;
 
         Band &h_band = state.bands[0][box.box_i];
@@ -211,7 +274,7 @@ struct SolverDpllTriadSimd {
             if (counts.AnyLessThan(box_minimums)) return false;
 
             // gather literals asserted by triggered cell clauses
-            Cells16 triggered = counts.Equal(box_minimums);
+            Cells16 triggered = counts.WhichEqual(box_minimums);
             Cells16 all_assertions = box.cells & triggered;
             // and add literals asserted by triggered triad definition clauses
             GatherTriadClauseAssertions(
@@ -239,9 +302,9 @@ struct SolverDpllTriadSimd {
         }
     }
 
-    // input cells contains zeros where nothing is asserted, a single candidate for regular cells
+    // input Cells16 contains zeros where nothing is asserted, a single candidate for regular cells
     // that are being asserted, and either 1 or 6 candidates for negative triad literals that are
-    // being asserted.
+    // being asserted (due to an unsatisfiable triad definition, or due to a 6/ minimum).
     static inline void AssertionsToEliminations(const Cells16 &assertions, int box_i, int box_j,
                                                 Cells16 &box_eliminations,
                                                 Cells08 &h_band_eliminations,
@@ -270,45 +333,53 @@ struct SolverDpllTriadSimd {
         // merge back rows and columns to populate elimination bits for negative triad literals.
         across_box |= across_rows | across_cols;
         // for any cell that had an assertion populate all elimination bits (ok to include >kAll).
-        across_box |= cell_assertions_only.NonZero();
+        across_box |= cell_assertions_only.WhichNonZero();
         // then clear elimination bits for the candidates that were actually asserted.
         across_box ^= cell_assertions_only;
         box_eliminations |= across_box;
 
-        // update band eliminations to reflect positive triad assertions. for positive triad
-        // assertions we use shifts 1 and 2 in the mask table because we want to eliminate positive
-        // triad candidates in the _other_ two peers.
-        Cells08 h_peer = HorizontalPeer(across_rows);
-        h_band_eliminations |=
-                h_peer.Shuffle(tables.shuffle_peer_x_shift_to_config_mask[box_j][1]) |
-                h_peer.Shuffle(tables.shuffle_peer_x_shift_to_config_mask[box_j][2]);
-        Cells08 v_peer = VerticalPeer(across_cols);
-        v_band_eliminations |=
-                v_peer.Shuffle(tables.shuffle_peer_x_shift_to_config_mask[box_i][1]) |
-                v_peer.Shuffle(tables.shuffle_peer_x_shift_to_config_mask[box_i][2]);
+        // update band eliminations to reflect the assertion of a positive triad arising from the
+        // assertion of a candidate in a regular cell. for positive triad assertions we use shifts
+        // 1 and 2 in the mask table because we want to eliminate positive triad candidates in
+        // the _other_ two peers.
+        Cells16 hv_pos_triad_assertions{HorizontalTriads(across_rows), VerticalTriads(across_cols)};
+        Cells16 new_eliminations =
+                hv_pos_triad_assertions.Shuffle(
+                        Bitvec16x16{tables.triads_shift1_to_config_elims[box_j],
+                                    tables.triads_shift1_to_config_elims[box_i]}) |
+                hv_pos_triad_assertions.Shuffle(
+                        Bitvec16x16{tables.triads_shift2_to_config_elims[box_j],
+                                    tables.triads_shift2_to_config_elims[box_i]});
 
         // update band eliminations to reflect negative triad assertions. for negative triad
         // assertions we use shift 0 in the mask table because we are eliminating positive triad
         // candidates in the same peer.
-        h_band_eliminations |= HorizontalPeer(assertions).Shuffle(
-                tables.shuffle_peer_x_shift_to_config_mask[box_j][0]);
-        v_band_eliminations |= VerticalPeer(assertions).Shuffle(
-                tables.shuffle_peer_x_shift_to_config_mask[box_i][0]);
+        Cells16 hv_neg_triad_assertions{HorizontalTriads(assertions), VerticalTriads(assertions)};
+        new_eliminations |= hv_neg_triad_assertions.Shuffle(
+                Bitvec16x16{tables.triads_shift0_to_config_elims[box_j],
+                            tables.triads_shift0_to_config_elims[box_i]});
+        h_band_eliminations |= new_eliminations.GetLo();
+        v_band_eliminations |= new_eliminations.GetHi();
     }
 
-    // extracts a Cells08 containing vertical triad candidates in positions 4, 5, and 6 for use
-    // as an input to shuffling. the contents of other cells are ignored by the shuffle.
-    static inline Cells08 VerticalPeer(const Cells16 &box_cells) {
-        return box_cells.GetHi();
+    // extracts a Cells08 containing (positive or negative) vertical triad literals in positions
+    // 4, 5, and 6 for use in shuffling an elimination message to send the vertical band peer. the
+    // contents of other cells are ignored by the shuffle.
+    static inline Cells08 VerticalTriads(const Cells16 &cells) {
+        return cells.GetHi();
     }
 
-    // extracts a Cells08 containing horizontal triad candidates in positions 4, 5, and 6 for
-    // use as an input to shuffling. the contents of other cells are ignored by the shuffle.
-    static inline Cells08 HorizontalPeer(const Cells16 &box_cells) {
-        return (box_cells.GetLo().Shuffle({0xffff, 0xffff, 0xffff, 0xffff,
-                                           shuf03, shuf07, 0xffff, 0xffff}) |
-                box_cells.GetHi().Shuffle({0xffff, 0xffff, 0xffff, 0xffff,
-                                           0xffff, 0xffff, shuf03, 0xffff}));
+    // extracts a Cells08 containing (positive or negative) horizontal triad literals in positions
+    // 4, 5, and for use in shuffling an elimination message to send the horizontal band peer. we
+    // use positions 4,5,6 so we can use the same tables in creating horizontal and vertical
+    // elimination messages (and so the vertical triads can be extracted at no cost).
+    static inline Cells08 HorizontalTriads(const Cells16 &cells) {
+        Cells16 split_triads = cells.Shuffle(
+                Bitvec16x16{{0xffff, 0xffff, 0xffff, 0xffff,
+                             shuf03, shuf07, 0xffff, 0xffff},
+                            {0xffff, 0xffff, 0xffff, 0xffff,
+                             0xffff, 0xffff, shuf03, 0xffff}});
+        return split_triads.GetLo() | split_triads.GetHi();
     }
 
     template<typename RotateFn>
@@ -328,8 +399,7 @@ struct SolverDpllTriadSimd {
         two_or_more |= one_or_more & rotated;
         one_or_more |= rotated;
         // we might check here that one_or_more == kAll, but the check is a net loss.
-
-        // assert (in the cells where they remain) candidates that now occur only once an a row/col
+        // now assert (in cells where they remain) candidates that occur only once an a row/col.
         assertions |= one_or_more.and_not(two_or_more) & cells;
     }
 
@@ -342,37 +412,37 @@ struct SolverDpllTriadSimd {
         band.configurations ^= eliminating;
 
         Cells16 triads = ConfigurationsToPositiveTriads(band.configurations);
-        // we might check here that every positive triad still has at least three candidates, but
-        // the check is a net loss.
+        // we might check here that every cell (corresponding to a minirow or minicol) still has
+        // at least three triad candidates, but the check is a net loss.
         const Cells16 counts = triads.Popcounts9();
 
         // we might repeat the updating of triads below until we no longer trigger new triad 3/
         // clauses. however, just once delivers most of the benefit, and it's best not to branch.
-        const Cells16 asserting = triads & counts.Equal(Cells16::All(3));
+        const Cells16 asserting = triads & counts.WhichEqual(Cells16::All(3));
         const Cells08 lo = asserting.GetLo();
         const Cells08 hi = asserting.GetHi();
         band.configurations = band.configurations.and_not(
-                lo.RotateCols().Shuffle(tables.shuffle_peer_x_shift_to_config_mask[0][1]) |
-                lo.RotateCols().Shuffle(tables.shuffle_peer_x_shift_to_config_mask[0][2]));
+                lo.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[0]) |
+                lo.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[0]));
         band.configurations = band.configurations.and_not(
-                lo.Shuffle(tables.shuffle_peer_x_shift_to_config_mask[1][1]) |
-                lo.Shuffle(tables.shuffle_peer_x_shift_to_config_mask[1][2]));
+                lo.Shuffle(tables.triads_shift1_to_config_elims[1]) |
+                lo.Shuffle(tables.triads_shift2_to_config_elims[1]));
         band.configurations = band.configurations.and_not(
-                hi.RotateCols().Shuffle(tables.shuffle_peer_x_shift_to_config_mask[2][1]) |
-                hi.RotateCols().Shuffle(tables.shuffle_peer_x_shift_to_config_mask[2][2]));
+                hi.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[2]) |
+                hi.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[2]));
         triads = ConfigurationsToPositiveTriads(band.configurations);
 
-        // convert positive triads to box elimination messages and send to the three box peers.
+        // convert positive triads to box restriction messages and send to the three box peers.
         // send these messages in order so that we return to the inbound peer last.
-        const Cells16 box_eliminations[3]{
-                PositiveTriadsToBoxEliminations(triads.GetLo(), vertical),
-                PositiveTriadsToBoxEliminations(triads.GetLo().RotateCols(), vertical),
-                PositiveTriadsToBoxEliminations(triads.GetHi(), vertical)};
-        const int order[10]{1, 2, 0, 1, 2, 0, 1, 2, 0, 1};
+        const Cells16 box_candidates[3]{
+                PositiveTriadsToBoxCandidates(triads.GetLo(), vertical),
+                PositiveTriadsToBoxCandidates(triads.GetLo().RotateCols(), vertical),
+                PositiveTriadsToBoxCandidates(triads.GetHi(), vertical)};
+        const int order[5]{1, 2, 0, 1, 2};
         const int peer[3]{order[from_peer], order[from_peer + 1], order[from_peer + 2]};
-        return BoxEliminate(state, band.box_peers[peer[0]], box_eliminations[peer[0]], vertical) &&
-               BoxEliminate(state, band.box_peers[peer[1]], box_eliminations[peer[1]], vertical) &&
-               BoxEliminate(state, band.box_peers[peer[2]], box_eliminations[peer[2]], vertical);
+        return BoxRestrict(state, band.box_peers[peer[0]], box_candidates[peer[0]], vertical) &&
+               BoxRestrict(state, band.box_peers[peer[1]], box_candidates[peer[1]], vertical) &&
+               BoxRestrict(state, band.box_peers[peer[2]], box_candidates[peer[2]], vertical);
     }
 
     // convert band configuration into an equivalent 3x3 matrix of positive triad candidates,
@@ -383,12 +453,13 @@ struct SolverDpllTriadSimd {
                tmp.Shuffle(tables.shuffle_configs_to_triads[1]);
     }
 
-    // convert a row of 3 positive triads (in positions 0,1,2 of the given Cells08) into an
-    // elimination message for the corresponding box peer.
-    static inline Cells16 PositiveTriadsToBoxEliminations(const Cells08 &triads, int orientation) {
-        Cells08 tmp1 = Cells08::All(kAll) ^(triads.Shuffle(tables.shuffle_triads_temp[0]) |
-                                            triads.Shuffle(tables.shuffle_triads_temp[1]));
-        return Cells16{tmp1, tmp1}.Shuffle(tables.shuffle_temp_to_box_mask[orientation]);
+    // convert 3 sets of positive triads (found in cells 0,1,2 of the given Cells08) into a
+    // mask for restricting the corresponding box peer.
+    static inline Cells16 PositiveTriadsToBoxCandidates(const Cells08 &triads, int orientation) {
+        Cells08 triads_with_kAll = triads | Cells08{0x0, 0x0, 0x0, kAll, 0x0, 0x0, 0x0, 0x0};
+        Cells16 tmp{triads_with_kAll, triads_with_kAll};
+        return tmp.Shuffle(tables.pos_triads_to_candidates[orientation][0]) |
+               tmp.Shuffle(tables.pos_triads_to_candidates[orientation][1]);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -496,29 +567,32 @@ struct SolverDpllTriadSimd {
         if (input[80] != '.') {
             InitClue(input, state, 80);
         }
+        // thanks to the merging of band updates the puzzle is almost always fully initialized
+        // after the first of these calls. most will be no-ops, but we've still got to do them
+        // since this cannot be guaranteed.
         return BandEliminate(state, 0, 0, 1) && BandEliminate(state, 1, 0, 1) &&
                BandEliminate(state, 0, 1, 2) && BandEliminate(state, 1, 1, 2) &&
                BandEliminate(state, 0, 2, 0) && BandEliminate(state, 1, 2, 0);
     }
 
-    static inline void ExtractTriad(uint64_t triad, int triad_base, char *solution) {
-        solution[triad_base + 0] = char('1' + LowOrderBitIndex(triad >> 0u));
-        solution[triad_base + 1] = char('1' + LowOrderBitIndex(triad >> 16u));
-        solution[triad_base + 2] = char('1' + LowOrderBitIndex(triad >> 32u));
+    static inline void ExtractMiniRow(uint64_t minirow, int minirow_base, char *solution) {
+        solution[minirow_base + 0] = char('1' + LowOrderBitIndex(minirow >> 0u));
+        solution[minirow_base + 1] = char('1' + LowOrderBitIndex(minirow >> 16u));
+        solution[minirow_base + 2] = char('1' + LowOrderBitIndex(minirow >> 32u));
     }
 
     static void ExtractSolution(const State &state, char *solution) {
         for (const Box &box : state.boxen) {
-            auto box_triads = box.cells.As_4x64();
+            auto box_minirows = box.cells.As_4x64();
             int box_base = box.box_i * 27 + box.box_j * 3;
-            ExtractTriad(box_triads.x0, box_base, solution);
-            ExtractTriad(box_triads.x1, box_base + 9, solution);
-            ExtractTriad(box_triads.x2, box_base + 18, solution);
+            ExtractMiniRow(box_minirows.x0, box_base, solution);
+            ExtractMiniRow(box_minirows.x1, box_base + 9, solution);
+            ExtractMiniRow(box_minirows.x2, box_base + 18, solution);
         }
     }
 
     size_t SolveSudoku(const char *input, size_t limit,
-                    char *solution, size_t *const num_guesses) {
+                       char *solution, size_t *const num_guesses) {
         limit_ = limit;
         num_solutions_ = 0;
         num_guesses_ = 0;
