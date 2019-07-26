@@ -262,13 +262,13 @@ struct SolverDpllTriadSimd {
         // return immediately if there are no new eliminations
         Box &box = state.boxen[box_idx];
         auto eliminating = box.cells.and_not(candidates);
-        if (eliminating.AllZero()) return true;
+        if (!eliminating.Intersects(box.cells)) return true;
 
         Band &h_band = state.bands[0][box.box_i];
         Band &v_band = state.bands[1][box.box_j];
         do {
             // apply eliminations and check that no cell clause now violates its minimum
-            box.cells ^= eliminating;
+            box.cells = box.cells.and_not(eliminating);
             Cells16 counts = box.cells.Popcounts9();
             const Cells16 box_minimums{1, 1, 1, 6, 1, 1, 1, 6, 1, 1, 1, 6, 6, 6, 6, 0};
             if (counts.AnyLessThan(box_minimums)) return false;
@@ -283,13 +283,10 @@ struct SolverDpllTriadSimd {
                     box.cells, [](const Cells16 &x) { return x.RotateCols(); }, all_assertions);
 
             // construct elimination messages for this box and for our band peers
-            Cells16 self_eliminations;
-            AssertionsToEliminations(all_assertions, box.box_i, box.box_j, self_eliminations,
+            AssertionsToEliminations(all_assertions, box.box_i, box.box_j, eliminating,
                                      h_band.eliminations, v_band.eliminations);
 
-            // repeat if we're propagating new eliminations in this box
-            eliminating = box.cells & self_eliminations;
-        } while (!eliminating.AllZero());
+        } while (eliminating.Intersects(box.cells));
 
         // send elimination messages to horizontal and vertical peers. Prefer to send the first
         // of these messages to the peer whose orientation is opposite that of the inbound peer.
@@ -331,7 +328,7 @@ struct SolverDpllTriadSimd {
         // restrict to 3x3 cells; each now has elimination bits for anything asserted in any cell.
         across_box &= tables.cell3x3_mask;
         // merge back rows and columns to populate elimination bits for negative triad literals.
-        across_box |= across_rows | across_cols;
+        across_box = Cells16::X_or_Y_or_Z(across_box, across_rows, across_cols);
         // for any cell that had an assertion populate all elimination bits (ok to include >kAll).
         across_box |= cell_assertions_only.WhichNonZero();
         // then clear elimination bits for the candidates that were actually asserted.
@@ -376,9 +373,9 @@ struct SolverDpllTriadSimd {
     static inline Cells08 HorizontalTriads(const Cells16 &cells) {
         Cells16 split_triads = cells.Shuffle(
                 Bitvec16x16{{0xffff, 0xffff, 0xffff, 0xffff,
-                             shuf03, shuf07, 0xffff, 0xffff},
+                                    shuf03, shuf07, 0xffff, 0xffff},
                             {0xffff, 0xffff, 0xffff, 0xffff,
-                             0xffff, 0xffff, shuf03, 0xffff}});
+                                    0xffff, 0xffff, shuf03, 0xffff}});
         return split_triads.GetLo() | split_triads.GetHi();
     }
 
@@ -393,14 +390,14 @@ struct SolverDpllTriadSimd {
         auto two_or_more = one_or_more & rotated;
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more |= one_or_more & rotated;
+        two_or_more = Cells16::X_or_Y_and_Z(two_or_more, one_or_more, rotated);
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more |= one_or_more & rotated;
+        two_or_more = Cells16::X_or_Y_and_Z(two_or_more, one_or_more, rotated);
         one_or_more |= rotated;
         // we might check here that one_or_more == kAll, but the check is a net loss.
         // now assert (in cells where they remain) candidates that occur only once an a row/col.
-        assertions |= one_or_more.and_not(two_or_more) & cells;
+        assertions |= Cells16::X_and_Y_andnot_Z(cells, one_or_more, two_or_more);
     }
 
     static bool BandEliminate(State &state, int vertical, int band_idx, int from_peer = 0) {
@@ -421,15 +418,14 @@ struct SolverDpllTriadSimd {
         const Cells16 asserting = triads & counts.WhichEqual(Cells16::All(3));
         const Cells08 lo = asserting.GetLo();
         const Cells08 hi = asserting.GetHi();
-        band.configurations = band.configurations.and_not(
-                lo.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[0]) |
-                lo.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[0]));
-        band.configurations = band.configurations.and_not(
-                lo.Shuffle(tables.triads_shift1_to_config_elims[1]) |
-                lo.Shuffle(tables.triads_shift2_to_config_elims[1]));
-        band.configurations = band.configurations.and_not(
-                hi.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[2]) |
-                hi.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[2]));
+        band.configurations = band.configurations.and_not(Cells08::X_or_Y_or_Z(
+                lo.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[0]),
+                lo.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[0]),
+                lo.Shuffle(tables.triads_shift1_to_config_elims[1])));
+        band.configurations = band.configurations.and_not(Cells08::X_or_Y_or_Z(
+                lo.Shuffle(tables.triads_shift2_to_config_elims[1]),
+                hi.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[2]),
+                hi.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[2])));
         triads = ConfigurationsToPositiveTriads(band.configurations);
 
         // convert positive triads to box restriction messages and send to the three box peers.
@@ -483,7 +479,8 @@ struct SolverDpllTriadSimd {
         if (best_band < UINT32_MAX) {
             const Band &band = state.bands[div3[best_band]][mod3[best_band]];
             for (uint32_t i = 0; i < 9; i++) {
-                auto value_count = (uint32_t) (band.configurations & tables.one_value_mask[i]).Popcount();
+                auto value_count = (uint32_t) (band.configurations &
+                                               tables.one_value_mask[i]).Popcount();
                 if (value_count > 1 && value_count < best_value_count) {
                     best_value_count = value_count;
                     best_value = i;
@@ -543,12 +540,14 @@ struct SolverDpllTriadSimd {
         state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
                 tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
         // merge all band eliminations; we'll propagate these below.
-        state.bands[0][indexing.box_i].eliminations |=
-                tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i] &
-                Cells08::All(candidate);
-        state.bands[1][indexing.box_j].eliminations |=
-                tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j] &
-                Cells08::All(candidate);
+        state.bands[0][indexing.box_i].eliminations = Cells08::X_or_Y_and_Z(
+                state.bands[0][indexing.box_i].eliminations,
+                tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i],
+                Cells08::All(candidate));
+        state.bands[1][indexing.box_j].eliminations = Cells08::X_or_Y_and_Z(
+                state.bands[1][indexing.box_j].eliminations,
+                tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j],
+                Cells08::All(candidate));
     }
 
     // We could set the initial clues in other ways, including one box update for each clue, or

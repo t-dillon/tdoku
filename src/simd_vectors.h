@@ -29,7 +29,10 @@
  * avx2 - haswell 2013
  *   _mm256 versions of most everything
  *
- * avx-512 - coming with ice lake (for bitalg) 2019/2020
+ * avx512vl
+ *  _mm(256)_ternarylogic_epi32
+ *
+ * avx512bitalg - coming with ice lake 2019/2020
  *   _mm256_popcnt_epi16   // avx512bitalg + avx512vl
  *                         // this might give an interesting boost when available.
  *
@@ -89,6 +92,33 @@ struct Bitvec08x16 {
         return _mm_set1_epi16(value);
     }
 
+    static inline Bitvec08x16
+    X_or_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+#ifdef __AVX512VL__
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 254);
+#else
+        return x | y | z;
+#endif
+    }
+
+    static inline Bitvec08x16
+    X_or_Y_and_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+#ifdef __AVX512VL__
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 248);
+#else
+        return x | (y & z);
+#endif
+    }
+
+    static inline Bitvec08x16
+    X_and_Y_andnot_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+#ifdef __AVX512VL__
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 64);
+#else
+        return x & y.and_not(z);
+#endif
+    }
+
     inline Bitvec08x16 &operator=(const __m128i &m128i) {
         vec = m128i;
         return *this;
@@ -135,6 +165,10 @@ struct Bitvec08x16 {
     inline bool AnyLessThan(const Bitvec08x16 &other) const {
         Bitvec08x16 which_less_than = _mm_cmpgt_epi16(other.vec, vec);
         return _mm_movemask_epi8(which_less_than.vec) != 0;
+    }
+
+    inline bool Intersects(const Bitvec08x16 &other) const {
+        return !_mm_testz_si128(vec, other.vec);
     }
 
     inline Bitvec08x16 ClearLowBit() const {
@@ -336,6 +370,21 @@ struct Bitvec16x16 {
         return Bitvec16x16{Bitvec08x16::All(value), Bitvec08x16::All(value)};
     }
 
+    static inline Bitvec16x16
+    X_or_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+        return Bitvec16x16{x.lo_ | y.lo_ | z.lo_, x.hi_ | y.hi_ | z.hi_};
+    }
+
+    static inline Bitvec16x16
+    X_or_Y_and_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+        return Bitvec16x16{x.lo_ | (y.lo_ & z.lo_), x.hi_ | (y.hi_ & z.hi_)};
+    }
+
+    static inline Bitvec16x16
+    X_and_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+        return Bitvec16x16{x.lo_ & y.lo_.and_not(z.lo_), x.hi_ & y.hi_.and_not(z.hi_)};
+    }
+
     inline Bitvec16x16 &operator=(const Bitvec16x16 &other) = default;
 
     inline bool operator==(const Bitvec16x16 &other) const {
@@ -381,6 +430,10 @@ struct Bitvec16x16 {
 
     inline bool AnyLessThan(const Bitvec16x16 &other) const {
         return lo_.AnyLessThan(other.lo_) || hi_.AnyLessThan(other.hi_);
+    }
+
+    inline bool Intersects(const Bitvec16x16 &other) const {
+        return lo_.Intersects(other.lo_) || hi_.Intersects(other.hi_);
     }
 
     // counts the number of bits set among the 9 lowest order bits of each packed 16-bit integer
@@ -494,6 +547,33 @@ struct Bitvec16x16 {
         return _mm256_set1_epi16(value);
     }
 
+    static inline Bitvec16x16
+    X_or_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+#ifdef __AVX512VL__
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 254);
+#else
+        return x | y | z;
+#endif
+    }
+
+    static inline Bitvec16x16
+    X_or_Y_and_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+#ifdef __AVX512VL__
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 248);
+#else
+        return x | (y & z);
+#endif
+    }
+
+    static inline Bitvec16x16
+    X_and_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+#ifdef __AVX512VL__
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 64);
+#else
+        return x & y.and_not(z);
+#endif
+    }
+
     inline Bitvec16x16 &operator=(const Bitvec16x16 &other) = default;
 
     inline bool operator==(const Bitvec16x16 &other) const {
@@ -543,6 +623,10 @@ struct Bitvec16x16 {
         return _mm256_movemask_epi8(which_less_than.vec) != 0;
     }
 
+    inline bool Intersects(const Bitvec16x16 &other) const {
+        return !_mm256_testz_si256(vec, other.vec);
+    }
+
     // counts the number of bits set among the 9 lowest order bits of each packed 16-bit integer
     // subject to the assumption that the 7 high bits are zero. results are undefined if any of
     // the 7 high bits are nonzero.
@@ -572,10 +656,7 @@ struct Bitvec16x16 {
     }
 
     inline Bitvec16x16 RotateRows2() const {
-        __m256i shuffle_control =
-                _mm256_setr_epi8(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11,
-                                 4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
-        return _mm256_shuffle_epi8(vec, shuffle_control);
+        return _mm256_shuffle_epi32(vec, 0b10110001);
     }
 
     inline Bitvec16x16 RotateCols() const {
