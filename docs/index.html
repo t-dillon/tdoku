@@ -168,7 +168,7 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 <p>We could stop here and our puzzles would be satisfied.</p>
 <p>But would we be satisfied? Is this fast? Let's see ...</p>
 <h2 id="measuring-performance">Measuring Performance</h2>
-<p>If you only look at performance<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> on really easy puzzles like those found in this <a href="https://www.kaggle.com/bryanpark/sudoku">Kaggle data set</a>, then you might say yes, this solver is actually fast! Here's how its performance on this dataset compares to the fastest Sudoku solvers I'm aware of:</p>
+<p>If you only look at performance<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> on really easy puzzles like those found in this <a href="https://www.kaggle.com/bryanpark/sudoku">Kaggle data set</a>, then you might say yes, this solver is actually fast! Here's how its performance on this dataset compares to the fastest Sudoku solvers I'm aware of at the time of this writing:</p>
 <table>
 <colgroup>
 <col width="41%" />
@@ -1257,7 +1257,8 @@ size_t num_todo_ = <span class="dv">0</span>, num_guesses_ = <span class="dv">0<
 </table>
 <p>For the first of these datasets the performance of tdoku_dpll_triad_simd is roughly equivalent to that of FSSS2, the fastest of the three other solvers. On the second dataset tdoku_dpll_triad_simd leads the pack, at least on modern hardware.</p>
 <h2 id="benchmark-summary">Benchmark Summary</h2>
-<p>Below are some charts summarizing benchmarking results for all datasets discussed above. For full details of benchmarks using a few different machines and compilers, see:<br> <a href="https://github.com/t-dillon/tdoku/tree/master/benchmarks" class="uri">https://github.com/t-dillon/tdoku/tree/master/benchmarks</a>.</p>
+<p>Below are some charts summarizing benchmarking results for all datasets discussed above and for the fastest known solvers at the time of this writing. If other fast solvers come along (<em>they have, e.g. rust sudoku</em>), or if tdoku itself improves (<em>it has</em>), or if solvers are benchmarked on new platforms (<em>they have been</em>), I'll leave the numbers in this doc and the charts in this section as they are at this point in time.</p>
+<p>The most up-to-date benchmarks can always be found here: <a href="https://github.com/t-dillon/tdoku/tree/master/benchmarks" class="uri">https://github.com/t-dillon/tdoku/tree/master/benchmarks</a>.</p>
 <p>Thanks for reading!</p>
 <div class="figure">
 <img src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQVFAqgn-rmIieo-k2lqf68l0PpMwVAzi9Jgx5V5r2S7X2_WC66an7B1jA12sPk7K-6pNWXga0QOzwl/pubchart?oid=1929162374&amp;format=image" />

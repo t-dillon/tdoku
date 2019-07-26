@@ -190,7 +190,7 @@ But would we be satisfied? Is this fast? Let's see ...
 If you only look at performance[^1] on really easy puzzles like those found in this
 [Kaggle data set](https://www.kaggle.com/bryanpark/sudoku), then you might say yes, this solver is
 actually fast! Here's how its performance on this dataset compares to the fastest Sudoku solvers
-I'm aware of:
+I'm aware of at the time of this writing:
 
 |data/puzzles0_kaggle                  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:| -----------:| ----------:| --------------:|
@@ -198,7 +198,6 @@ I'm aware of:
 |[fsss2](https://github.com/dobrichev/fsss2)[^2]                                                               | 1,477,910.9 |         0.7 |     100.0% |           0.00 |
 |[jczsolve](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470-210.html#p249309)[^3] |   597,074.2 |         1.7 |     100.0% |           0.00 |
 |[sk_bforce2](https://github.com/GPenet/SK_BFORCE2)[^4]                                                        | 1,234,240.0 |         0.8 |     100.0% |           0.00 |
-
 
 [^1]: All benchmarks run on i5-8600k@3.6GHz; Ubuntu 18.04; [benchmark program](https://github.com/t-dillon/tdoku/blob/master/src/run_benchmark.cc)
 compiled with clang++-8 -O3 -march=native, except for testing fsss2, which was compiled with gcc-6 and the same
@@ -1015,8 +1014,12 @@ leads the pack, at least on modern hardware.
 
 ## Benchmark Summary
 
-Below are some charts summarizing benchmarking results for all datasets discussed above. For full 
-details of benchmarks using a few different machines and compilers, see:<br> 
+Below are some charts summarizing benchmarking results for all datasets discussed above and for the
+fastest known solvers at the time of this writing. If other fast solvers come along (*they have, e.g. rust sudoku*),
+or if tdoku itself improves (*it has*), or if solvers are benchmarked on new platforms (*they have been*), I'll
+leave the numbers in this doc and the charts in this section as they are at this point in time.
+
+The most up-to-date benchmarks can always be found here:
 [https://github.com/t-dillon/tdoku/tree/master/benchmarks](https://github.com/t-dillon/tdoku/tree/master/benchmarks).
 
 Thanks for reading!

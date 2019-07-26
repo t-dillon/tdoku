@@ -56,7 +56,7 @@ And here are results on the well-known and commonly-benchmarked dataset of ~49,0
 And here is a chart comparing a narrower set of the fastest solvers on a wider range of datasets 
 ordered roughly from easiest to hardest:
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQVFAqgn-rmIieo-k2lqf68l0PpMwVAzi9Jgx5V5r2S7X2_WC66an7B1jA12sPk7K-6pNWXga0QOzwl/pubchart?oid=1929162374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQGsldjnZhAU0XB-lAcmwQD8PpWMNIkAT0tumcPeS61Fft3sMKs0e9X22LRT26ij07c5U5GwqslnlSX/pubchart?oid=1180131374&format=image)
 
 #### Building and Running
 
