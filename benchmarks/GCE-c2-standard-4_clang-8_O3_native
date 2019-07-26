@@ -1,0 +1,110 @@
+build info: Clang 8.0.0 -O3 -march=native
+###########################################
+# BUILD INFO
+###########################################
+build info: Clang 8.0.0 -O3 -march=native
+
+###########################################
+# CPU INFO
+###########################################
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              4
+On-line CPU(s) list: 0-3
+Thread(s) per core:  2
+Core(s) per socket:  2
+Socket(s):           1
+NUMA node(s):        1
+Vendor ID:           GenuineIntel
+CPU family:          6
+Model:               85
+Model name:          Intel(R) Xeon(R) CPU
+Stepping:            6
+CPU MHz:             3100.218
+BogoMIPS:            6200.43
+Hypervisor vendor:   KVM
+Virtualization type: full
+L1d cache:           32K
+L1i cache:           32K
+L2 cache:            256K
+L3 cache:            56320K
+NUMA node0 CPU(s):   0-3
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves arat avx512_vnni md_clear arch_capabilities
+
+###########################################
+# BENCHMARK
+###########################################
+ build/run_benchmark -t25 -w5 -n500000 -e1 -sfsss2,fsss2:1,jczsolve,sk_bforce2,rust_sudoku,tdoku data/*
+
+|data/puzzles0_kaggle                  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |    958225.2 |         1.0 |     100.0% |           0.00 |
+|fsss2{0x1}                            |    958325.1 |         1.0 |     100.0% |           0.00 |
+|jczsolve                              |    464515.8 |         2.2 |     100.0% |           0.00 |
+|sk_bforce2                            |   1074268.3 |         0.9 |     100.0% |           0.00 |
+|rust_sudoku                           |    665288.8 |         1.5 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |    884587.2 |         1.1 |     100.0% |           0.00 |
+
+|data/puzzles1_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |    184322.6 |         5.4 |      44.6% |           4.45 |
+|fsss2{0x1}                            |    243688.1 |         4.1 |      72.5% |           1.31 |
+|jczsolve                              |    223876.6 |         4.5 |      69.6% |           1.90 |
+|sk_bforce2                            |    291503.5 |         3.4 |      73.8% |           1.01 |
+|rust_sudoku                           |    313597.4 |         3.2 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |    291580.7 |         3.4 |      78.7% |           0.61 |
+
+|data/puzzles2_magictour_top1465       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |     36790.2 |        27.2 |       0.0% |          37.37 |
+|fsss2{0x1}                            |     58592.5 |        17.1 |       1.7% |          19.18 |
+|jczsolve                              |     60046.4 |        16.7 |       2.3% |          20.73 |
+|sk_bforce2                            |     66810.0 |        15.0 |       3.6% |          15.43 |
+|rust_sudoku                           |     73430.9 |        13.6 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |    108385.6 |         9.2 |       7.9% |           9.06 |
+
+|data/puzzles3_forum_hardest_1905      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |     12150.6 |        82.3 |       0.0% |         118.03 |
+|fsss2{0x1}                            |     11994.7 |        83.4 |       0.0% |         117.66 |
+|jczsolve                              |     12478.2 |        80.1 |       0.0% |         138.78 |
+|sk_bforce2                            |     13919.9 |        71.8 |       0.0% |         103.28 |
+|rust_sudoku                           |     15122.3 |        66.1 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |     22628.4 |        44.2 |       0.0% |          54.99 |
+
+|data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |      9966.2 |       100.3 |       0.0% |         139.19 |
+|fsss2{0x1}                            |      9870.3 |       101.3 |       0.0% |         138.60 |
+|jczsolve                              |      9699.8 |       103.1 |       0.0% |         171.17 |
+|sk_bforce2                            |     11034.9 |        90.6 |       0.0% |         122.63 |
+|rust_sudoku                           |     11809.6 |        84.7 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |     18747.7 |        53.3 |       0.0% |          64.93 |
+
+|data/puzzles5_forum_hardest_1106      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |      5348.8 |       187.0 |       0.0% |         280.36 |
+|fsss2{0x1}                            |      5386.1 |       185.7 |       0.0% |         277.05 |
+|jczsolve                              |      5075.7 |       197.0 |       0.0% |         365.87 |
+|sk_bforce2                            |      5586.2 |       179.0 |       0.0% |         270.86 |
+|rust_sudoku                           |      6348.8 |       157.5 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |     12034.8 |        83.1 |       0.0% |         113.10 |
+
+|data/puzzles6_serg_benchmark          |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |    301192.2 |         3.3 |       0.0% |           7.75 |
+|fsss2{0x1}                            |    233445.1 |         4.3 |       0.0% |           7.72 |
+|jczsolve                              |    237797.1 |         4.2 |       0.0% |           7.09 |
+|sk_bforce2                            |    265135.6 |         3.8 |       0.0% |           7.08 |
+|rust_sudoku                           |    324707.9 |         3.1 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |    368813.7 |         2.7 |       0.0% |           7.13 |
+
+|data/puzzles7_gen_puzzles             |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:| -----------:| ----------:| --------------:|
+|fsss2                                 |   1484958.5 |         0.7 |      97.4% |           0.30 |
+|fsss2{0x1}                            |   1421922.9 |         0.7 |      97.4% |           0.30 |
+|jczsolve                              |   1379449.5 |         0.7 |      97.4% |           0.31 |
+|sk_bforce2                            |   1570452.8 |         0.6 |      97.5% |           0.29 |
+|rust_sudoku                           |   1116292.4 |         0.9 |        N/A |            N/A |
+|tdoku_dpll_triad_simd                 |   2654939.5 |         0.4 |      97.4% |           0.29 |

@@ -14,7 +14,7 @@
 #
 prefix="$*"
 # Rust builds are always LLVM, so include rust_sudoku only in clang benchmarks
-if build/run_benchmark -h | grep build.info | grep Clang; then
+if build/run_benchmark -h | grep build.info | grep -q Clang; then
     rust_sudoku="rust_sudoku,"
 fi
 cmd="build/run_benchmark -t25 -w5 -n500000 -e1 -sfsss2,fsss2:1,jczsolve,sk_bforce2,${rust_sudoku:-}tdoku"
