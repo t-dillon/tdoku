@@ -7,6 +7,7 @@ header-includes:
       gtag('js', new Date());
       gtag('config', 'UA-142101488-1');
     </script>
+    <meta name="description" content="development and benchmarking of a fast sudoku solver algorithm, maybe the fastest sudoku solver algorithm" />
 ---
 
 <link type="text/css" rel="stylesheet" href="jquery.tocify.css" />
@@ -34,7 +35,7 @@ header-includes:
 Who doesn't love [Sudoku](https://en.wikipedia.org/wiki/Sudoku)? 
 
 Judging from the number of websites, apps, and books on the topic, lots of people love it; judging
-from the profusion of here's-my-Sudoku-solver blog posts (like this one), programmers
+from the profusion of github projects and here's-my-Sudoku-solver blog posts (like this one), programmers
 love it too; and judging from the academic attention it has recieved, computer scientists and ML
 researchers love it just as much as everyone else.
 
@@ -379,18 +380,21 @@ of the following clauses:
 <b>Each cell contains a value</b>  (81 positive clauses, 9 literals each)
 $$ \forall_{r,c \in D} \, (x_{rc1} \lor x_{rc2} \lor x_{rc3} \lor x_{rc4} \lor x_{rc5} \lor x_{rc6} \lor x_{rc7} \lor x_{rc8} \lor x_{rc9})  $$
 
-<b>No cell contains more than one value</b>  (<small>$81\binom{9}{2}=2916$</small> binary constraint clauses)
-$$ \forall_{r,c,i,j \in D, \,i < j} \, (\lnot x_{rci} \lor \lnot x_{rcj}) $$ 
-
 <b>No row|col|box contains the same value twice</b>  (<small>$3 \times 81\binom{9}{2}=8748$</small> binary constraint clauses)
 $$ \forall_{r,v,i,j \in D, \,i < j} \, (\lnot x_{riv} \lor \lnot x_{rjv}) $$ 
 $$ \forall_{c,v,i,j \in D, \,i < j} \, (\lnot x_{icv} \lor \lnot x_{jcv}) $$ 
 $$ \forall_{b,v,i,j \in D, \,i < j} \,
  (\lnot x_{\mathrm{R}(b,i)\mathrm{C}(b,i)v} \lor \lnot x_{\mathrm{R}(b,j)\mathrm{C}(b,j)v}) $$ 
 
-These 11745 clauses capture the constraints that are common to all Sudoku puzzles. In order to
-express the additional constraints of a specific puzzle we add a unit clause for each of the
-given clues. For example, to represent the previous sample input:
+These 8829 clauses capture the necessary constraints common to all Sudoku puzzles. The basic solver
+described above effectively takes these as its starting point, along with one other set of obvious
+(though strictly speaking redundant) clauses:
+ 
+ <b>No cell contains more than one value</b>  (<small>$81\binom{9}{2}=2916$</small> binary constraint clauses)
+ $$ \forall_{r,c,i,j \in D, \,i < j} \, (\lnot x_{rci} \lor \lnot x_{rcj}) $$ 
+
+In addition to these general constraints, we express the additional constraints of a specific puzzle
+by adding a unit clause for each of the given clues. For example, to represent the previous sample input:
 
   <pre>5.....37....6..............7..54.....4......2...1..6...6..83........2.4...1......</pre>
 
@@ -501,11 +505,11 @@ $$ \forall_{b,v \in D} \, (x_{R(b,1)C(b,1)v} \lor x_{R(b,2)C(b,2)v} \lor \ldots 
 Armed with these new positive clauses unit resolution can discover and propagate hidden
 singles since these clauses will become unit clauses when only one candidate remains in a group.
 
-In a sense these clauses haven't added anything new. They are all logical consequences of the 
-clauses we started with, and we could derive a resolution proof for each of them if we were
-patient. That said, we know these new clauses are consequences of the set we started with not 
-because of resolution proofs, but because of the pigeonhole principle. And since the shortest
-resolution proof of a pigeonhole formula is exponential in the number of variables 
+In a sense these clauses haven't added anything new. Like the no-cell-contains-two-values constraints
+they are all logical consequences of the minimal clause set we started with, and we could derive a
+resolution proof for each of them if we were patient. That said, we know these new clauses are consequences
+of the minimal clause set not because of resolution proofs, but because of the pigeonhole principle.
+And since the shortest resolution proof of a pigeonhole formula is exponential in the number of variables 
 [[Haken 1985](https://www.sciencedirect.com/science/article/pii/0304397585901446)], these
 new clauses are, in a sense, very very far away from our starting point. It's therefore no
 surprise that puzzles which require them (e.g., 17 clue puzzles) are very difficult for solvers 
@@ -634,56 +638,61 @@ directly a part of our solution, but the overall formula is equisatisfiable with
 is smaller than the original, and it makes more consequences reachable by unit resolution than does
 the original.
 
-## Numerical Clauses
+## Cardinality Constraints
 
 The introduction of triads is a nice improvement in our representation, but there is more we can
 do with them. So far we've used them to express constraints that act on the *same* value *across* intersections
 in a group. We can also use them to express constraints over *different* values *within* the same
-intersection. However, to do this it will be convenient to think of clauses and resolution a little
-differently.
+intersection. However, to do this it will be convenient to think of our clausal representation and 
+resolution rule a little differently.
+
+A disjunction is a way of saying "at least one of the literals in this set true". This can be
+seen as a special case (with *c*=1) of a more general *cardinality constraint* expressing that at
+least *c* of the literals are true; and the cardinality constraint in turn can be seen as a special 
+case (with all *w*=1) of a more general *linear pseudo-boolean constraint* expressing an inequality 
+over a weighted sum of literals:
+
+$\sum_i w_il_i \geq c$  with $w_i,c \in \mathbb{Z}$  and $l_i$ a literal, $x$, or its negation $\bar{x}$ (i.e. $\lnot x$).
 
 Previously we justified resolution by converting clauses into implications and showing via the
 law of the excluded middle that we must have one or the other of the right hand sides of those
-implications. Let's consider another way to motivate it. A disjunction is a way of saying
-"at least one of the literals in this set true". Let's generalize this notion and think of a
-<i>numerical clause</i> as a bag of literals with a specified minimum that must be true.  We
-adopt the following notation:
+implications. For pseudo boolean constraints we can perform inference in a similar way by adding
+together two equations and appealing again to the law of the excluded middle to simplify using
+the identity $x + \bar{x} = 1$.
 
-$(1/ \,\, x \lor y_1 \lor \ldots \lor y_n) \\
-(1/ \lnot x \lor z_1 \lor \ldots \lor z_n)$
+For instance, starting with:
+$$\begin{align*}
+  2x + \bar{y} + z \geq 2 \\
+                 y \geq 1 \\
+\end{align*}$$
 
-In the event that the minumum is 1, as shown above, the numerical clause is the same as a normal clause, the
-difference between a bag and a set being irrelevant in this case.
+We obtain:
 
-Now, if we've got at least <i>n</i> true literals in one bag and at least <i>m</i> true literals
-in another, and if we place the contents of the first two bags into a third, then the third bag has at
-least <i>n + m</i> true literals:
+$$\begin{align*}
+  2x + \bar{y} + y + z \geq 3 \\
+  2x + z \geq 2 \\
+\end{align*}$$
 
-$(2/ \,\, x \lor y_1 \lor \ldots \lor y_n \lor \lnot x \lor z_1 \lor \ldots \lor z_n)$
+From which we can conclude $x$ since the inequality can not be satisfied using $z$ alone if $x$ is false.
 
-If we remove the pair of complementary literals from this new numerical clause we know, again from
-the law of the excluded middle, that we are removing exactly one true literal, so we decrement the
-minimum by one and we've reached the same resolvent as before:
-
-$(1/ \, y_1 \lor \ldots \lor y_n \lor z_1 \lor \ldots \lor z_n)$
-
-So the numerical clause gives us a way to represent the constraint "at least N of", and it is equipped
-a resolution rule for generating new numerical clauses. We can develop other rules for simplifying
-and reasoning with numerical clauses, but since we'll be sticking with unit resolution we won't
-need anything beyond the obvious: when the number of literals in a numerical clause equals the
-clause minimum, then we can assert each of the literals as a unit clause. 
+As illustrated by this example, there are some additional complexities to simplifying general 
+pseudo boolean constraints. However, this need not concern us since we'll only need cardinality 
+constraints. These play nicely with unit resolution, so the additional power of this representation
+essentially comes at zero cost. We can view each cardinality constraint as a clause equipped with 
+a minimum other than one. When the number of literals remaining equals the clause minimum, then we
+can assert each of the literals as a unit clause. 
 
 With this tool we now have an easy way to represent and reason about the triad literals in a given
-interection.  What we want to say is:
+interection. An intersection contains three cells and each cell has one value, so what we want to say is:
 
 $$ \textrm{exactly-three}(h_{111} \lor \ldots \lor h_{119} )$$
 
 The usual way to express this in CNF would be to add <small>$\binom{9}{7}=36$</small> clauses 
 to insist on at least 3 values and <small>$\binom{9}{4}=126$</small> clauses to insist on at most 3
-values. Instead, we can write this with just two numerical clauses:
+values. Instead, we can write this with just two cardinality constraints:
 
-$$ (3/ \,\,\,h_{111} \lor \ldots \lor h_{119} )$$
-$$ (6/ \lnot h_{111} \lor \ldots \lor \lnot h_{119} )$$
+$$ h_{111} + \ldots + h_{119} \geq 3 $$
+$$ \bar{h}_{111} + \ldots + \bar{h}_{119} \geq 6 $$
 
 This is a much more compact and tidy representation, which we appreciate since the cost of unit 
 propagation is bounded by the size of our representation, and since our efforts to implement
@@ -693,7 +702,7 @@ this efficiently will be intimately tied to our representation.
 
 Enough of the theory for a moment. Let's put this ideas into practice and see how far we've come.
 
-Our next solver will be based on DPLL with literals and numerical clauses as the native representation.
+Our next solver will be based on DPLL with literals and cardinality constraints as the native representation.
 The logic will be organized around triads as discussed above. The diagram below offers a visualization of the
 propositional variables involved in a single band and the ways in which literals occur together 
 in each type of constraint:
@@ -848,7 +857,7 @@ But I think we've chased the reduction of guessing far enough. Now it's time to 
 ## Getting Vectorized
 
 In the interest of speed we'll set aside the strongly connected components and focus exclusively 
-on how to represent our numerical clauses and triads in a way the supports efficient inference.
+on how to represent our cardinality constraints and triads in a way the supports efficient inference.
 In fact, we've already had a preview of how this can be done in the diagram above that depicts our 
 propositional variables and their co-occurrence in clauses. 
 
@@ -858,7 +867,7 @@ propagate inference between boxes and bands via message passing between peers.
 
 For boxes we've seen above that it's convenient to organize the positive cell literals and negative 
 triad literals of a box as a 4x4 matrix with one unused extra cell. This gives a compact way
-to organize 3 out of our 5 varieties of numerical clause (1/9 positive cell clauses, 6/9 negative
+to organize 3 out of our 5 varieties of cardinality constraint (1/9 positive cell clauses, 6/9 negative
 triad clauses, and 1/4 triad definition clauses). We'll store the box state in a 256-bit SIMD
 vector of packed 16-bit integers. Each 16-bit integer will store 9 bits representing candidate 
 layers in the diagram above, with the top 7 bits unused. For platforms lacking AVX2 support we'll
@@ -896,7 +905,7 @@ None of these are as simple or as cheap as the straightforward vector operations
 candidates, but they are all feasible and they can all be done without branches.
 
 Given our box representation it falls to the bands to represent the remaining two varieties of 
-numerical clause, both of which involve only positive triad literals (1/3 clauses horizontally
+cardinality constraint, both of which involve only positive triad literals (1/3 clauses horizontally
 and vertically for each value within the band, and 3/9 clauses across values for each
 intersection).
 
