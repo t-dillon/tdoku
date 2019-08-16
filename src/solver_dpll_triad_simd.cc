@@ -574,6 +574,26 @@ struct SolverDpllTriadSimd {
                BandEliminate(state, 0, 2, 0) && BandEliminate(state, 1, 2, 0);
     }
 
+    static bool InitBoxBatch729(const char *input, State &state) {
+        __m128i dots = _mm_set1_epi8('.');
+        for (int box_i = 0; box_i < 3; box_i++) {
+            for (int box_j = 0; box_j < 3; box_j++) {
+                Cells16 mask = Cells16::All(kAll);
+                for (int elm_i = 0; elm_i < 3; elm_i++) {
+                    for (int elm_j = 0; elm_j < 3; elm_j++) {
+                        int cell = box_i * 27 + elm_i * 9 + box_j * 3 + elm_j;
+                        __m128i str16 = _mm_loadu_si128((const __m128i *) &input[cell * 9]);
+                        auto elims = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(str16, dots));
+                        mask.Insert(elm_i * 4 + elm_j, kAll & ~elims);
+
+                    }
+                }
+                if (!BoxRestrict(state, box_i * 3 + box_j, mask, 0)) return false;
+            }
+        }
+        return true;
+    }
+
     static inline void ExtractMiniRow(uint64_t minirow, int minirow_base, char *solution) {
         solution[minirow_base + 0] = char('1' + LowOrderBitIndex(minirow >> 0u));
         solution[minirow_base + 1] = char('1' + LowOrderBitIndex(minirow >> 16u));
@@ -590,14 +610,14 @@ struct SolverDpllTriadSimd {
         }
     }
 
-    size_t SolveSudoku(const char *input, size_t limit,
+    size_t SolveSudoku(const char *input, size_t limit, bool sukaku,
                        char *solution, size_t *const num_guesses) {
         limit_ = limit;
         num_solutions_ = 0;
         num_guesses_ = 0;
 
         State state;
-        if (InitBandBatch(input, state)) {
+        if (sukaku ? InitBoxBatch729(input, state) : InitBandBatch(input, state)) {
             CountSolutionsConsistentWithPartialAssignment(state);
             if (limit_ == 1) ExtractSolution(solution_, solution);
         }
@@ -612,7 +632,7 @@ SolverDpllTriadSimd solver{};
 
 extern "C"
 size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit,
-                                uint32_t /* unused_configuration */,
+                                uint32_t configuration,
                                 char *solution, size_t *num_guesses) {
-    return solver.SolveSudoku(input, limit, solution, num_guesses);
+    return solver.SolveSudoku(input, limit, configuration & 1u, solution, num_guesses);
 }

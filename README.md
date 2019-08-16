@@ -1,7 +1,8 @@
 ## Tdoku: A fast Sudoku Solver
 
 #### Overview
-This project contains an optimized Sudoku solver for conventional 9x9 puzzles. It also contains two 
+This project contains an optimized Sudoku solver for conventional 9x9 puzzles (as well as Sukaku
+"pencilmark" puzzles with clues given as negative instead of positive literals). It also contains two 
 other solvers with several variations exploring different ideas for optimization visited during
 development. Lastly, it contains a benchmarking framework for comparing performance among these 
 solvers and among several third party solvers of current or historical interest using a variety of
