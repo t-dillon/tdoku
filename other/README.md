@@ -7,7 +7,7 @@ configured here.
 1. **norvig-sudoku** (P.Norvig 2007)\
  -- To the location of your choice clone https://github.com/t-dillon/norvig-sudoku-bench.git (a fork
     of pauek/norvig-sudoku, which is a C++ port of the original Python solver).\
- -- For the original see: https://norvig.com/sudoku.html\
+ -- For the original see: https://norvig.com/sudoku.html \
  -- Link required files using:\
     `$ other/norvig/link.sh path/to/norvig-sudoku-bench`\
  -- build with -DNORVIG=on

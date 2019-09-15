@@ -126,7 +126,7 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(OtherSolverJCZSolve,          0, "jczsolve",                 15));
 #endif
 #ifdef SK_BFORCE2
-    solvers.emplace_back(Solver(OtherSolverSKBFORCE2,         0, "skbforce",                 10));
+    solvers.emplace_back(Solver(OtherSolverSKBFORCE2,         0, "sk_bforce2",               10));
 #endif
 #ifdef RUST_SUDOKU
     solvers.emplace_back(Solver(OtherSolverRustSudoku,        0, "rust_sudoku",               6));
