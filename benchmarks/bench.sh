@@ -13,11 +13,13 @@
 # benchmark/bench.sh taskset 0x8 | tee benchmark.log
 #
 prefix="$*"
-# Rust builds are always LLVM, so include rust_sudoku only in clang benchmarks
+# Rust builds are always LLVM, so exclude rust_sudoku by default.
+solver_arg="-s$(build/run_benchmark -h | grep tdoku | tr ' ' '\n' | grep -v rust_sudoku | xargs | tr ' ' ,)"
 if build/run_benchmark -h | grep build.info | grep -q Clang; then
-    rust_sudoku="rust_sudoku,"
+    # If clang, pass no -s arg, so we'll run everything
+    solver_arg=""
 fi
-cmd="build/run_benchmark -t25 -w5 -n500000 -e1 -sfsss2,fsss2:1,jczsolve,sk_bforce2,${rust_sudoku:-}tdoku"
+cmd="build/run_benchmark -t25 -w5 -n500000 -e1 ${solver_arg}"
 
 echo "###########################################"
 echo "# BUILD INFO"
