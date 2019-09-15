@@ -153,7 +153,7 @@ struct Bitvec08x16 {
 #ifdef __SSE4_1__
         return _mm_test_all_zeros(vec, vec) != 0;
 #else
-        return _mm_movemask_epi8(WhichEqual(_mm_setzero_si128())) == 0xffff;
+        return _mm_movemask_epi8(WhichEqual(_mm_setzero_si128()).vec) == 0xffff;
 #endif
     }
 
@@ -168,7 +168,11 @@ struct Bitvec08x16 {
     }
 
     inline bool Intersects(const Bitvec08x16 &other) const {
+#ifdef __SSE4_1__
         return !_mm_testz_si128(vec, other.vec);
+#else
+        return !(*this & other).AllZero();
+#endif
     }
 
     inline Bitvec08x16 ClearLowBit() const {
@@ -456,7 +460,13 @@ struct Bitvec16x16 {
     }
 
     inline Bitvec16x16 RotateCols() const {
-        return Bitvec16x16{hi_.ThisLoThatHi(lo_).RotateCols(), lo_.ThisLoThatHi(hi_).RotateCols()};
+#ifdef __SSSE3__
+        return Bitvec16x16{_mm_alignr_epi8(hi_.vec, lo_.vec, 8),
+                           _mm_alignr_epi8(lo_.vec, hi_.vec, 8)};
+#else
+        return Bitvec16x16{_mm_or_si128(_mm_srli_si128(lo_.vec, 8), _mm_slli_si128(hi_.vec, 8)),
+                           _mm_or_si128(_mm_srli_si128(hi_.vec, 8), _mm_slli_si128(lo_.vec, 8))};
+#endif
     }
 
     inline Bitvec16x16 RotateCols2() const {
