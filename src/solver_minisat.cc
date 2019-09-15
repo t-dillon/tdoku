@@ -4,16 +4,37 @@ namespace {
 
 using Minisat::Lit;
 using Minisat::mkLit;
-using namespace std;
 
 struct SolverMiniSat {
     Minisat::Solver solver;
 
-    SolverMiniSat() {
-        InitializeVariables();
-        InitializeTriadDefinitions();
-        InitializeTriadOnnes();
-        InitializeCellOnnes();
+    // Construct a solver using one of four CNF representations of Sudoku logic:
+    // 0 = minimal representation
+    // 1 = natural representation. adds clauses to explicitly state that a cell has only one
+    //     value instead of relying on pigeonhole inferences for this.
+    // 2 = complete representation. adds clauses to state that each group has no more than one
+    //     value instead of relying on pigeonhole inferences for this. i.e., cells and groups
+    //     are all modeled as exactly-one.
+    // 3 = augmented representation. replaces constraints over groups with definition of triads
+    //     and constraints over triads.
+    //
+    //       logic              cells          groups         triads
+    //   representation      min=1 max=1    min=1  max=1   min=1  max=1
+    //   --------------      ----- -----    -----  -----   -----  -----
+    //   0. minimal            X                     X
+    //   1. natural            X     X               X
+    //   2. complete           X     X        X      X
+    //   3. augmented          X     X                       X      X
+    //
+    SolverMiniSat(int config) {
+        InitializeVariables(config == 3);
+        InitializeCellConstraints(config > 0);
+        if (config < 3) {
+            InitializeGroupConstraints(config > 1);
+        } else {
+            InitializeTriadDefinitions();
+            InitializeTriadConstraints();
+        }
     }
 
     // normal cell literals, of which we have 9*9*9
@@ -33,18 +54,54 @@ struct SolverMiniSat {
         return mkLit(base + value + 9 * (row + 3 * column));
     }
 
-    void InitializeVariables() {
-        for (int i = 0; i < 15 * 9 * 9; i++) {
+    void InitializeVariables(bool with_triads) {
+        for (int i = 0; i < (with_triads ? 15 : 9) * 9 * 9; i++) {
             solver.newVar();
         }
     }
 
-    // create an exactly-one constraint over a set of literals
-    void CreateOnne(const Minisat::vec<Minisat::Lit> &literals) {
-        solver.addClause(literals);
-        for (int i = 0; i < literals.size() - 1; i++) {
-            for (int j = i + 1; j < literals.size(); j++) {
-                solver.addClause(~literals[i], ~literals[j]);
+    // create one or both sides of an exactly-one constraint over a set of literals
+    void Constrain(const Minisat::vec<Minisat::Lit> &literals, bool one, bool only_one) {
+        if (one) {
+            solver.addClause(literals);
+        }
+        if (only_one) {
+            for (int i = 0; i < literals.size() - 1; i++) {
+                for (int j = i + 1; j < literals.size(); j++) {
+                    solver.addClause(~literals[i], ~literals[j]);
+                }
+            }
+        }
+    }
+
+    void InitializeCellConstraints(bool only_one) {
+        for (int row = 0; row < 9; row++) {
+            for (int column = 0; column < 9; column++) {
+                Minisat::vec<Minisat::Lit> literals;
+                for (int value = 0; value < 9; value++) {
+                    literals.push(Literal(row, column, value));
+                }
+                Constrain(literals, true, only_one);
+            }
+        }
+    }
+
+    void InitializeGroupConstraints(bool one) {
+        for (int i = 0; i < 9; i++) {
+            for (int value = 0; value < 9; value++) {
+                Minisat::vec<Minisat::Lit> row;
+                Minisat::vec<Minisat::Lit> col;
+                Minisat::vec<Minisat::Lit> box;
+
+                for (int j = 0; j < 9; j++) {
+                    row.push(Literal(i, j, value));
+                    col.push(Literal(j, i, value));
+                    box.push(Literal(i / 3 * 3 + j / 3, (i % 3) * 3 + (j % 3), value));
+                }
+
+                Constrain(row, one, true);
+                Constrain(col, one, true);
+                Constrain(box, one, true);
             }
         }
     }
@@ -62,62 +119,50 @@ struct SolverMiniSat {
                     h_triad_def.push(Literal(i, j1, value));
                     h_triad_def.push(Literal(i, j2, value));
                     h_triad_def.push(~h_triad);
-                    CreateOnne(h_triad_def);
+                    Constrain(h_triad_def, true, true);
 
                     Minisat::vec<Minisat::Lit> v_triad_def;
                     v_triad_def.push(Literal(j0, i, value));
                     v_triad_def.push(Literal(j1, i, value));
                     v_triad_def.push(Literal(j2, i, value));
                     v_triad_def.push(~v_triad);
-                    CreateOnne(v_triad_def);
+                    Constrain(v_triad_def, true, true);
                 }
             }
         }
     }
 
-    void InitializeTriadOnnes() {
+    void InitializeTriadConstraints() {
         for (int i = 0; i < 9; i++) {
             for (int value = 0; value < 9; value++) {
                 Minisat::vec<Minisat::Lit> row;
                 row.push(HTriadLiteral(i, 0, value));
                 row.push(HTriadLiteral(i, 1, value));
                 row.push(HTriadLiteral(i, 2, value));
-                CreateOnne(row);
+                Constrain(row, true, true);
 
                 Minisat::vec<Minisat::Lit> column;
                 column.push(VTriadLiteral(0, i, value));
                 column.push(VTriadLiteral(1, i, value));
                 column.push(VTriadLiteral(2, i, value));
-                CreateOnne(column);
+                Constrain(column, true, true);
 
                 Minisat::vec<Minisat::Lit> hbox;
                 hbox.push(HTriadLiteral(3 * (i / 3) + 0, i % 3, value));
                 hbox.push(HTriadLiteral(3 * (i / 3) + 1, i % 3, value));
                 hbox.push(HTriadLiteral(3 * (i / 3) + 2, i % 3, value));
-                CreateOnne(hbox);
+                Constrain(hbox, true, true);
 
                 Minisat::vec<Minisat::Lit> vbox;
                 vbox.push(VTriadLiteral(i % 3, 3 * (i / 3) + 0, value));
                 vbox.push(VTriadLiteral(i % 3, 3 * (i / 3) + 1, value));
                 vbox.push(VTriadLiteral(i % 3, 3 * (i / 3) + 2, value));
-                CreateOnne(vbox);
+                Constrain(vbox, true, true);
             }
         }
     }
 
-    void InitializeCellOnnes() {
-        for (int row = 0; row < 9; row++) {
-            for (int column = 0; column < 9; column++) {
-                Minisat::vec<Minisat::Lit> literals;
-                for (int value = 0; value < 9; value++) {
-                    literals.push(Literal(row, column, value));
-                }
-                CreateOnne(literals);
-            }
-        }
-    }
-
-    bool SolveSudoku(const char *input, char *solution, size_t *num_guesses) {
+    size_t SolveSudoku(const char *input, char *solution, size_t *num_guesses) {
         Minisat::vec<Minisat::Lit> assumptions;
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < 9; column++) {
@@ -142,7 +187,7 @@ struct SolverMiniSat {
             }
         }
         *num_guesses = solver.decisions - 1;
-        return satisfied;
+        return satisfied ? 1 : 0;
     }
 };
 
@@ -150,8 +195,22 @@ struct SolverMiniSat {
 
 
 extern "C"
-size_t TdokuSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t /*unused_flags*/,
+size_t TdokuSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t config,
                           char *solution, size_t *num_guesses) {
-    static SolverMiniSat solver;
-    return solver.SolveSudoku(input, solution, num_guesses);
+    static SolverMiniSat s0{0};
+    static SolverMiniSat s1{1};
+    static SolverMiniSat s2{2};
+    static SolverMiniSat s3{3};
+
+    switch(config) {
+        case 0:
+            return s0.SolveSudoku(input, solution, num_guesses);
+        case 1:
+            return s1.SolveSudoku(input, solution, num_guesses);
+        case 2:
+            return s2.SolveSudoku(input, solution, num_guesses);
+        default:
+            return s3.SolveSudoku(input, solution, num_guesses);
+    }
+
 }

@@ -18,7 +18,7 @@ Solver | Description
 [src/solver_dpll_triad_scc.cc](https://github.com/t-dillon/tdoku/blob/master/src/solver_dpll_triad_scc.cc) | A DPLL-based solver for exploring how the puzzle representation can be optimized and strongly connected components can be exploited to reduce backtracking.| 
 [src/solver_basic.cc](https://github.com/t-dillon/tdoku/blob/master/src/solver_basic.cc) | A very simple solver. Fast as simple solvers go, but mainly here to illustrate how poorly such solvers handle hard puzzles. 
 
-See [here](https://github.com/t-dillon/tdoku/blob/master/other/README) for details on third party solvers 
+See [here](https://github.com/t-dillon/tdoku/blob/master/other/README.md) for details on third party solvers
 supported for benchmarking. For a glimpse of comparative performance at opposite ends of the difficulty 
 spectrum, here are results for the full set of benchmarked solvers on a dataset of ~49,000 very
 difficult puzzles with Sudoku Explainer ratings of 11 or higher:
@@ -82,7 +82,7 @@ $ ./solve < data/puzzles0_kaggle
 
 This project is set up to facilitate benchmarking against a number of the fastest known solvers, as
 well as some solvers of historical interest. Also included is a solver based on minisat. 
-Follow the [instructions here](https://github.com/t-dillon/tdoku/blob/master/other/README) to find
+Follow the [instructions here](https://github.com/t-dillon/tdoku/blob/master/other/README.md) to find
 and set up sources where necessary.
 
 With sources set up, the benchmarks [found here](https://github.com/t-dillon/tdoku/tree/master/benchmarks) were run as follows:

@@ -25,10 +25,6 @@ struct Benchmark {
     size_t test_dataset_size_ = 1000000;
     int min_seconds_test_ = 20;
     int min_seconds_warmup_ = 10;
-    string solvers_ =
-            "tdoku_basic:0,tdoku_basic:1,tdoku_dpll_triad_scc:0,"
-            "tdoku_dpll_triad_scc:1,tdoku_dpll_triad_scc:2,tdoku_dpll_triad_scc:3,"
-            "tdoku_dpll_triad_simd";
     bool csv_output_ = false;
     // when randomize_ is true we'll randomly sample loaded puzzles in constructing the
     // test dataset AND we'll randomly permute those puzzles. this is desirable to avoid
@@ -52,7 +48,7 @@ struct Benchmark {
     uniform_real_distribution<> random_double{0.0, 1.0};
     uint64_t rng_seed = 0;
 
-    vector<Solver> solvers;
+    vector<Solver> solvers_;
     vector<string> testing_data_;
 
     static void PrintSudoku(const char *board, bool one_line, ostream &stream) {
@@ -158,71 +154,6 @@ struct Benchmark {
         }
     }
 
-    void InitSolvers() {
-        stringstream ss(solvers_);
-        string solver_with_options;
-
-        while (getline(ss, solver_with_options, ',')) {
-            string solver = solver_with_options;
-            uint32_t configuration = 0;
-            size_t pos = solver_with_options.find(':');
-            if (pos != string::npos) {
-                solver = solver_with_options.substr(0, pos);
-                configuration = (uint32_t) stoi(solver_with_options.substr(pos + 1));
-            }
-            if (solver == "tdoku_basic") {
-                solvers.emplace_back(
-                        Solver(TdokuSolverBasic, configuration, "tdoku_basic"));
-            } else if (solver == "tdoku_dpll_triad_scc") {
-                solvers.emplace_back(
-                        Solver(TdokuSolverDpllTriadScc, configuration, "tdoku_dpll_triad_scc"));
-            } else if (solver == "tdoku_dpll_triad_simd" || solver == "tdoku") {
-                solvers.emplace_back(
-                        Solver(TdokuSolverDpllTriadSimd, configuration, "tdoku_dpll_triad_simd"));
-#ifdef BB_SUDOKU
-            } else if (solver == "bb_sudoku") {
-                solvers.emplace_back(
-                        Solver(OtherSolverBBSudoku, configuration, "bb_sudoku"));
-#endif
-#ifdef JSOLVE
-            } else if (solver == "jsolve") {
-                solvers.emplace_back(
-                        Solver(OtherSolverJSolve, configuration, "jsolve"));
-#endif
-#ifdef KUDOKU
-            } else if (solver == "kudoku") {
-                solvers.emplace_back(
-                        Solver(OtherSolverKudoku, configuration, "kudoku", 11));
-#endif
-#ifdef FSSS2
-            } else if (solver == "fsss2") {
-                solvers.emplace_back(
-                        Solver(OtherSolverFsss2, configuration, "fsss2", 2));
-#endif
-#ifdef JCZSOLVE
-            } else if (solver == "jczsolve") {
-                solvers.emplace_back(
-                        Solver(OtherSolverJCZSolve, configuration, "jczsolve"));
-#endif
-#ifdef RUST_SUDOKU
-            } else if (solver == "rust_sudoku") {
-                solvers.emplace_back(
-                        Solver(OtherSolverRustSudoku, configuration, "rust_sudoku", 14));
-#endif
-#ifdef SK_BFORCE2
-            } else if (solver == "sk_bforce2") {
-                solvers.emplace_back(
-                        Solver(OtherSolverSKBFORCE2, configuration, "sk_bforce2", 2));
-#endif
-#ifdef MINISAT
-            } else if (solver == "minisat") {
-                solvers.emplace_back(
-                        Solver(TdokuSolverMiniSat, configuration, "minisat", 1));
-#endif
-            }
-        }
-    }
-
     static bool ValidateSolution(const char *board) {
         array<uint32_t, 9 * 3> covered{};
         for (int i = 0; i < 9; i++) {
@@ -261,7 +192,7 @@ struct Benchmark {
         char output[81]{0};
         size_t num_guesses;
 
-        for (Solver &solver : solvers) {
+        for (Solver &solver : solvers_) {
             // warm caches, branch predictor, etc. and estimate solving speed on this data
             int warmup_count = 0;
             microseconds start =
@@ -355,34 +286,12 @@ struct Benchmark {
 
 } // namespace
 
-int main(int argc, char **argv) {
-    Benchmark benchmark;
 
-    // order the solver list roughly in chronological order of development
-#ifdef MINISAT
-    benchmark.solvers_.insert(0, "minisat,");
-#endif
-#ifdef SK_BFORCE2
-    benchmark.solvers_.insert(0, "sk_bforce2,");
-#endif
-#ifdef RUST_SUDOKU
-    benchmark.solvers_.insert(0, "rust_sudoku,");
-#endif
-#ifdef JCZSOLVE
-    benchmark.solvers_.insert(0, "jczsolve,");
-#endif
-#ifdef FSSS2
-    benchmark.solvers_.insert(0, "fsss2,fsss2:1,");
-#endif
-#ifdef KUDOKU
-    benchmark.solvers_.insert(0, "kudoku,");
-#endif
-#ifdef JSOLVE
-    benchmark.solvers_.insert(0, "jsolve,");
-#endif
-#ifdef BB_SUDOKU
-    benchmark.solvers_.insert(0, "bb_sudoku,");
-#endif
+int main(int argc, char **argv) {
+    vector<Solver> all_solvers = GetAllSolvers();
+    string solver_list = "";
+
+    Benchmark benchmark;
 
     ketopt_t opt = KETOPT_INIT;
     char c;
@@ -405,7 +314,7 @@ int main(int argc, char **argv) {
                 break;
             }
             case 's': {
-                benchmark.solvers_ = opt.arg;
+                solver_list = opt.arg;
                 break;
             }
             case 't': {
@@ -432,15 +341,30 @@ int main(int argc, char **argv) {
                 cout << "  -t <secs>           // target test time [default 20]" << endl;
                 cout << "  -v [0|1]            // validate during warmup [default 1]" << endl;
                 cout << "  -w <secs>           // target warmup time [default 10]" << endl;
-                cout << "solvers: " << endl << benchmark.solvers_ << endl;
-                cout << "build info: " << CXX_COMPILER_ID << " " << CXX_COMPILER_VERSION
+                cout << "solvers: " << endl;
+                for (int i = 0; i < all_solvers.size(); i++) {
+                    cout << " " << all_solvers[i].Id();
+                }
+                cout << "\nbuild info: " << CXX_COMPILER_ID << " " << CXX_COMPILER_VERSION
                      << CXX_FLAGS << endl;
                 exit(0);
             }
         }
     }
 
-    benchmark.InitSolvers();
+    if (solver_list.empty()) {
+        benchmark.solvers_ = all_solvers;
+    } else {
+        stringstream ss(solver_list);
+        string solver_id;
+        while (getline(ss, solver_id, ',')) {
+            for (const Solver &s : all_solvers) {
+                if (s.Id() == solver_id) {
+                    benchmark.solvers_.push_back(s);
+                }
+            }
+        }
+    }
 
     if (opt.ind == argc) {
         benchmark.Test("data/puzzles4_forum_hardest_1905_11+");

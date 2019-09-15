@@ -12,6 +12,8 @@ other/fsss2/t_128.h
 other/JCZSolve/JCZSolve.c
 other/JCZSolve/JCZSolve.h
 
+other/norvig/sudoku.en.cc
+
 other/SK_BFORCE2/Zhn.h
 other/SK_BFORCE2/Zhn_cpp.h
 other/SK_BFORCE2/Zhtables_cpp.h

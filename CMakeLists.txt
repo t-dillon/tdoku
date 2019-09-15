@@ -14,14 +14,16 @@ option(SSE4_2      "Compile with SSE4.2 support"       OFF)
 option(AVX2        "Compile with AVX2 support"         OFF)
 option(AVX512      "Compile with AVX512BITALG support" OFF)
 
-option(BB_SUDOKU   "Include BB_SUDOKU"   OFF)
-option(JSOLVE      "Include JSolve"      OFF)
-option(KUDOKU      "Include KUDOKU"      OFF)
-option(FSSS2       "Include fsss2"       OFF)
-option(JCZSOLVE    "Include JCZSolve"    OFF)
-option(RUST_SUDOKU "Include rust_sudoku" OFF)
-option(SK_BFORCE2  "Include SK_BFORCE2"  OFF)
-option(MINISAT     "Include MiniSat"     OFF)
+option(BB_SUDOKU     "Include BB_SUDOKU"     OFF)
+option(FAST_SOLV_9R2 "Include FAST_SOLV_9R2" OFF)
+option(FSSS2         "Include fsss2"         OFF)
+option(JCZSOLVE      "Include JCZSolve"      OFF)
+option(JSOLVE        "Include JSolve"        OFF)
+option(KUDOKU        "Include KUDOKU"        OFF)
+option(MINISAT       "Include MiniSat"       OFF)
+option(NORVIG        "Include norvig"        OFF)
+option(RUST_SUDOKU   "Include rust_sudoku"   OFF)
+option(SK_BFORCE2    "Include SK_BFORCE2"    OFF)
 
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -${OPT}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -${OPT}")
@@ -69,16 +71,10 @@ if (BB_SUDOKU)
             other/bb_sudoku/bb_sudoku_solver.cpp)
 endif()
 
-if (JSOLVE)
-    add_definitions(-DJSOLVE)
+if (FAST_SOLV_9R2)
+    add_definitions(-DFAST_SOLV_9R2)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/JSolve/JSolve.c)
-endif()
-
-if (KUDOKU)
-    add_definitions(-DKUDOKU)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/kudoku/kudoku.c)
+            other/fast_solv_9r2/fast_solv_9r2.c)
 endif()
 
 if (FSSS2)
@@ -95,6 +91,30 @@ if (JCZSOLVE)
             other/JCZSolve/JCZSolve.c)
 endif()
 
+if (JSOLVE)
+    add_definitions(-DJSOLVE)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/JSolve/JSolve.c)
+endif()
+
+if (KUDOKU)
+    add_definitions(-DKUDOKU)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/kudoku/kudoku.c)
+endif()
+
+if (MINISAT)
+    add_definitions(-DMINISAT)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            src/solver_minisat.cc)
+endif()
+
+if (NORVIG)
+    add_definitions(-DNORVIG)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/norvig/sudoku.en.cc)
+endif()
+
 if (RUST_SUDOKU)
     add_definitions(-DRUST_SUDOKU)
 endif()
@@ -104,12 +124,6 @@ if (SK_BFORCE2)
   set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
           other/SK_BFORCE2/sk_bitfields.cpp
           other/SK_BFORCE2/sk_t.cpp)
-endif()
-
-if (MINISAT)
-    add_definitions(-DMINISAT)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            src/solver_minisat.cc)
 endif()
 
 add_executable(run_benchmark src/run_benchmark.cc ${BENCHMARK_SOLVER_SOURCES})

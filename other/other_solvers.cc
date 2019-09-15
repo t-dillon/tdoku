@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstring>
 
+
 #ifdef RUST_SUDOKU
 extern "C"
 size_t rust_solve_sudoku(const char *input, size_t limit);
@@ -13,6 +14,7 @@ size_t OtherSolverRustSudoku(const char *input, size_t limit, uint32_t /*unused_
     return rust_solve_sudoku(input, limit);
 }
 #endif
+
 
 #ifdef SK_BFORCE2
 #include "SK_BFORCE2/sk_t.h"
@@ -31,6 +33,7 @@ size_t OtherSolverSKBFORCE2(const char *input, size_t limit, uint32_t /*unused_c
 }
 #endif
 
+
 #ifdef JCZSOLVE
 #include "JCZSolve/JCZSolve.h"
 // apply patch JCZSolve.c.diff so JCZSolve uses this extern.
@@ -46,6 +49,7 @@ size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_co
 }
 #endif
 
+
 #ifdef JSOLVE
 #include "JSolve/JSolve.h"
 // apply patch JSolve.c.diff so JSolve uses this extern
@@ -60,6 +64,7 @@ size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_conf
     return count;
 }
 #endif
+
 
 #ifdef FSSS2
 #include "fsss2/fsss2.h"
@@ -96,6 +101,7 @@ size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t configuration,
 }
 #endif
 
+
 #ifdef BB_SUDOKU
 extern int Solver(char num_search, unsigned int use_methods, char ret_puzzle,
                   int initp, char* buffer);
@@ -114,3 +120,20 @@ size_t OtherSolverBBSudoku(const char *input, size_t limit, uint32_t /*unused_co
     return count;
 }
 #endif
+
+
+#ifdef FAST_SOLV_9R2
+extern "C" int make_links(void);
+extern "C" int fast_solv_9r2_solve(const char *buffer, int limit);
+extern int fast_solv_92r_undone;
+
+extern "C"
+size_t OtherSolverFastSolv9r2(const char *input, size_t limit, uint32_t /*unused_configuration*/,
+                              char *solution, size_t *num_guesses) {
+    static int initialized = make_links();
+    size_t count = fast_solv_9r2_solve(input, limit);
+    *num_guesses = fast_solv_92r_undone;
+    return count;
+}
+#endif
+
