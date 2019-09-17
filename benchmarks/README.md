@@ -59,10 +59,10 @@ An AMD platorm with AVX2 (but faster for Tdoku without it)
 
 # Benchmark Summary
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQGsldjnZhAU0XB-lAcmwQD8PpWMNIkAT0tumcPeS61Fft3sMKs0e9X22LRT26ij07c5U5GwqslnlSX/pubchart?oid=1180131374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1180131374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQGsldjnZhAU0XB-lAcmwQD8PpWMNIkAT0tumcPeS61Fft3sMKs0e9X22LRT26ij07c5U5GwqslnlSX/pubchart?oid=1929162374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1929162374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQGsldjnZhAU0XB-lAcmwQD8PpWMNIkAT0tumcPeS61Fft3sMKs0e9X22LRT26ij07c5U5GwqslnlSX/pubchart?oid=1085609822&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1085609822&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQGsldjnZhAU0XB-lAcmwQD8PpWMNIkAT0tumcPeS61Fft3sMKs0e9X22LRT26ij07c5U5GwqslnlSX/pubchart?oid=1298913250&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1298913250&format=image)

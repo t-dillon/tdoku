@@ -20,22 +20,25 @@ Solver | Description
 
 See [here](https://github.com/t-dillon/tdoku/blob/master/other/README.md) for details on third party solvers
 supported for benchmarking. For a glimpse of comparative performance at opposite ends of the difficulty 
-spectrum, here are results for the full set of benchmarked solvers on a dataset of ~49,000 very
+spectrum, here are results for a range of benchmarked solvers on a dataset of ~49,000 very
 difficult puzzles with Sudoku Explainer ratings of 11 or higher:
 
 <pre>
 |forum_hardest_1905_11+        |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |------------------------------|------------:| -----------:| ----------:| --------------:|
-|minisat[*]                    |       713.2 |     1,402.2 |       0.0% |          65.31 |
-|kudoku                        |     2,255.6 |       443.3 |        N/A |            N/A |
-|bb_sudoku                     |     6,318.4 |       158.3 |       0.0% |         200.49 |
-|jsolve                        |     7,589.9 |       131.8 |       0.0% |         213.24 |
-|fsss2                         |    11,765.5 |        85.0 |       0.0% |         139.30 |
-|jczsolve                      |    12,599.9 |        79.4 |       0.0% |         171.21 |
-|sk_bforce2                    |    14,334.1 |        69.8 |       0.0% |         122.66 |
-|<b>tdoku                         |    20,295.9 |        49.3 |       0.0% |          64.96 </b>|
+|minisat[*]               (sat)|       693.9 |      1441.1 |       0.0% |          63.75 |
+|norvig                        |       356.4 |      2805.8 |       0.0% |         359.81 |
+|kudoku                   (cov)|     2,022.0 |       494.6 |        N/A |            N/A |
+|fast_solv_9r2            (dlx)|     2,068.4 |       483.5 |       0.0% |         171.34 |
+|bb_sudoku                     |     4,871.6 |       205.3 |       0.0% |         200.59 |
+|jsolve                        |     6,372.2 |       156.9 |       0.0% |         213.47 |
+|jczsolve                      |     9,670.7 |       103.4 |       0.0% |         171.17 |
+|fsss2                         |    10,384.1 |        96.3 |       0.0% |         139.19 |
+|rust_sudoku                   |    11,841.2 |        84.5 |        N/A |            N/A |
+|sk_bforce2                    |    12,418.1 |        80.5 |       0.0% |         122.63 |
+|<b>tdoku                         |    18,906.2 |        52.9 |       0.0% |          64.93 </b>|
 </pre>
-<small>[*] Note: minisat has an unfair advantage in this comparison because the minisat-based solver 
+<small>[*] Note: minisat appears ~2x as fast as it really is in this comparison because the minisat-based solver 
 is only looking for the first solution, while the others are all finding the solution <b>and</b> 
 confirming that the solution is unique.</small>
 
@@ -44,20 +47,23 @@ And here are results on the well-known and commonly-benchmarked dataset of ~49,0
 <pre>
 |17_clue                       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |------------------------------|------------:| -----------:| ----------:| --------------:|
-|minisat[*]                    |     4,443.4 |       225.1 |      76.2% |           0.83 |
-|kudoku                        |    37,930.2 |        26.4 |        N/A |            N/A |
-|bb_sudoku                     |   145,132.1 |         6.9 |      76.1% |           1.54 |
-|jsolve                        |   173,017.6 |         5.8 |      50.2% |           3.18 |
-|fsss2                         |   300,984.5 |         3.3 |      72.5% |           1.30 |
-|jczsolve                      |   291,835.7 |         3.4 |      69.6% |           1.84 |
-|sk_bforce2                    |   379,375.8 |         2.6 |      73.8% |           1.00 |
-|<b>tdoku                         |   328,803.6 |         3.0 |      78.7% |           0.62 </b>|
+|minisat[*]               (sat)|     4,133.0 |       242.0 |      76.2% |           0.83 |
+|norvig                        |     6,599.1 |       151.5 |      44.7% |           9.83 |
+|kudoku                   (cov)|    34,126.0 |        29.3 |        N/A |            N/A |
+|fast_solv_9r2            (dlx)|    34,213.1 |        29.2 |      44.6% |           4.62 |
+|bb_sudoku                     |   111,377.3 |         9.0 |      76.0% |           1.56 |
+|jsolve                        |   145,103.4 |         6.9 |      50.1% |           3.21 |
+|jczsolve                      |   224,303.9 |         4.5 |      69.6% |           1.90 |
+|fsss2                         |   262,448.4 |         3.8 |      72.5% |           1.31 |
+|<b>tdoku                         |   292,388.6 |         3.4 |      78.7% |           0.61 </b>|
+|rust_sudoku                   |   315,924.3 |         3.2 |        N/A |            N/A |
+|sk_bforce2                    |   329,052.3 |         3.0 |      73.8% |           1.01 |
 </pre>
 
 And here is a chart comparing a narrower set of the fastest solvers on a wider range of datasets 
 ordered roughly from easiest to hardest:
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vQGsldjnZhAU0XB-lAcmwQD8PpWMNIkAT0tumcPeS61Fft3sMKs0e9X22LRT26ij07c5U5GwqslnlSX/pubchart?oid=1180131374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1180131374&format=image)
 
 #### Building and Running
 
@@ -81,17 +87,18 @@ $ ./solve < data/puzzles0_kaggle
 #### Benchmarking Other Solvers
 
 This project is set up to facilitate benchmarking against a number of the fastest known solvers, as
-well as some solvers of historical interest. Also included is a solver based on minisat. 
+well as some solvers of historical interest. Also included is a solver based on minisat and able to
+test several different SAT encodings. 
 Follow the [instructions here](https://github.com/t-dillon/tdoku/blob/master/other/README.md) to find
 and set up sources where necessary.
 
 With sources set up, the benchmarks [found here](https://github.com/t-dillon/tdoku/tree/master/benchmarks) were run as follows:
 
 ```bash
-$ CC=clang-8 CXX=clang++-8 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on
-$ benchmarks/bench.sh benchmarks/benchmark-clang8.log
-$ CC=gcc-6 CXX=g++-6 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on
-$ benchmarks/bench.sh benchmarks/benchmark-gcc6.log
+$ CC=clang-8 CXX=clang++-8 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on
+$ benchmarks/bench.sh | tee benchmarks/benchmark-clang8.log
+$ CC=gcc-6 CXX=g++-6 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on
+$ benchmarks/bench.sh | tee benchmarks/benchmark-gcc6.log
 ```
 
 See CMakeLists.txt for the set of -D options to pass to BUILD.sh if you want to build and benchmark
@@ -103,16 +110,18 @@ $ build/run_benchmark -h
 usage: run_benchmark <options> puzzle_file_1 [...] 
 options:
   -c [0|1]            // output csv instead of table [default 0]
-  -n size             // test set size [default 2500000]
+  -e <seed>           // random seed [default random_device{}()]
+  -n <size>           // test set size [default 2500000]
   -r [0|1]            // randomly permute puzzles [default 1]
   -s solver_1,...     // which solvers to run [default all]
-  -t secs             // target test time [default 20]
-  -v [0|1]            // validate solutions [default 1]
-  -w secs             // target warmup time [default 10]
+  -t <secs>           // target test time [default 20]
+  -v [0|1]            // validate during warmup [default 1]
+  -w <secs>           // target warmup time [default 10]
 solvers: 
-bb_sudoku,jsolve,kudoku,fsss2,fsss2:1,jczsolve,sk_bforce2,minisat,tdoku_basic:0,tdoku_basic:1,
-tdoku_dpll_triad_scc:0,tdoku_dpll_triad_scc:1,tdoku_dpll_triad_scc:2,tdoku_dpll_triad_scc:3,
-tdoku_dpll_triad_simd
+ _tdev_basic _tdev_basic_heuristic minisat_minimal_01 minisat_natural_01 minisat_complete_01 
+ minisat_augmented_01 _tdev_dpll_triad _tdev_dpll_triad_scc_i _tdev_dpll_triad_scc_h 
+ _tdev_dpll_triad_scc_ih norvig fast_solv_9r2 kudoku bb_sudoku jsolve fsss2 fsss2_locked jczsolve 
+ sk_bforce2 rust_sudoku tdoku
 build info: Clang 8.0.1 -O3 -march=native
 </pre>
 

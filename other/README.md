@@ -53,7 +53,7 @@ configured here.
     `$ other/SK_BFORCE2/link.sh path/to/SK_BFORCE2_bench`\
  -- build with -DSK_BFORCE2=on
 
-1. **rust_sudoku** (Emerentius 2017-2019)\
+1. **rust_sudoku** (Emerentius 2017-2019 based on JCZSolve)\
  -- To the location of your choice clone https://github.com/t-dillon/rust_sudoku_bench (a fork of
     Emerentius/sudoku modified to build a dynamic library the benchmark program can call).\
  -- Build the rust project using:\
