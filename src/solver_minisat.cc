@@ -186,7 +186,9 @@ struct SolverMiniSat {
                 }
             }
         }
-        *num_guesses = solver.decisions - 1;
+        // minisat doesn't report decisions consistently. If satisfied it reports 1 + the
+        // actual decision count.
+        *num_guesses = solver.decisions - (satisfied ? 1 : 0);
         return satisfied ? 1 : 0;
     }
 };
