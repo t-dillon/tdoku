@@ -281,15 +281,6 @@ struct Bitvec08x16 {
         return _mm_shuffle_epi32(vec, 0b01001110);
     }
 
-    inline Bitvec08x16 ThisLoThatHi(const Bitvec08x16 &other) const {
-#ifdef __SSE4_1__
-        return _mm_blend_epi16(vec, other.vec, 0b11110000);
-#else
-        return (_mm_setr_epi16(0xffff, 0xffff, 0xffff, 0xffff, 0x0, 0x0, 0x0, 0x0) & vec) |
-               (_mm_setr_epi16(0x0, 0x0, 0x0, 0x0, 0xffff, 0xffff, 0xffff, 0xffff) & other.vec);
-#endif
-    }
-
     inline uint16_t Extract(int index) const {
 #define CASE(x) case x: return _mm_extract_epi16(vec, x);
         switch (index) {

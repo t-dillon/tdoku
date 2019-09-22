@@ -289,7 +289,7 @@ struct Benchmark {
 
 int main(int argc, char **argv) {
     vector<Solver> all_solvers = GetAllSolvers();
-    string solver_list = "";
+    string solver_list;
 
     Benchmark benchmark;
 
@@ -342,8 +342,8 @@ int main(int argc, char **argv) {
                 cout << "  -v [0|1]            // validate during warmup [default 1]" << endl;
                 cout << "  -w <secs>           // target warmup time [default 10]" << endl;
                 cout << "solvers: " << endl;
-                for (int i = 0; i < all_solvers.size(); i++) {
-                    cout << " " << all_solvers[i].Id();
+                for (auto &solver : all_solvers) {
+                    cout << " " << solver.Id();
                 }
                 cout << "\nbuild info: " << CXX_COMPILER_ID << " " << CXX_COMPILER_VERSION
                      << CXX_FLAGS << endl;

@@ -7,6 +7,8 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <queue>
+#include <assert.h>
 
 using namespace std;
 
@@ -17,24 +19,44 @@ constexpr int kNumPosClausesPerBox = 16; // 9 cells, 6 triads, 1 slack
 constexpr int kNumValues = 9;
 
 constexpr uint16_t kNumLiterals = kNumBoxes * kNumPosClausesPerBox * kNumValues * 2;
-constexpr uint16_t kAllAssigned = kNumBoxes * (kNumPosClausesPerBox - 1) * kNumValues;
+constexpr uint16_t kAllAsserted = kNumBoxes * (kNumPosClausesPerBox - 1) * kNumValues;
 
 typedef uint32_t ClauseId;
 typedef uint32_t LiteralId;
 
+template<int literals>
+class FastBitset {
+    uint64_t bits[literals / 64 + 1]{};
+
+public:
+    void set(uint32_t index) {
+        bits[index >> 6u] |= (1ul << (index & 63u));
+    }
+
+    bool operator[](uint32_t index) const {
+        return bits[index >> 6u] & (1ul << (index & 63u));
+    }
+
+    bool pos_or_neg(uint32_t index) const {
+        auto positive = index & ~1u;
+        return bits[positive >> 6u] & (3ul << (positive & 63u));
+    }
+};
+
 struct State {
     // 1s for asserted literals, 0s for literals negated or unknown
-    bitset<kNumLiterals> truth_value;
+    FastBitset<kNumLiterals> asserted;
     // the number of literals that can be eliminated before the clause produces binary implications
     vector<uint16_t> clause_free_literals;
     // the number of implications for a given literal. we will not copy the implication lists
     // themselves as part of the state. instead the global state has a vector for each literal
     // that we use as a stack, and these counts are the stack pointers.
     array<uint16_t, kNumLiterals> implication_counts;
-    // number of literals assigned. we are done when this equals kAllAssigned.
-    uint32_t num_assigned = 0;
+    // number of literals asserted. we are done when this equals kAllAsserted.
+    uint32_t num_asserted = 0;
 
-    State() : truth_value{}, clause_free_literals{}, implication_counts{} {}
+    State() : asserted{}, clause_free_literals{}, implication_counts{} {}
+
     State(const State &prior_state) = default;
 };
 
@@ -54,7 +76,7 @@ struct SolverDpllTriadScc {
     vector<ClauseId> positive_cell_clauses_{};
     // initial state with the correct implication counts. we'll clone this when we begin
     // solving each new puzzle, but this will not change after setup.
-    State clean_slate_{};
+    State initial_state_{};
     // whether to use strongly connected component size as a heuristic for variable selection.
     bool scc_heuristic_ = true;
     // whether to apply inferences reached during strongly connected component evaluation.
@@ -81,7 +103,7 @@ struct SolverDpllTriadScc {
                     for (int vj = 0; vj < 3; vj++) {
                         int box = i / 4 * 3 + j / 4;
                         int elm = (i % 4) * 4 + (j % 4);
-                        if (state->truth_value[Not(Lit(box, elm, vi * 3 + vj))]) {
+                        if (state->asserted[Not(Literal(box, elm, vi * 3 + vj))]) {
                             cout << " ";
                         } else {
                             cout << vi * 3 + vj + 1;
@@ -109,13 +131,14 @@ struct SolverDpllTriadScc {
     // based on a 4x4 grid, with the upper-left 3x3 subgrid being the actual 9 cells of the box
     // and the 3x1 and 1x3 extra column and row being horizontal and vertical triads. The last
     // element of the 4x4 grid is unused, but remains for indexing convenience.
-    static uint32_t Lit(int box, int elem, int value) {
-        return 2 * (value + 9 * (elem + 16 * box));
+    static uint32_t Literal(int box, int elem, int value) {
+        // this order strikes the best balance of locality and avoiding division in ValidLiteral
+        return 2 * (elem + 16 * (value + 9 * box));
     }
 
     // return true if the literal is in use (vs. in the filler space at the end of each box).
     static bool ValidLiteral(LiteralId literal) {
-        return ((literal / 18) % 16) != 15;
+        return ((literal % 32u) & 0xeu) != 0xeu;
     }
 
     inline void AddImplication(LiteralId from, LiteralId to, State *state) {
@@ -135,7 +158,7 @@ struct SolverDpllTriadScc {
             literals_to_clauses_[literal].push_back(new_clause_id);
         }
         clauses_to_literals_.push_back(literals);
-        clean_slate_.clause_free_literals.push_back(literals.size() - 1 - min);
+        initial_state_.clause_free_literals.push_back(literals.size() - 1 - min);
         if (min == 1 && literals.size() == 9) {
             positive_cell_clauses_.push_back(new_clause_id);
         }
@@ -146,8 +169,8 @@ struct SolverDpllTriadScc {
         if (n == 1) {
             for (size_t i = 0; i < literals.size() - 1; i++) {
                 for (size_t j = i + 1; j < literals.size(); j++) {
-                    AddImplication(literals[i], Not(literals[j]), &clean_slate_);
-                    AddImplication(literals[j], Not(literals[i]), &clean_slate_);
+                    AddImplication(literals[i], Not(literals[j]), &initial_state_);
+                    AddImplication(literals[j], Not(literals[i]), &initial_state_);
                 }
             }
         } else {
@@ -164,7 +187,7 @@ struct SolverDpllTriadScc {
             for (int elem = 0; elem < 15; elem++) {
                 vector<LiteralId> literals;
                 for (int val = 0; val < 9; val++) {
-                    literals.push_back(Lit(box, elem, val));
+                    literals.push_back(Literal(box, elem, val));
                 }
                 // exactly one for normal cells, exactly three for triads
                 if (elem / 4 < 3 && elem % 4 < 3) {
@@ -178,11 +201,11 @@ struct SolverDpllTriadScc {
                 for (int i = 0; i < 3; i++) {
                     vector<LiteralId> h_triad, v_triad;
                     for (int j = 0; j < 3; j++) {
-                        h_triad.push_back(Lit(box, i * 4 + j, val));
-                        v_triad.push_back(Lit(box, i + j * 4, val));
+                        h_triad.push_back(Literal(box, i * 4 + j, val));
+                        v_triad.push_back(Literal(box, i + j * 4, val));
                     }
-                    h_triad.push_back(Not(Lit(box, i * 4 + 3, val)));
-                    v_triad.push_back(Not(Lit(box, i + 12, val)));
+                    h_triad.push_back(Not(Literal(box, i * 4 + 3, val)));
+                    v_triad.push_back(Not(Literal(box, i + 12, val)));
                     AddExactlyNConstraint(h_triad, 1);
                     AddExactlyNConstraint(v_triad, 1);
                 }
@@ -194,10 +217,10 @@ struct SolverDpllTriadScc {
                 for (int i = 0; i < 3; i++) {
                     vector<LiteralId> h_within, h_across, v_within, v_across;
                     for (int j = 0; j < 3; j++) {
-                        h_within.push_back(Lit(band * 3 + i, j * 4 + 3, val));
-                        h_across.push_back(Lit(band * 3 + j, i * 4 + 3, val));
-                        v_within.push_back(Lit(i * 3 + band, j + 12, val));
-                        v_across.push_back(Lit(j * 3 + band, i + 12, val));
+                        h_within.push_back(Literal(band * 3 + i, j * 4 + 3, val));
+                        h_across.push_back(Literal(band * 3 + j, i * 4 + 3, val));
+                        v_within.push_back(Literal(i * 3 + band, j + 12, val));
+                        v_across.push_back(Literal(j * 3 + band, i + 12, val));
                     }
                     AddExactlyNConstraint(h_within, 1);
                     AddExactlyNConstraint(h_across, 1);
@@ -212,99 +235,124 @@ struct SolverDpllTriadScc {
     // boolean constraint propagation
     ///////////////////////////////////////////////
 
+    vector<LiteralId> noneliminated;
+
     // we have a clause with a minimum of N that's now down to N+1 literals. if any of its
     // remaining literals are eliminated then the rest are implied.
     void AddBinaryImplicationsAmongNonEliminated(ClauseId clause_id, State *state) {
-        vector<LiteralId> noneliminated;
-        for (LiteralId literal : clauses_to_literals_[clause_id]) {
-            if (!state->truth_value[Not(literal)]) {
-                noneliminated.push_back(literal);
+        const auto &literals = clauses_to_literals_[clause_id];
+        int expect = literals.size() - initial_state_.clause_free_literals[clause_id];
+        // optimize for the common case where the clause has a minimum of 1
+        if (expect == 2) {
+            LiteralId first = kNumLiterals;
+            for (LiteralId literal : literals) {
+                if (!state->asserted[Not(literal)]) {
+                    if (first == kNumLiterals) {
+                        first = literal;
+                    } else {
+                        AddImplication(Not(first), literal, state);
+                        AddImplication(Not(literal), first, state);
+                        return;
+                    }
+                }
             }
-        }
-        // add all pairwise implications
-        for (size_t i = 0; i < noneliminated.size() - 1; i++) {
-            for (size_t j = i + 1; j < noneliminated.size(); j++) {
-                AddImplication(Not(noneliminated[i]), noneliminated[j], state);
-                AddImplication(Not(noneliminated[j]), noneliminated[i], state);
+            assert(false);
+        } else {
+            noneliminated.clear();
+            for (LiteralId literal : literals) {
+                if (!state->asserted[Not(literal)]) {
+                    noneliminated.push_back(literal);
+                }
+            }
+            for (size_t i = 0; i < noneliminated.size() - 1; i++) {
+                for (size_t j = i + 1; j < noneliminated.size(); j++) {
+                    AddImplication(Not(noneliminated[i]), noneliminated[j], state);
+                    AddImplication(Not(noneliminated[j]), noneliminated[i], state);
+                }
             }
         }
     }
 
-    bool Assign(LiteralId literal, State *state) {
-        if (state->truth_value[literal]) {
+    bool Assert(LiteralId literal, State *state) {
+        if (state->asserted[literal]) {
             return true;
         }
-        if (state->truth_value[Not(literal)]) {
+        if (state->asserted[Not(literal)]) {
             return false;
         }
-        state->truth_value[literal] = true;
-        state->num_assigned++;
+        state->asserted.set(literal);
+        state->num_asserted++;
 
         // decrement free literal counts for clauses containing the negation to reflect that these
         // literals are eliminated; update implication lists if this produces new binary clauses.
         for (auto clause_id : literals_to_clauses_[Not(literal)]) {
-            if (--state->clause_free_literals[clause_id] ==  0) {
+            if (--state->clause_free_literals[clause_id] == 0) {
                 AddBinaryImplicationsAmongNonEliminated(clause_id, state);
             }
         }
-        // now perform unit propagation by assigning implications of this literal
-        // note: new implications can be added during this loop.
-        vector<LiteralId> &implications = literals_to_implications_[literal];
-        uint16_t &num_implications = state->implication_counts[literal];
+
+        // now perform unit propagation by asserting implications of this literal. while it might
+        // appear that new implications can be added during this loop, in practice this does not
+        // occur, so it's best to read num_implications up front.
+        const vector<LiteralId> &implications = literals_to_implications_[literal];
+        uint16_t num_implications = state->implication_counts[literal];
         for (int i = 0; i < num_implications; i++) {
-            if (!Assign(implications[i], state)) return false;
+            if (!Assert(implications[i], state)) return false;
         }
         return true;
     }
 
     ///////////////////////////////////////////////
-    // path-based strongly connected components
+    // path-based strongly connected components with adaptations
     ///////////////////////////////////////////////
 
     int preorder_counter = 0;
     array<int, kNumLiterals> preorder_index{};
     vector<uint16_t> stack_p;
     vector<uint16_t> stack_s;
-    vector<uint16_t> check_vec{};
-
+    priority_queue<pair<double, uint16_t>> queue{}, empty_queue{};
     array<int, kNumLiterals> literal_to_component_id{};
-    vector<uint16_t> component_id_to_component_size;
     int next_component_id = 0;
 
     // returns false if visitation finds us to be in an inconsistent state.
     bool SccVisit(LiteralId literal, State *state) {
-        preorder_index[literal] = preorder_counter++;
-        if (scc_inference_ && !state->truth_value[literal] &&
-            find(stack_s.begin(), stack_s.end(), Not(literal)) != stack_s.end()) {
-            // if a literal is implied by its negation then it can be asserted immediately.
-            // since the literal is now asserted anything in its implication list is already
-            // asserted and the corresponding binary clauses subsumed. we should proceed as if
-            // they don't exist and return without visiting children, without creating a
-            // single-member component, and considering the implication count of this branch zero.
-            return Assign(literal, state);
+        if (scc_inference_ && !stack_p.empty()) {
+            // if the negation of this literal was visited somewhere under this root then at a
+            // minimum we can negate the root.
+            if (preorder_index[Not(literal)] > preorder_index[stack_p[0]]) {
+                // if the negation is still on stack_p, then this literal is a consequence of
+                // its negation, so we can assert the literal (which will negate a chain of
+                // literals from somewhere in stack_p back to the root). the stack is generally
+                // small and does not justify use of another data structure for lookup.
+                if (find(stack_p.begin(), stack_p.end(), Not(literal)) != stack_p.end()) {
+                    return Assert(literal, state);
+                } else {
+                    return Assert(Not(stack_p[0]), state);
+                }
+            }
         }
+        preorder_index[literal] = preorder_counter++;
         stack_p.push_back(literal);
         stack_s.push_back(literal);
 
         auto &implications = literals_to_implications_[literal];
         auto &num_implications = state->implication_counts[literal];
+
         for (size_t i = 0; i < num_implications; i++) {
             uint16_t implication = implications[i];
-            if (state->truth_value[implication]) {
+            if (state->asserted[implication]) {
                 // we can skip any already-asserted implications. these correspond to subsumed
                 // binary clauses that have no effect on inference.
                 continue;
             }
-            if (scc_inference_ && state->truth_value[Not(implication)]) {
-                // when we're not apply inferences discovered during scc evaluation we should
-                // never visit negated literals since a chain of modus tollens should have negated
-                // the root before we began. however, when we *are* applying inferences we may make
-                // an assignment during our visitation that leads to a conflict elsewhere.
-                return Assign(Not(stack_p[0]), state);
-            }
             if (preorder_index[implication] == -1) {
                 if (!SccVisit(implication, state)) {
-                    return false;
+                    return false; // back out. we are in an inconsistent state.
+                }
+                if (scc_inference_ && state->asserted.pos_or_neg(literal)) {
+                    // visiting an implication and its consequences may have resulted in the
+                    // current literal's assertion or negation. either way we can stop.
+                    break;
                 }
             } else if (literal_to_component_id[implication] == -1) {
                 while (preorder_index[stack_p.back()] > preorder_index[implication]) {
@@ -314,25 +362,27 @@ struct SolverDpllTriadScc {
         }
         if (literal == stack_p.back()) {
             stack_p.pop_back();
-            int component_id = next_component_id++;
-            int component_size = 0;
-            check_vec.clear();
-            uint32_t s_back;
-            do {
-                s_back = stack_s.back();
-                stack_s.pop_back();
-                // if we have a component containing a literal and its negation then we are in
-                // an inconsistent state already (this can arise without triggering the path
-                // check we've already done).
-                if (scc_inference_ &&
-                    find(check_vec.begin(), check_vec.end(), Not(s_back)) != check_vec.end()) {
-                    return false;
+            auto s_rit = find(stack_s.rbegin(), stack_s.rend(), literal);
+            int component_size = s_rit - stack_s.rbegin() + 1;
+            if (!state->asserted.pos_or_neg(literal)) {
+                for (auto s_fit = stack_s.end() - component_size; s_fit != stack_s.end(); s_fit++) {
+                    // if we have a component containing a literal and its negation then we are
+                    // in an inconsistent state already. the stack is generally small and does not
+                    // justify use of anothe rdata structure for lookup.
+                    if (scc_inference_ &&
+                        find(s_fit + 1, stack_s.end(), Not(*s_fit)) != stack_s.end()) {
+                        return false;
+                    }
+                    literal_to_component_id[*s_fit] = next_component_id;
                 }
-                check_vec.push_back(s_back);
-                literal_to_component_id[s_back] = component_id;
-                component_size++;
-            } while (s_back != literal);
-            component_id_to_component_size.push_back(component_size);
+                // push to the priority queue a representative literal for the component with
+                // priority first favoring large components and then favoring components with low
+                // IDs. when we have a chain of implication from a component to its negation the
+                // topological order ensures that the first component is the one that's entailed.
+                queue.push(make_pair(component_size + 1.0 / (1 + next_component_id), literal));
+                next_component_id++;
+            }
+            stack_s.resize(stack_s.size() - component_size);
         }
         return true;
     }
@@ -342,21 +392,19 @@ struct SolverDpllTriadScc {
         preorder_index.fill(-1);
         stack_p.clear();
         stack_s.clear();
-        next_component_id = 0;
         literal_to_component_id.fill(-1);
-        component_id_to_component_size.clear();
-        // if we're only interested in component size we could restrict to positive literals as
-        // roots since complementary literals are guaranteed (thanks to exactly-one constraint)
-        // to appear in components of the same size. however, one will occur before the other
-        // topologically, and this may give us reason to prefer one over the other.
-        for (uint16_t literal = 0; literal < kNumLiterals; literal++) {
-            if (state->truth_value[literal] || state->truth_value[Not(literal)]) {
-                // we want SCCs of the graph of binary clauses, excluding subsumed clauses
-                // and clauses that are actually unit due to an asserted negation.
-                continue;
-            }
-            if (preorder_index[literal] == -1) {
-                if (!SccVisit(literal, state)) return false;
+        next_component_id = 0;
+        queue = empty_queue;
+        // it suffices to explore positive literals as roots since every non-excluded negative
+        // literal will be visited and will form the necessary component.
+        for (uint16_t literal = 0; literal < kNumLiterals; literal += 2) {
+            // we want SCCs of the graph of binary clauses, excluding subsumed clauses
+            // and clauses that are actually unit due to an asserted negation.
+            if (preorder_index[literal] == -1 && ValidLiteral(literal) &&
+                !state->asserted.pos_or_neg(literal)) {
+                if (!SccVisit(literal, state)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -366,25 +414,13 @@ struct SolverDpllTriadScc {
     // heuristic search
     ///////////////////////////////////////////////
 
-    // find a literal in a large component and possibly with favorable topological ordering.
+    // find a literal in a large component and with favorable topological ordering.
     LiteralId ChooseLiteralToBranchByComponent(State *state) {
-        int best_literal = -1;
-        double max_weight = -1.0;
-        for (int i = 0; i < kNumLiterals; i++) {
-            if (ValidLiteral(i) && !state->truth_value[i] && !state->truth_value[Not(i)]) {
-                auto size = component_id_to_component_size[literal_to_component_id[i]];
-                // first we'll prefer a literal in a component of maximum size, and next we'll
-                // prefer a component with a large ID since the component IDs are in reverse
-                // topological order. a literal and its negation will be in separate components
-                // both of the same size. however, topologically we may prefer one over the other.
-                double weight = size + 1.0 - 1.0 / (1 + literal_to_component_id[i]);
-                if (weight > max_weight) {
-                    max_weight = weight;
-                    best_literal = i;
-                }
-            }
+        if (queue.empty()) {
+            return -1;
+        } else {
+            return queue.top().second;
         }
-        return best_literal;
     }
 
     // find a positive clause with as few undetermined literals as possible and return one
@@ -399,7 +435,7 @@ struct SolverDpllTriadScc {
             }
         }
         for (LiteralId literal : clauses_to_literals_[which_clause]) {
-            if (!state->truth_value[Not(literal)]) {
+            if (!state->asserted[Not(literal)]) {
                 return literal;
             }
         }
@@ -409,13 +445,13 @@ struct SolverDpllTriadScc {
     void BranchOnLiteral(LiteralId literal, State *state) {
         num_guesses_++;
         State state_copy = *state;
-        if (Assign(literal, &state_copy)) {
+        if (Assert(literal, &state_copy)) {
             CountSolutionsConsistentWithPartialAssignment(&state_copy);
             if (num_solutions_ == limit_) {
                 return;
             }
         }
-        if (Assign(Not(literal), state)) {
+        if (Assert(Not(literal), state)) {
             CountSolutionsConsistentWithPartialAssignment(state);
         }
     }
@@ -424,33 +460,33 @@ struct SolverDpllTriadScc {
         if (scc_heuristic_ || scc_inference_) {
             uint32_t assigned;
             do {
-                assigned = state->num_assigned;
+                assigned = state->num_asserted;
                 if (!FindStronglyConnectedComponents(state)) return;
-            } while (assigned != state->num_assigned);
+            } while (assigned != state->num_asserted);
         }
-        if (state->num_assigned == kAllAssigned) {
+        if (state->num_asserted == kAllAsserted) {
             if (++num_solutions_ == 1) {
                 result_ = *state;
             }
             return;
         } else {
             LiteralId branch_literal = scc_heuristic_ ?
-                    ChooseLiteralToBranchByComponent(state) :
-                    ChooseLiteralToBranchByClause(state);
+                                       ChooseLiteralToBranchByComponent(state) :
+                                       ChooseLiteralToBranchByClause(state);
             BranchOnLiteral(branch_literal, state);
         }
     }
 
     size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
-                    char *solution, size_t *num_guesses) {
+                       char *solution, size_t *num_guesses) {
         limit_ = limit;
         scc_inference_ = (configuration & 1u) > 0;
         scc_heuristic_ = (configuration & 2u) > 0;
         num_solutions_ = 0;
-        num_guesses_ = 0;
+        *num_guesses = num_guesses_ = 0;
 
-        result_ = clean_slate_;
-        State state = clean_slate_;
+        result_ = initial_state_;
+        State state = initial_state_;
 
         for (int i = 0; i < 81; i++) {
             char digit = input[i];
@@ -458,7 +494,7 @@ struct SolverDpllTriadScc {
                 int box = i / 27 * 3 + (i % 9) / 3;
                 int elm = ((i / 9) % 3) * 4 + (i % 3);
                 int val = digit - '1';
-                if (!Assign(Lit(box, elm, val), &state)) return 0;
+                if (!Assert(Literal(box, elm, val), &state)) return 0;
             }
         }
         CountSolutionsConsistentWithPartialAssignment(&state);
@@ -467,7 +503,7 @@ struct SolverDpllTriadScc {
             int box = i / 27 * 3 + (i % 9) / 3;
             int elm = ((i / 9) % 3) * 4 + (i % 3);
             for (int val = 0; val < 9; val++) {
-                if (result_.truth_value[Lit(box, elm, val)]) {
+                if (result_.asserted[Literal(box, elm, val)]) {
                     solution[i] = char('1' + val);
                 }
             }

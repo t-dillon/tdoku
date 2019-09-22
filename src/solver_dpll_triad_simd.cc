@@ -634,5 +634,5 @@ extern "C"
 size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit,
                                 uint32_t configuration,
                                 char *solution, size_t *num_guesses) {
-    return solver.SolveSudoku(input, limit, configuration & 1u, solution, num_guesses);
+    return solver.SolveSudoku(input, limit, configuration != 0, solution, num_guesses);
 }
