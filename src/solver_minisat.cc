@@ -9,14 +9,14 @@ struct SolverMiniSat {
     Minisat::Solver solver;
 
     // Construct a solver using one of four CNF representations of Sudoku logic:
-    // 0 = minimal representation
-    // 1 = natural representation. adds clauses to explicitly state that a cell has only one
-    //     value instead of relying on pigeonhole inferences for this.
-    // 2 = complete representation. adds clauses to state that each group has no more than one
-    //     value instead of relying on pigeonhole inferences for this. i.e., cells and groups
-    //     are all modeled as exactly-one.
-    // 3 = augmented representation. replaces constraints over groups with definition of triads
-    //     and constraints over triads.
+    // 0 = minimal representation: each cell has a value. no group has a value twice.
+    // 1 = natural representation: to the minimal representation adds explicit constraints
+    //     ensuring a cell has *only* one value instead of relying on pigeonhole inferences.
+    // 2 = complete representation: to the natural representation adds explicit constraints
+    //     ensuring a group has at least one of each value instead of relying on pigeonhole
+    //     inferences. i.e., both cells and groups are now modeled as exactly-one.
+    // 3 = augmented representation: replaces exactly-one constraints over groups with
+    //     definition of triads and constraints over triads.
     //
     //       logic              cells          groups         triads
     //   representation      min=1 max=1    min=1  max=1   min=1  max=1
@@ -162,13 +162,21 @@ struct SolverMiniSat {
         }
     }
 
-    size_t SolveSudoku(const char *input, char *solution, size_t *num_guesses) {
+    size_t SolveSudoku(const char *input, char *solution, bool sukaku, size_t *num_guesses) {
         Minisat::vec<Minisat::Lit> assumptions;
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < 9; column++) {
-                char digit = input[row * 9 + column];
-                if (digit != '.') {
-                    assumptions.push(Literal(row, column, digit - '1'));
+                if (sukaku) {
+                    for (int value = 0; value < 9; value++) {
+                        if (input[row * 81 + column * 9 + value] == '.') {
+                            assumptions.push(~Literal(row, column, value));
+                        }
+                    }
+                } else {
+                    char digit = input[row * 9 + column];
+                    if (digit != '.') {
+                        assumptions.push(Literal(row, column, digit - '1'));
+                    }
                 }
             }
         }
@@ -199,20 +207,18 @@ struct SolverMiniSat {
 extern "C"
 size_t TdokuSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t config,
                           char *solution, size_t *num_guesses) {
-    static SolverMiniSat s0{0};
-    static SolverMiniSat s1{1};
-    static SolverMiniSat s2{2};
-    static SolverMiniSat s3{3};
-
-    switch(config) {
+    switch(config % 4) {
         case 0:
-            return s0.SolveSudoku(input, solution, num_guesses);
+            static SolverMiniSat s0{0};
+            return s0.SolveSudoku(input, solution, config >= 4, num_guesses);
         case 1:
-            return s1.SolveSudoku(input, solution, num_guesses);
+            static SolverMiniSat s1{1};
+            return s1.SolveSudoku(input, solution, config >= 4, num_guesses);
         case 2:
-            return s2.SolveSudoku(input, solution, num_guesses);
+            static SolverMiniSat s2{2};
+            return s2.SolveSudoku(input, solution, config >= 4, num_guesses);
         default:
-            return s3.SolveSudoku(input, solution, num_guesses);
+            static SolverMiniSat s3{3};
+            return s3.SolveSudoku(input, solution, config >= 4, num_guesses);
     }
-
 }

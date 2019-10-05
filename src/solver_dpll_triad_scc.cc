@@ -5,9 +5,10 @@
 #include <cstring>
 #include <iostream>
 #include <map>
+#include <queue>
+#include <random>
 #include <set>
 #include <vector>
-#include <queue>
 #include <assert.h>
 
 using namespace std;
@@ -477,25 +478,109 @@ struct SolverDpllTriadScc {
         }
     }
 
+    ///////////////////////////////////////////////
+    // pencilmark sudoku generation
+    ///////////////////////////////////////////////
+
+    random_device rd{};
+    mt19937_64 rng{rd()};
+
+    bool Generate(bool sukaku, const vector<int> &permutation, int level,
+                  char *clues, State *state) {
+        if (state->num_asserted == kAllAsserted) {
+            return true; // current assertions fully identify solution
+        }
+        if (level == permutation.size()) {
+            return false; // not solved, but remaining assertions all tried and failed
+        }
+        int var_idx = permutation[level];
+        int cell = var_idx / 9;
+        int box = cell / 27 * 3 + (cell % 9) / 3;
+        int elm = ((cell / 9) % 3) * 4 + (cell % 3);
+        int val = var_idx % 9;
+        LiteralId lit = Literal(box, elm, val);
+
+        if (state->asserted[lit] || state->asserted[Not(lit)]) {
+            return Generate(sukaku, permutation, level + 1, clues, state);
+        } else {
+            State state2 = *state;
+            if (sukaku) {
+                clues[var_idx] = '.';
+                if (Assert(Not(lit), &state2) &&
+                    Generate(sukaku, permutation, level + 1, clues, &state2)) {
+                    return true;
+                }
+                clues[var_idx] = (char) ('1' + val);
+                return Assert(lit, state) &&
+                       Generate(sukaku, permutation, level + 1, clues, state);
+            } else {
+                clues[cell] = (char)('1' + val);
+                if (Assert(lit, &state2) &&
+                    Generate(sukaku, permutation, level + 1, clues, &state2)) {
+                    return true;
+                }
+                clues[cell] = '.';
+                return Assert(Not(lit), state) &&
+                       Generate(sukaku, permutation, level + 1, clues, state);
+            }
+        }
+    }
+
+    void Minimize(bool sukaku,char *clues) {
+        limit_ = 2;
+        for (int i = sukaku ? 729 : 81; i-- > 0;) {
+            char tmp = clues[i];
+            clues[i] = sukaku ? (char)('1' + (i % 9)) : '.';
+            if (tmp == clues[i]) continue;
+            State state = initial_state_;
+            InitializePuzzle(clues, sukaku, &state);
+            num_solutions_ = 0;
+            CountSolutionsConsistentWithPartialAssignment(&state);
+            if (num_solutions_ > 1) {
+                clues[i] = tmp;
+            }
+        }
+    }
+
+    bool InitializePuzzle(const char *input, bool sukaku, State *state) {
+        for (int i = 0; i < 81; i++) {
+            int box = i / 27 * 3 + (i % 9) / 3;
+            int elm = ((i / 9) % 3) * 4 + (i % 3);
+            if (sukaku) {
+                for (int j = 0; j < 9; j++) {
+                    if (input[i * 9 + j] == '.') {
+                        if (!Assert(Not(Literal(box, elm, j)), state)) return false;
+                    }
+                }
+            } else {
+                char digit = input[i];
+                if (digit != '.') {
+                    int val = digit - '1';
+                    if (!Assert(Literal(box, elm, val), state)) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    ///////////////////////////////////////////////
+    // entry
+    ///////////////////////////////////////////////
+
     size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
                        char *solution, size_t *num_guesses) {
         limit_ = limit;
         scc_inference_ = (configuration & 1u) > 0;
         scc_heuristic_ = (configuration & 2u) > 0;
+        bool sukaku = (configuration & 4u) > 0;
         num_solutions_ = 0;
         *num_guesses = num_guesses_ = 0;
 
         result_ = initial_state_;
         State state = initial_state_;
 
-        for (int i = 0; i < 81; i++) {
-            char digit = input[i];
-            if (digit != '.') {
-                int box = i / 27 * 3 + (i % 9) / 3;
-                int elm = ((i / 9) % 3) * 4 + (i % 3);
-                int val = digit - '1';
-                if (!Assert(Literal(box, elm, val), &state)) return 0;
-            }
+        if (!InitializePuzzle(input, sukaku, &state)) {
+            return 0;
         }
         CountSolutionsConsistentWithPartialAssignment(&state);
 
@@ -511,6 +596,23 @@ struct SolverDpllTriadScc {
         *num_guesses = num_guesses_;
         return num_solutions_;
     }
+
+    void Generate(bool sukaku, char *clues) {
+        vector<int> permutation;
+        permutation.reserve(729);
+        for (int i = 0; i < 729; i++) permutation.push_back(i);
+        while (true) {
+            State state = initial_state_;
+            shuffle(permutation.begin(), permutation.end(), rng);
+            for (int i = 0; i < 729; i++) {
+                clues[i] = sukaku ? (char) ('1' + (i % 9)) : '.';
+            }
+            if (Generate(sukaku, permutation, 0, clues, &state)) {
+                Minimize(sukaku, clues);
+                break;
+            }
+        }
+    }
 };
 
 }  // namespace
@@ -521,4 +623,10 @@ size_t TdokuSolverDpllTriadScc(const char *input, size_t limit, uint32_t configu
                                char *solution, size_t *num_guesses) {
     static SolverDpllTriadScc solver;
     return solver.SolveSudoku(input, limit, configuration, solution, num_guesses);
+}
+
+extern "C"
+void GeneratePuzzle(bool sukaku, char *clues) {
+    static SolverDpllTriadScc solver;
+    solver.Generate(sukaku, clues);
 }
