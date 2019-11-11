@@ -5,7 +5,6 @@
 #include <cstring>
 #include <iostream>
 #include <map>
-#include <queue>
 #include <random>
 #include <set>
 #include <vector>
@@ -139,7 +138,7 @@ struct SolverDpllTriadScc {
 
     // return true if the literal is in use (vs. in the filler space at the end of each box).
     static bool ValidLiteral(LiteralId literal) {
-        return ((literal % 32u) & 0xeu) != 0xeu;
+        return ((literal % 32u) & 0x1eu) != 0x1eu;
     }
 
     inline void AddImplication(LiteralId from, LiteralId to, State *state) {
@@ -311,25 +310,30 @@ struct SolverDpllTriadScc {
     array<int, kNumLiterals> preorder_index{};
     vector<uint16_t> stack_p;
     vector<uint16_t> stack_s;
-    priority_queue<pair<double, uint16_t>> queue{}, empty_queue{};
     array<int, kNumLiterals> literal_to_component_id{};
     int next_component_id = 0;
+    int best_component_literal = -1;
+    int best_component_size = -1;
 
     // returns false if visitation finds us to be in an inconsistent state.
     bool SccVisit(LiteralId literal, State *state) {
-        if (scc_inference_ && !stack_p.empty()) {
-            // if the negation of this literal was visited somewhere under this root then at a
-            // minimum we can negate the root.
-            if (preorder_index[Not(literal)] > preorder_index[stack_p[0]]) {
-                // if the negation is still on stack_p, then this literal is a consequence of
-                // its negation, so we can assert the literal (which will negate a chain of
-                // literals from somewhere in stack_p back to the root). the stack is generally
-                // small and does not justify use of another data structure for lookup.
-                if (find(stack_p.begin(), stack_p.end(), Not(literal)) != stack_p.end()) {
-                    return Assert(literal, state);
+        if (scc_inference_) {
+            int common_ancestor = -1;
+            for (auto ancestor : stack_p) {
+                if (preorder_index[ancestor] <= preorder_index[Not(literal)]) {
+                    common_ancestor = ancestor;
                 } else {
-                    return Assert(Not(stack_p[0]), state);
+                    break;
                 }
+            }
+            if (common_ancestor >= 0) {
+                // we found a proximal ancestor implying both the literal and its negation.
+                // (this ancestor might actually be the negation). we can therefore eliminate
+                // the ancestor (and as a consequence the chain of literals from the ancestor
+                // up to the root of stack_p). this might lead to discovery of a conflict.
+                if (!Assert(Not(common_ancestor), state)) return false;
+                // or it might lead to discovery of an assertion that lets us skip this branch.
+                if (state->asserted[literal]) return true;
             }
         }
         preorder_index[literal] = preorder_counter++;
@@ -345,8 +349,7 @@ struct SolverDpllTriadScc {
                 // we can skip any already-asserted implications. these correspond to subsumed
                 // binary clauses that have no effect on inference.
                 continue;
-            }
-            if (preorder_index[implication] == -1) {
+            } else if (preorder_index[implication] == -1) {
                 if (!SccVisit(implication, state)) {
                     return false; // back out. we are in an inconsistent state.
                 }
@@ -363,24 +366,23 @@ struct SolverDpllTriadScc {
         }
         if (literal == stack_p.back()) {
             stack_p.pop_back();
-            auto s_rit = find(stack_s.rbegin(), stack_s.rend(), literal);
-            int component_size = s_rit - stack_s.rbegin() + 1;
+            int component_size = (find(stack_s.rbegin(), stack_s.rend(), literal) -
+                                  stack_s.rbegin() + 1);
             if (!state->asserted.pos_or_neg(literal)) {
-                for (auto s_fit = stack_s.end() - component_size; s_fit != stack_s.end(); s_fit++) {
-                    // if we have a component containing a literal and its negation then we are
-                    // in an inconsistent state already. the stack is generally small and does not
-                    // justify use of anothe rdata structure for lookup.
-                    if (scc_inference_ &&
-                        find(s_fit + 1, stack_s.end(), Not(*s_fit)) != stack_s.end()) {
-                        return false;
-                    }
-                    literal_to_component_id[*s_fit] = next_component_id;
+                bool negation_has_component = literal_to_component_id[Not(literal)] >= 0;
+                for (auto it = stack_s.end() - component_size; it != stack_s.end(); it++) {
+                    literal_to_component_id[*it] = next_component_id;
                 }
-                // push to the priority queue a representative literal for the component with
-                // priority first favoring large components and then favoring components with low
-                // IDs. when we have a chain of implication from a component to its negation the
-                // topological order ensures that the first component is the one that's entailed.
-                queue.push(make_pair(component_size + 1.0 / (1 + next_component_id), literal));
+                // if the negation has a prior component it will be of the same size, and we
+                // should prefer it since topologically there may exist a path of implication
+                // from this component to the one containing the negation. in this case skip.
+                if (!negation_has_component) {
+                    // otherwise, we want to prioritize the largest component.
+                    if (component_size > best_component_size) {
+                        best_component_size = component_size;
+                        best_component_literal = literal;
+                    }
+                }
                 next_component_id++;
             }
             stack_s.resize(stack_s.size() - component_size);
@@ -395,7 +397,8 @@ struct SolverDpllTriadScc {
         stack_s.clear();
         literal_to_component_id.fill(-1);
         next_component_id = 0;
-        queue = empty_queue;
+        best_component_literal = -1;
+        best_component_size = -1;
         // it suffices to explore positive literals as roots since every non-excluded negative
         // literal will be visited and will form the necessary component.
         for (uint16_t literal = 0; literal < kNumLiterals; literal += 2) {
@@ -417,11 +420,7 @@ struct SolverDpllTriadScc {
 
     // find a literal in a large component and with favorable topological ordering.
     LiteralId ChooseLiteralToBranchByComponent(State *state) {
-        if (queue.empty()) {
-            return -1;
-        } else {
-            return queue.top().second;
-        }
+        return best_component_literal;
     }
 
     // find a positive clause with as few undetermined literals as possible and return one
@@ -459,11 +458,11 @@ struct SolverDpllTriadScc {
 
     void CountSolutionsConsistentWithPartialAssignment(State *state) {
         if (scc_heuristic_ || scc_inference_) {
-            uint32_t assigned;
-            do {
-                assigned = state->num_asserted;
+            while (state->num_asserted < kAllAsserted) {
+                auto prev_asserted = state->num_asserted;
                 if (!FindStronglyConnectedComponents(state)) return;
-            } while (assigned != state->num_asserted);
+                if (prev_asserted == state->num_asserted) break;
+            }
         }
         if (state->num_asserted == kAllAsserted) {
             if (++num_solutions_ == 1) {
@@ -485,7 +484,7 @@ struct SolverDpllTriadScc {
     random_device rd{};
     mt19937_64 rng{rd()};
 
-    bool Generate(bool sukaku, const vector<int> &permutation, int level,
+    bool Generate(bool pencilmark, const vector<int> &permutation, int level,
                   char *clues, State *state) {
         if (state->num_asserted == kAllAsserted) {
             return true; // current assertions fully identify solution
@@ -501,52 +500,54 @@ struct SolverDpllTriadScc {
         LiteralId lit = Literal(box, elm, val);
 
         if (state->asserted[lit] || state->asserted[Not(lit)]) {
-            return Generate(sukaku, permutation, level + 1, clues, state);
+            return Generate(pencilmark, permutation, level + 1, clues, state);
         } else {
             State state2 = *state;
-            if (sukaku) {
+            if (pencilmark) {
                 clues[var_idx] = '.';
                 if (Assert(Not(lit), &state2) &&
-                    Generate(sukaku, permutation, level + 1, clues, &state2)) {
+                    Generate(pencilmark, permutation, level + 1, clues, &state2)) {
                     return true;
                 }
                 clues[var_idx] = (char) ('1' + val);
                 return Assert(lit, state) &&
-                       Generate(sukaku, permutation, level + 1, clues, state);
+                       Generate(pencilmark, permutation, level + 1, clues, state);
             } else {
                 clues[cell] = (char)('1' + val);
                 if (Assert(lit, &state2) &&
-                    Generate(sukaku, permutation, level + 1, clues, &state2)) {
+                    Generate(pencilmark, permutation, level + 1, clues, &state2)) {
                     return true;
                 }
                 clues[cell] = '.';
                 return Assert(Not(lit), state) &&
-                       Generate(sukaku, permutation, level + 1, clues, state);
+                       Generate(pencilmark, permutation, level + 1, clues, state);
             }
         }
     }
 
-    void Minimize(bool sukaku,char *clues) {
+    void Minimize(bool pencilmark, const vector<int> &permutation, char *clues) {
         limit_ = 2;
-        for (int i = sukaku ? 729 : 81; i-- > 0;) {
-            char tmp = clues[i];
-            clues[i] = sukaku ? (char)('1' + (i % 9)) : '.';
-            if (tmp == clues[i]) continue;
+        int max = pencilmark ? 729 : 81;
+        for (int i = 0; i < max; i++) {
+            int j = pencilmark ? permutation[729-i-1] : i;
+            char tmp = clues[j];
+            clues[j] = pencilmark ? (char)('1' + (j % 9)) : '.';
+            if (tmp == clues[j]) continue;
             State state = initial_state_;
-            InitializePuzzle(clues, sukaku, &state);
+            InitializePuzzle(clues, pencilmark, &state);
             num_solutions_ = 0;
             CountSolutionsConsistentWithPartialAssignment(&state);
             if (num_solutions_ > 1) {
-                clues[i] = tmp;
+                clues[j] = tmp;
             }
         }
     }
 
-    bool InitializePuzzle(const char *input, bool sukaku, State *state) {
+    bool InitializePuzzle(const char *input, bool pencilmark, State *state) {
         for (int i = 0; i < 81; i++) {
             int box = i / 27 * 3 + (i % 9) / 3;
             int elm = ((i / 9) % 3) * 4 + (i % 3);
-            if (sukaku) {
+            if (pencilmark) {
                 for (int j = 0; j < 9; j++) {
                     if (input[i * 9 + j] == '.') {
                         if (!Assert(Not(Literal(box, elm, j)), state)) return false;
@@ -572,14 +573,14 @@ struct SolverDpllTriadScc {
         limit_ = limit;
         scc_inference_ = (configuration & 1u) > 0;
         scc_heuristic_ = (configuration & 2u) > 0;
-        bool sukaku = (configuration & 4u) > 0;
+        bool pencilmark = input[81] != '\0';
         num_solutions_ = 0;
         *num_guesses = num_guesses_ = 0;
 
         result_ = initial_state_;
         State state = initial_state_;
 
-        if (!InitializePuzzle(input, sukaku, &state)) {
+        if (!InitializePuzzle(input, pencilmark, &state)) {
             return 0;
         }
         CountSolutionsConsistentWithPartialAssignment(&state);
@@ -597,7 +598,7 @@ struct SolverDpllTriadScc {
         return num_solutions_;
     }
 
-    void Generate(bool sukaku, char *clues) {
+    void Generate(bool pencilmark, char *clues) {
         vector<int> permutation;
         permutation.reserve(729);
         for (int i = 0; i < 729; i++) permutation.push_back(i);
@@ -605,10 +606,10 @@ struct SolverDpllTriadScc {
             State state = initial_state_;
             shuffle(permutation.begin(), permutation.end(), rng);
             for (int i = 0; i < 729; i++) {
-                clues[i] = sukaku ? (char) ('1' + (i % 9)) : '.';
+                clues[i] = pencilmark ? (char) ('1' + (i % 9)) : '.';
             }
-            if (Generate(sukaku, permutation, 0, clues, &state)) {
-                Minimize(sukaku, clues);
+            if (Generate(pencilmark, permutation, 0, clues, &state)) {
+                Minimize(pencilmark, permutation, clues);
                 break;
             }
         }
@@ -626,7 +627,7 @@ size_t TdokuSolverDpllTriadScc(const char *input, size_t limit, uint32_t configu
 }
 
 extern "C"
-void GeneratePuzzle(bool sukaku, char *clues) {
+void GeneratePuzzle(bool pencilmark, char *clues) {
     static SolverDpllTriadScc solver;
-    solver.Generate(sukaku, clues);
+    solver.Generate(pencilmark, clues);
 }
