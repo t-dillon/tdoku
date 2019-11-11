@@ -21,7 +21,6 @@ typedef size_t SolverFn(const char *input, size_t limit, uint32_t flags,
 extern "C" {
 #endif
     SolverFn TdokuSolverBasic;
-    SolverFn TdokuSolverDpllCellNonUnit;
     SolverFn TdokuSolverDpllTriadScc;
     SolverFn TdokuSolverDpllTriadSimd;
     SolverFn TdokuSolverMiniSat;

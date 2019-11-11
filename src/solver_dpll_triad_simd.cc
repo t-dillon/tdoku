@@ -553,15 +553,17 @@ struct SolverDpllTriadSimd {
     // We could set the initial clues in other ways, including one box update for each clue, or
     // one batch box update for each box. But it's fastest to start with 6 batched band updates.
     static bool InitBandBatch(const char *input, State &state) {
-        __m128i dots = _mm_set1_epi8('.');
-        for (int i = 0; i < 5; i++) {
-            __m128i str16 = _mm_loadu_si128((const __m128i *) &input[i * 16]);
-            uint32_t clues = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(str16, dots)) ^0xffffu;
-            while (clues) {
-                int cell_idx = i * 16 + LowOrderBitIndex(clues);
-                InitClue(input, state, cell_idx);
-                clues = ClearLowBit(clues);
-            }
+        uint64_t clues64 = WhichDots64(input) ^ (uint64_t)-1ll;
+        while (clues64) {
+            int cell_idx = LowOrderBitIndex64(clues64);
+            InitClue(input, state, cell_idx);
+            clues64 = ClearLowBit64(clues64);
+        }
+        uint32_t clues16 = WhichDots16(input + 64) ^ 0xffffu;
+        while (clues16) {
+            int cell_idx = 64 + LowOrderBitIndex(clues16);
+            InitClue(input, state, cell_idx);
+            clues16 = ClearLowBit(clues16);
         }
         if (input[80] != '.') {
             InitClue(input, state, 80);
@@ -575,17 +577,16 @@ struct SolverDpllTriadSimd {
     }
 
     static bool InitBoxBatch729(const char *input, State &state) {
-        __m128i dots = _mm_set1_epi8('.');
+        char buf[736]; // make sure 16 byte cell reads won't go past end of buffer
+        memcpy(&buf, input, 729);
         for (int box_i = 0; box_i < 3; box_i++) {
             for (int box_j = 0; box_j < 3; box_j++) {
                 Cells16 mask = Cells16::All(kAll);
                 for (int elm_i = 0; elm_i < 3; elm_i++) {
                     for (int elm_j = 0; elm_j < 3; elm_j++) {
                         int cell = box_i * 27 + elm_i * 9 + box_j * 3 + elm_j;
-                        __m128i str16 = _mm_loadu_si128((const __m128i *) &input[cell * 9]);
-                        auto elims = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(str16, dots));
+                        auto elims = WhichDots16(&buf[cell * 9]);
                         mask.Insert(elm_i * 4 + elm_j, kAll & ~elims);
-
                     }
                 }
                 if (!BoxRestrict(state, box_i * 3 + box_j, mask, 0)) return false;
@@ -610,14 +611,15 @@ struct SolverDpllTriadSimd {
         }
     }
 
-    size_t SolveSudoku(const char *input, size_t limit, bool sukaku,
+    size_t SolveSudoku(const char *input, size_t limit,
                        char *solution, size_t *const num_guesses) {
         limit_ = limit;
         num_solutions_ = 0;
         num_guesses_ = 0;
+        bool pencilmark = input[81] != '\0';
 
         State state;
-        if (sukaku ? InitBoxBatch729(input, state) : InitBandBatch(input, state)) {
+        if (pencilmark ? InitBoxBatch729(input, state) : InitBandBatch(input, state)) {
             CountSolutionsConsistentWithPartialAssignment(state);
             if (limit_ == 1) ExtractSolution(solution_, solution);
         }
@@ -632,7 +634,7 @@ SolverDpllTriadSimd solver{};
 
 extern "C"
 size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit,
-                                uint32_t configuration,
+                                uint32_t /* unused configuration */,
                                 char *solution, size_t *num_guesses) {
-    return solver.SolveSudoku(input, limit, configuration != 0, solution, num_guesses);
+    return solver.SolveSudoku(input, limit, solution, num_guesses);
 }

@@ -29,18 +29,19 @@
  * avx2 - haswell 2013
  *   _mm256 versions of most everything
  *
- * avx512vl
+ * avx512vl - skylake 2017
  *  _mm(256)_ternarylogic_epi32
  *
- * avx512bitalg - coming with ice lake 2019/2020
- *   _mm256_popcnt_epi16   // avx512bitalg + avx512vl
- *                         // this might give an interesting boost when available.
+ * avx512vpopcntdq, avx512bitalg - ice lake 2019
+ *   _mm_popcnt_epi64
+ *   _mm256_popcnt_epi16
  *
- * June 2019 Steam monthly hardware survey:
+ * October 2019 Steam monthly hardware survey:
  *   SSE2        100.00%  +0.00%
- *   SSSE3        97.74%  +0.17%
- *   SSE4.1       96.61%  +0.31%
- *   SSE4.2       95.60%  +0.40%
+ *   SSSE3        97.95%  +0.14%
+ *   SSE4.1       96.92%  +0.20%
+ *   SSE4.2       95.95%  +0.25%
+ *   AVX          89.47%  +0.33%
  */
 
 // for functions like extract below where we use switches to determine which immediate to use
@@ -64,10 +65,9 @@ struct FourBy64 {
 namespace {
 
 struct Consts {
-    __m128i popcount_lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
     __m128i popcount_mask4 = _mm_set1_epi16(0x0f);
+    __m128i popcount_lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
     __m128i rotate_rows1 = _mm_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9);
-    __m128i rotate_rows2 = _mm_setr_epi8(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
 };
 
 const Consts consts{};
@@ -219,10 +219,15 @@ struct Bitvec08x16 {
     }
 
     inline int Popcount() const {
+#ifdef __AVX512VPOPCNTDQ__
+        __m128i counts = _mm_popcnt_epi64(vec);
+        return _mm_cvtsi128_si64(counts) + _mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec));
+#else
         // unpackhi_epi64+cvtsi128_si64 compiles to the same instructions as extract_epi64,
         // but works on windows where extract_epi64 is missing.
         return NumBitsSet64((uint64_t) _mm_cvtsi128_si64(vec)) +
                NumBitsSet64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec)));
+#endif
     }
 
     inline Bitvec08x16 Shuffle(const Bitvec08x16 &control) const {
@@ -267,7 +272,7 @@ struct Bitvec08x16 {
 
     inline Bitvec08x16 RotateRows2() const {
 #ifdef __SSSE3__
-        return Shuffle(consts.rotate_rows2);
+        return _mm_shuffle_epi32(vec, 0b10110001);
 #else
         __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0);
         __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff);
@@ -744,6 +749,26 @@ struct Bitvec16x16 {
 };
 
 #endif // __AVX2__
+
+inline uint32_t WhichDots16(const char *x) {
+    const __m128i dots = _mm_set1_epi8('.');
+    return ((uint32_t) _mm_movemask_epi8(
+            _mm_cmpeq_epi8(_mm_loadu_si128((const __m128i *) x), dots)));
+}
+
+inline uint32_t WhichDots32(const char *x) {
+#ifdef __AVX2__
+    const __m256i dots = _mm256_set1_epi8('.');
+    return ((uint32_t) _mm256_movemask_epi8(
+            _mm256_cmpeq_epi8(_mm256_loadu_si256((const __m256i *) x), dots)));
+#else
+    return WhichDots16(x) | (WhichDots16(x + 16) << 16u);
+#endif // __AVX2__
+}
+
+inline uint64_t WhichDots64(const char *x) {
+    return (uint64_t) WhichDots32(x) | ((uint64_t) WhichDots32(x + 32) << 32u);
+}
 
 #pragma GCC diagnostic pop
 

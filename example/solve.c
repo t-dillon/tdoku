@@ -11,8 +11,7 @@ int main(int argc, const char **argv) {
 
     while (getline(&puzzle, &size, stdin) != -1) {
         solution[0] = '\0';
-        uint32_t config = size >= 729 ? 1 /*sukaku*/ : 0 /*sudoku*/;
-        int count = SolveSudoku(puzzle, limit, config, solution, &guesses);
+        int count = SolveSudoku(puzzle, limit, 0, solution, &guesses);
         if (limit > 1 && count == 1) {
             SolveSudoku(puzzle, 1, config, solution, &guesses);
         }

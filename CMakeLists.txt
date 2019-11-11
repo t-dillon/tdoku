@@ -53,7 +53,7 @@ configure_file (
 
 # a gcc-linkable library with just the fast solver
 add_library(tdoku STATIC src/solver_dpll_triad_simd.cc)
-target_compile_options(tdoku PUBLIC -fno-exceptions -fno-rtti)
+target_compile_options(tdoku PUBLIC -fno-exceptions -fno-rtti -fpic)
 
 add_library(rust_sudoku SHARED IMPORTED)
 set_target_properties(rust_sudoku PROPERTIES IMPORTED_LOCATION

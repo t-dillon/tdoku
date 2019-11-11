@@ -162,11 +162,11 @@ struct SolverMiniSat {
         }
     }
 
-    size_t SolveSudoku(const char *input, char *solution, bool sukaku, size_t *num_guesses) {
+    size_t SolveSudoku(const char *input, char *solution, bool pencilmark, size_t *num_guesses) {
         Minisat::vec<Minisat::Lit> assumptions;
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < 9; column++) {
-                if (sukaku) {
+                if (pencilmark) {
                     for (int value = 0; value < 9; value++) {
                         if (input[row * 81 + column * 9 + value] == '.') {
                             assumptions.push(~Literal(row, column, value));
@@ -207,18 +207,19 @@ struct SolverMiniSat {
 extern "C"
 size_t TdokuSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t config,
                           char *solution, size_t *num_guesses) {
+    bool pencilmark = input[81] != '\0';
     switch(config % 4) {
         case 0:
             static SolverMiniSat s0{0};
-            return s0.SolveSudoku(input, solution, config >= 4, num_guesses);
+            return s0.SolveSudoku(input, solution, pencilmark, num_guesses);
         case 1:
             static SolverMiniSat s1{1};
-            return s1.SolveSudoku(input, solution, config >= 4, num_guesses);
+            return s1.SolveSudoku(input, solution, pencilmark, num_guesses);
         case 2:
             static SolverMiniSat s2{2};
-            return s2.SolveSudoku(input, solution, config >= 4, num_guesses);
+            return s2.SolveSudoku(input, solution, pencilmark, num_guesses);
         default:
             static SolverMiniSat s3{3};
-            return s3.SolveSudoku(input, solution, config >= 4, num_guesses);
+            return s3.SolveSudoku(input, solution, pencilmark, num_guesses);
     }
 }
