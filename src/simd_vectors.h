@@ -221,7 +221,7 @@ struct Bitvec08x16 {
     inline int Popcount() const {
 #ifdef __AVX512VPOPCNTDQ__
         __m128i counts = _mm_popcnt_epi64(vec);
-        return _mm_cvtsi128_si64(counts) + _mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec));
+        return _mm_cvtsi128_si64(counts) + _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts, counts));
 #else
         // unpackhi_epi64+cvtsi128_si64 compiles to the same instructions as extract_epi64,
         // but works on windows where extract_epi64 is missing.
