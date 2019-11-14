@@ -12,6 +12,9 @@
 # Then run the benchmark as:
 # benchmark/bench.sh taskset 0x8 | tee benchmark.log
 #
+# To reduce benchmark variance still further, consider niceing & disabling ASLR:
+# sudo nice -n -20 benchmarks/bench.sh setarch `uname -m` -R taskset 0x8 | tee benchmark.log
+#
 prefix="$*"
 # Rust builds are always LLVM, so exclude rust_sudoku by default.
 solver_arg="-s$(build/run_benchmark -h | grep tdoku | tr ' ' '\n' | grep -v rust_sudoku | xargs | tr ' ' ,)"
@@ -19,7 +22,7 @@ if build/run_benchmark -h | grep build.info | grep -q Clang; then
     # If clang, pass no -s arg, so we'll run everything
     solver_arg=""
 fi
-cmd="build/run_benchmark -t25 -w5 -n500000 -e1 ${solver_arg}"
+cmd="build/run_benchmark -t15 -w5 -n250000 -e1 ${solver_arg}"
 
 echo "###########################################"
 echo "# BUILD INFO"

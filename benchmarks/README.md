@@ -49,7 +49,9 @@ not known whether a puzzle has 0, 1, or 2+ solutions, so this is an important us
 # Benchmark Machines
 
 1. **GCE-c2-standard-4** (Cascade Lake)\
-The most modern platform tested so far. These can take advantage of AVX512VL instructions.
+A compute optimized server platform supporting AVX512VL instructions.
+1. **i7-1065G7** (Ice Lake)\
+A modern laptop supporting AVX512BIGALG, AVXVPOPCNTDQ, and AVX512VL instructions.
 1. **i5-8600k** (Coffee Lake)\
 A fast desktop supporting AVX2 instructions.
 1. **i7-4930k** (Ivy Bridge)\
@@ -59,10 +61,15 @@ An AMD platorm with AVX2 (but faster for Tdoku without it)
 
 # Benchmark Summary
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1180131374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1180131374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1929162374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=860792693&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1085609822&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1929162374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1298913250&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1085609822&format=image)
+
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1298913250&format=image)
+
+
+

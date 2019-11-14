@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(tdoku VERSION 1.0)
 set(CMAKE_CXX_STANDARD 14)
 
+set(ARGS "" CACHE STRING "Additional compiler args")
 # e.g., cmake . -DOPT=O2
 set(OPT "O3" CACHE STRING "Optimization level")
 # e.g., cmake . -DARCH=sandybridge
@@ -25,8 +26,8 @@ option(NORVIG        "Include norvig"        OFF)
 option(RUST_SUDOKU   "Include rust_sudoku"   OFF)
 option(SK_BFORCE2    "Include SK_BFORCE2"    OFF)
 
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -${OPT}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -${OPT}")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -${OPT} ${ARGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -${OPT} ${ARGS}")
 
 if(AVX512)
     set(ArchFlags "-mavx512vl -mavx512bitalg")

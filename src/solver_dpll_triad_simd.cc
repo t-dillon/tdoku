@@ -5,6 +5,8 @@
 #include <cstring>
 #include <immintrin.h>
 
+#define LIKELY(x) __builtin_expect(!!(x),1)
+
 using namespace std;
 
 namespace {
@@ -403,7 +405,7 @@ struct SolverDpllTriadSimd {
     static bool BandEliminate(State &state, int vertical, int band_idx, int from_peer = 0) {
         Band &band = state.bands[vertical][band_idx];
         const Cells08 eliminating = band.configurations & band.eliminations;
-        if (eliminating.AllZero()) return true;
+        if (LIKELY(eliminating.AllZero())) return true;
         // after eliminating we might check that every value is still consistent with some
         // configuration, but the check is a net loss.
         band.configurations ^= eliminating;

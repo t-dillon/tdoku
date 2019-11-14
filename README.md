@@ -24,46 +24,49 @@ spectrum, here are results for a range of benchmarked solvers on a dataset of ~4
 difficult puzzles with Sudoku Explainer ratings of 11 or higher:
 
 <pre>
-|forum_hardest_1905_11+        |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
-|------------------------------|------------:| -----------:| ----------:| --------------:|
-|minisat[*]               (sat)|       693.9 |      1441.1 |       0.0% |          63.75 |
-|norvig                        |       356.4 |      2805.8 |       0.0% |         359.81 |
-|kudoku                   (cov)|     2,022.0 |       494.6 |        N/A |            N/A |
-|fast_solv_9r2            (dlx)|     2,068.4 |       483.5 |       0.0% |         171.34 |
-|bb_sudoku                     |     4,871.6 |       205.3 |       0.0% |         200.59 |
-|jsolve                        |     6,372.2 |       156.9 |       0.0% |         213.47 |
-|jczsolve                      |     9,670.7 |       103.4 |       0.0% |         171.17 |
-|fsss2                         |    10,384.1 |        96.3 |       0.0% |         139.19 |
-|rust_sudoku                   |    11,841.2 |        84.5 |        N/A |            N/A |
-|sk_bforce2                    |    12,418.1 |        80.5 |       0.0% |         122.63 |
-|<b>tdoku                         |    18,906.2 |        52.9 |       0.0% |          64.93 </b>|
+|data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|norvig                                |       292.6 |      3417.7 |       0.0% |         186.19 |
+|minisat_augmented_01[*]         (sat) |       680.3 |      1469.9 |       0.0% |          63.17 |
+|kudoku                          (cov) |      1976.2 |       506.0 |        N/A |            N/A |
+|fast_solv_9r2                   (dlx) |      1993.1 |       501.7 |       0.0% |         172.39 |
+|bb_sudoku                             |      4656.2 |       214.8 |       0.0% |         200.41 |
+|jsolve                                |      5347.7 |       187.0 |       0.0% |         213.38 |
+|jczsolve                              |      9341.4 |       107.1 |       0.0% |         171.20 |
+|fsss2                                 |     10183.2 |        98.2 |       0.0% |         139.23 |
+|sk_bforce2                            |     10947.9 |        91.3 |       0.0% |         122.64 |
+|rust_sudoku                           |     11522.1 |        86.8 |        N/A |            N/A |
+|<b>tdoku                                 |     18963.2 |        52.7 |       0.0% |          64.95 </b>|
 </pre>
-<small>[*] Note: minisat appears ~2x as fast as it really is in this comparison because the minisat-based solver 
+<small>[*] Note: minisat appears faster than it really is in this comparison because the minisat-based solver 
 is only looking for the first solution, while the others are all finding the solution <b>and</b> 
 confirming that the solution is unique.</small>
 
 And here are results on the well-known and commonly-benchmarked dataset of ~49,000 generally very easy 17-clue puzzles:
 
 <pre>
-|17_clue                       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
-|------------------------------|------------:| -----------:| ----------:| --------------:|
-|minisat[*]               (sat)|     4,133.0 |       242.0 |      76.2% |           0.83 |
-|norvig                        |     6,599.1 |       151.5 |      44.7% |           9.83 |
-|kudoku                   (cov)|    34,126.0 |        29.3 |        N/A |            N/A |
-|fast_solv_9r2            (dlx)|    34,213.1 |        29.2 |      44.6% |           4.62 |
-|bb_sudoku                     |   111,377.3 |         9.0 |      76.0% |           1.56 |
-|jsolve                        |   145,103.4 |         6.9 |      50.1% |           3.21 |
-|jczsolve                      |   224,303.9 |         4.5 |      69.6% |           1.90 |
-|fsss2                         |   262,448.4 |         3.8 |      72.5% |           1.31 |
-|<b>tdoku                         |   292,388.6 |         3.4 |      78.7% |           0.61 </b>|
-|rust_sudoku                   |   315,924.3 |         3.2 |        N/A |            N/A |
-|sk_bforce2                    |   329,052.3 |         3.0 |      73.8% |           1.01 |
+|data/puzzles1_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_augmented_01[*]         (sat) |      3972.4 |       251.7 |      76.3% |           0.83 |
+|norvig                                |      6469.1 |       154.6 |      44.6% |           4.98 |
+|fast_solv_9r2                   (dlx) |     33167.3 |        30.2 |      44.6% |           4.62 |
+|kudoku                          (cov) |     34265.3 |        29.2 |        N/A |            N/A |
+|bb_sudoku                             |    106279.2 |         9.4 |      76.0% |           1.56 |
+|jsolve                                |    120971.1 |         8.3 |      50.1% |           3.20 |
+|jczsolve                              |    213868.4 |         4.7 |      69.6% |           1.89 |
+|fsss2                                 |    257772.9 |         3.9 |      72.5% |           1.31 |
+|sk_bforce2                            |    288829.0 |         3.5 |      73.7% |           1.00 |
+|rust_sudoku                           |    304866.3 |         3.3 |        N/A |            N/A |
+|<b>tdoku                                 |    312914.6 |         3.2 |      78.7% |           0.61 </b>|
 </pre>
 
-And here is a chart comparing a narrower set of the fastest solvers on a wider range of datasets 
-ordered roughly from easiest to hardest:
+For configuration and full details of the runs used for this comparison, [see here](https://github.com/t-dillon/tdoku/tree/master/benchmarks/GCE-c2-standard-4_clang-9_O3_native_pgo).
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRL2K3hr9Eku5tN6qMFyLuRjXMrnHyo88J_HT1Pq9r-C5pFj2OfaDaoMOs3V9JA6eGSR7jWcRo1OIQJ/pubchart?oid=1180131374&format=image)
+Here is a chart comparing a narrower set of the fastest solvers on a wider range of datasets 
+ordered roughly from easiest to hardest, and for each solver using the results from its most 
+favorable tested compiler and compiler options:
+
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1180131374&format=image)
 
 #### Building and Running
 
@@ -76,12 +79,15 @@ $ ./build/run_tests
 $ ./build/run_benchmark data/*
 ```
 Building the project also produces a library containing the fast simd solver.  You can build a 
-simple test program that reads Sudoku from stdin and displays the solution count and solution (if
-unique) like so:
+simple test program that reads Sudoku (or 729-character pencilmark Sudoku) from stdin and displays 
+the solution count and solution (if unique) like so:
 
 ```bash
 $ gcc example/solve.c build/libtdoku.a -o solve
+$ # count solutions:
 $ ./solve < data/puzzles0_kaggle
+$ # find single solution:
+$ ./solve 1 < data/puzzles0_kaggle
 ```
 
 #### Benchmarking Other Solvers
@@ -92,13 +98,12 @@ test several different SAT encodings.
 Follow the [instructions here](https://github.com/t-dillon/tdoku/blob/master/other/README.md) to find
 and set up sources where necessary.
 
-With sources set up, the benchmarks [found here](https://github.com/t-dillon/tdoku/tree/master/benchmarks) were run as follows:
+With sources set up, the benchmarks [found here](https://github.com/t-dillon/tdoku/tree/master/benchmarks) were run 
+using [BENCH.sh](https://github.com/t-dillon/tdoku/blob/master/BENCH.sh) by specifying an architecture, taskset CPU mask, and list of compiler/flag specifications as
+in the following example:
 
 ```bash
-$ CC=clang-8 CXX=clang++-8 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on
-$ benchmarks/bench.sh | tee benchmarks/benchmark-clang8.log
-$ CC=gcc-6 CXX=g++-6 ./BUILD.sh -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on
-$ benchmarks/bench.sh | tee benchmarks/benchmark-gcc6.log
+$ ./BENCH.sh i7-4930k 0x8 gcc-6_O3_native clang-8_O3_native clang-8_O3_native_pgo ...
 ```
 
 See CMakeLists.txt for the set of -D options to pass to BUILD.sh if you want to build and benchmark
