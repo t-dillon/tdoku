@@ -573,7 +573,7 @@ struct SolverDpllTriadScc {
         limit_ = limit;
         scc_inference_ = (configuration & 1u) > 0;
         scc_heuristic_ = (configuration & 2u) > 0;
-        bool pencilmark = input[81] != '\0';
+        bool pencilmark = input[81] >= '.';
         num_solutions_ = 0;
         *num_guesses = num_guesses_ = 0;
 

@@ -13,7 +13,7 @@ int main(int argc, const char **argv) {
         solution[0] = '\0';
         int count = SolveSudoku(puzzle, limit, 0, solution, &guesses);
         if (limit > 1 && count == 1) {
-            SolveSudoku(puzzle, 1, config, solution, &guesses);
+            SolveSudoku(puzzle, 1, 0, solution, &guesses);
         }
         printf("%.81s:%d:%.81s\n", puzzle, count, solution);
     }

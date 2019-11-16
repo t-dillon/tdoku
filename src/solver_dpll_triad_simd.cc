@@ -618,7 +618,7 @@ struct SolverDpllTriadSimd {
         limit_ = limit;
         num_solutions_ = 0;
         num_guesses_ = 0;
-        bool pencilmark = input[81] != '\0';
+        bool pencilmark = input[81] >= '.';
 
         State state;
         if (pencilmark ? InitBoxBatch729(input, state) : InitBandBatch(input, state)) {
