@@ -55,6 +55,7 @@ extern "C" {
     SolverFn OtherSolverNorvig;
     SolverFn OtherSolverJSolve;
     SolverFn OtherSolverKudoku;
+    SolverFn OtherSolverGss;
     SolverFn OtherSolverFsss2;
     SolverFn OtherSolverJCZSolve;
     SolverFn OtherSolverSKBFORCE2;
@@ -135,6 +136,17 @@ std::vector<Solver> GetAllSolvers() {
 #endif
 #ifdef KUDOKU
     solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku",                    7));
+#endif
+#ifdef GSS
+    solvers.emplace_back(Solver(OtherSolverGss,               1, "gss1",                      7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  2, "gss2",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  3, "gss3",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  4, "gss4",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  5, "gss5",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  6, "gss6",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  7, "gss7",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  8, "gss8",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,      		  0, "gss",         			  7));
 #endif
 #ifdef BB_SUDOKU
     solvers.emplace_back(Solver(OtherSolverBBSudoku,          0, "bb_sudoku",                15));
