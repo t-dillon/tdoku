@@ -1,19 +1,31 @@
 /*
     Generic Sudoku Solver (gss) link to tdoku benchmark
     Copyright (C) 2019 B. Pieters
+	BSD 2-Clause License
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	Copyright (c) 2019, Tom Dillon
+	All rights reserved.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Redistribution and use in source and binary forms, with or without
+	modification, are permitted provided that the following conditions are met:
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	1. Redistributions of source code must retain the above copyright notice, this
+	   list of conditions and the following disclaimer.
+
+	2. Redistributions in binary form must reproduce the above copyright notice,
+	   this list of conditions and the following disclaimer in the documentation
+	   and/or other materials provided with the distribution.
+
+	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+	AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+	FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+	DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+	SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+	CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+	OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdlib.h>
 #include <stdio.h>
@@ -54,11 +66,8 @@ int S_ReadCompactStandard(const char *s, Sudoku *S)
 	return 1;
 }
 
-size_t OtherSolverGss(const char *input, size_t limit /* unused */,
-                         uint32_t configuration /* unused */,
-                         char *solution, size_t *num_guesses) 
+size_t OtherSolverGss(const char *input, size_t limit, uint32_t configuration, char *solution, size_t *num_guesses) 
 {
-	int limitlevel;
 	int maxlevel;
 	int ns;
 	int i;
@@ -76,13 +85,11 @@ size_t OtherSolverGss(const char *input, size_t limit /* unused */,
 		init=1;
 	}
 		
-		
-	limitlevel=(int)configuration;
 	if (!S_ReadCompactStandard(input, &S))
 		return 0;
 		
 	sol=malloc(sizeof(MASKINT *));
-	state=Solve(&S, &maxlevel, &sol, &ns, 2, limitlevel, STRAT);
+	state=Solve(&S, &maxlevel, &sol, &ns, (int)limit, (int)configuration, STRAT);
 	solution[81]='\0';
 	switch(state)
 	{
