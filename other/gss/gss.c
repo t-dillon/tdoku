@@ -106,8 +106,9 @@ size_t OtherSolverGss(const char *input, size_t limit, uint32_t configuration, c
 			free(sol);		
 			return (size_t)ns;
 		case INVALID:
-		case UNSOLVED:
+		case UNSOLVED:	
 		default:
+			free(sol);
 			return 0;
 	}
 }
