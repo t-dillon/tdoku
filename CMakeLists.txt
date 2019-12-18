@@ -21,6 +21,7 @@ option(FSSS2         "Include fsss2"         OFF)
 option(JCZSOLVE      "Include JCZSolve"      OFF)
 option(JSOLVE        "Include JSolve"        OFF)
 option(KUDOKU        "Include KUDOKU"        OFF)
+option(GSS           "Include GSS"           OFF)
 option(MINISAT       "Include MiniSat"       OFF)
 option(NORVIG        "Include norvig"        OFF)
 option(RUST_SUDOKU   "Include rust_sudoku"   OFF)
@@ -102,6 +103,15 @@ if (KUDOKU)
     add_definitions(-DKUDOKU)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
             other/kudoku/kudoku.c)
+endif()
+
+if (GSS)
+    add_definitions(-DGSS)
+	set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -DM32bit -DGCC_POPCNT32")
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/gss/sudoku.c
+            other/gss/sudoku_parser.c
+            other/gss/gss.c)
 endif()
 
 if (MINISAT)

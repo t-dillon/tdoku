@@ -126,7 +126,7 @@ solvers:
  _tdev_basic _tdev_basic_heuristic minisat_minimal_01 minisat_natural_01 minisat_complete_01 
  minisat_augmented_01 _tdev_dpll_triad _tdev_dpll_triad_scc_i _tdev_dpll_triad_scc_h 
  _tdev_dpll_triad_scc_ih norvig fast_solv_9r2 kudoku bb_sudoku jsolve fsss2 fsss2_locked jczsolve 
- sk_bforce2 rust_sudoku tdoku
+ sk_bforce2 rust_sudoku tdoku gss gss[1-8]
 build info: Clang 8.0.1 -O3 -march=native
 </pre>
 

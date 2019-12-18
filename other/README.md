@@ -33,6 +33,13 @@ configured here.
  -- An early exact cover solver (but not DLX).\
  -- build with -DKUDOKU=on
 
+1. **gss** (Bart 2019)\
+    (from [here](https://github.com/bartp5/gss)).\
+ -- To the location of your choice clone https://github.com/bartp5/gss.\
+ -- Link required files using:\
+    `$ other/gss/link.sh path/to/gss`\
+ -- build with -DGSS=on
+ 
 1. **FSSS2** (M.Dobrichev 2014-2015)\
  -- To the location of your choice clone https://github.com/t-dillon/fsss2_bench (a fork of
     dobrichev/fsss2 with some patches to work with the benchmark program here).\
