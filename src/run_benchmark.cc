@@ -1,6 +1,7 @@
 #include "all_solvers.h"
 #include "build_info.h"
 #include "klib/ketopt.h"
+#include "util.h"
 
 #include <algorithm>
 #include <array>
@@ -23,6 +24,8 @@ namespace {
 struct Options {
     // whether to expect 729-character pencilmark input instead of 81-character sudoku.
     bool pencilmark = false;
+    // whether to rate puzzles by time (instead of by backtracks)
+    bool rate_by_backtracks = false;
     // size of the dataset to create from the input (via randomization, replication, sampling).
     size_t test_dataset_size = 100000;
     // target warmup time for caches, branch prediction before actual benchmarking
@@ -50,18 +53,15 @@ struct Options {
 
 struct Benchmark {
     const Options options_;
-    const int puzzle_size_;
-    const int puzzle_buf_size_; // puzzle_size_ rounded up for alignment
+    const size_t puzzle_size_;
+    const size_t puzzle_buf_size_; // puzzle_size_ rounded up for alignment
     vector<char> dataset_{};
     // when validating puzzles during warmup it is an error if the solver can not find a
     // solution, UNLESS the dataset indicates that it contains puzzles with no solutions
     // via a comment at the top of the file containing the string 'ALLOWZERO'.
     bool allow_zero_ = false;
 
-    random_device rd{};
-    mt19937_64 rng{rd()};
-    uniform_int_distribution<uint32_t> random_uint{};
-    uniform_real_distribution<> random_double{0.0, 1.0};
+    Util util;
 
     explicit Benchmark(const Options &options) :
             options_(options),
@@ -86,57 +86,6 @@ struct Benchmark {
 
     void PrintSudoku(const char *board, bool one_line) {
         PrintSudoku(board, one_line, cout);
-    }
-
-    // permute indices s.t. bands may be reordered and rows or columns may be reordered
-    // within a band, but rows or columns may not be exchanged between bands.
-    void BlockShuffle(vector<int> *vec) {
-        vector<int> blocks{0, 1, 2};
-        shuffle(blocks.begin(), blocks.end(), rng);
-        for (int i = 0; i < 3; i++) {
-            vector<int> block{0, 1, 2};
-            shuffle(block.begin(), block.end(), rng);
-            for (int j = 0; j < 3; j++) {
-                (*vec)[i * 3 + j] = blocks[i] * 3 + block[j];
-            }
-        }
-    }
-
-    // permute rows, columns, bands, and digits to produce a randomly transformed but
-    // equivalent puzzle.
-    void PermuteSudoku(char *puzzle) {
-        vector<int> digit_permutation{0, 1, 2, 3, 4, 5, 6, 7, 8};
-        shuffle(digit_permutation.begin(), digit_permutation.end(), rng);
-
-        vector<int> row_permutation{0, 1, 2, 3, 4, 5, 6, 7, 8};
-        vector<int> col_permutation{0, 1, 2, 3, 4, 5, 6, 7, 8};
-        BlockShuffle(&col_permutation);
-        BlockShuffle(&row_permutation);
-
-        int row_size = options_.pencilmark ? 81 : 9;
-        vector<char> out_puzzle;
-        out_puzzle.resize(puzzle_size_);
-
-        for (int row = 0; row < 9; row++) {
-            for (int col = 0; col < 9; col++) {
-                if (options_.pencilmark) {
-                    for (int digit = 0; digit < 9; digit++) {
-                        bool eliminated = puzzle[row * 81 + col * 9 + digit] == '.';
-                        out_puzzle[row_permutation[row] * 81 +
-                                   col_permutation[col] * 9 +
-                                   digit_permutation[digit]] =
-                                eliminated ? '.' : (char) ('1' + digit_permutation[digit]);
-                    }
-                } else {
-                    char digit = puzzle[row * 9 + col];
-                    if (digit != '.') {
-                        digit = (char) ('1' + digit_permutation[digit - '1']);
-                    }
-                    out_puzzle[row_permutation[row] * 9 + col_permutation[col]] = digit;
-                }
-            }
-        }
-        strncpy(puzzle, &out_puzzle[0], puzzle_size_);
     }
 
     // generate a dataset of the requested size from the input file in a way that maximizes
@@ -168,14 +117,14 @@ struct Benchmark {
                     if (num_loaded < options_.test_dataset_size) {
                         char *dest = &dataset_[puzzle_buf_size_ * num_loaded];
                         strncpy(dest, line.c_str(), puzzle_size_);
-                        if (options_.randomize) PermuteSudoku(dest);
+                        if (options_.randomize) util.PermuteSudoku(dest, options_.pencilmark);
                         num_loaded++;
-                    } else if (random_double(rng) <
+                    } else if (util.RandomDouble() <
                                (double) options_.test_dataset_size / num_processed) {
-                        auto replace = random_uint(rng) % options_.test_dataset_size;
+                        auto replace = util.RandomUInt() % options_.test_dataset_size;
                         char *dest = &dataset_[puzzle_buf_size_ * replace];
                         strncpy(dest, line.c_str(), puzzle_size_);
-                        if (options_.randomize) PermuteSudoku(dest);
+                        if (options_.randomize) util.PermuteSudoku(dest, options_.pencilmark);
                     }
                 }
             } else if (line.find("ALLOWZERO") != string::npos) {
@@ -192,7 +141,8 @@ struct Benchmark {
                        puzzle_buf_size_ * num_processed);
                 if (options_.randomize) {
                     for (int j = 0; j < num_processed; j++) {
-                        PermuteSudoku(&dataset_[puzzle_buf_size_ * (num_loaded + j)]);
+                        util.PermuteSudoku(&dataset_[puzzle_buf_size_ * (num_loaded + j)],
+                                options_.pencilmark);
                     }
                 }
                 num_loaded += num_processed;
@@ -200,12 +150,12 @@ struct Benchmark {
         }
         // then complete the dataset by sampling from loaded puzzles with uniform probability.
         for (int i = num_loaded; i < options_.test_dataset_size; i++) {
-            auto which = random_uint(rng) % num_loaded;
+            auto which = util.RandomUInt() % num_loaded;
             strncpy(&dataset_[puzzle_buf_size_ * i],
                     &dataset_[puzzle_buf_size_ * which],
                     puzzle_size_);
             if (options_.randomize) {
-                PermuteSudoku(&dataset_[puzzle_buf_size_ * i]);
+                util.PermuteSudoku(&dataset_[puzzle_buf_size_ * i], options_.pencilmark);
             }
         }
     }
@@ -296,7 +246,7 @@ struct Benchmark {
                           (solver.ReturnsGuessCount() ? f3 : f4) :
                           (solver.ReturnsGuessCount() ? f1 : f2);
 
-        double puzzles_per_second = 1000000 * num_solved / (double) usec_total;
+        double puzzles_per_second = 1000000 * num_solved / usec_total;
         double usec_per_puzzle = usec_total / (double) num_solved;
         double percent_no_guess = 100 * total_no_guess / (double) num_solved;
         double guesses_per_puzzle = total_guesses / (double) num_solved;
@@ -315,9 +265,9 @@ struct Benchmark {
     // for the fast solvers we want to do passes over the full data set so the results are most
     // comparable. but for the slow solvers we'll run over just a fraction of the dataset if
     // necessary to finish in a reasonable time.
-    int Test(const string &filename) {
+    void Test(const string &filename) {
         if (options_.random_seed > 0) {
-            rng.seed(options_.random_seed);
+            util.RandomSeed(options_.random_seed);
         }
         Load(filename);
         OutputHeader(filename);
@@ -350,7 +300,51 @@ struct Benchmark {
             auto total_usec = (end - start).count();
             OutputResult(solver, filename, puzzles_todo, total_usec, total_guesses, total_no_guess);
         }
-        return 0;
+    }
+
+    void Rate(const string &dataset_filename) {
+        ifstream file;
+        file.open(dataset_filename);
+        if (file.fail()) {
+            cout << "Error opening " << dataset_filename << endl;
+            exit(1);
+        }
+        dataset_.resize(options_.test_dataset_size * puzzle_buf_size_);
+        fill(dataset_.begin(), dataset_.end(), 0);
+
+        char solution[81];
+        size_t guesses = 0;
+        string line;
+        while (getline(file, line)) {
+            if (line.length() > 0 && line[0] != '#') {
+                if (line[line.size() - 1] == '\r') {
+                    line.erase(line.size() - 1);
+                }
+                if (line.length() >= puzzle_size_) {
+                    for (int i = 0; i < options_.test_dataset_size; i++) {
+                        char *dest = &dataset_[i * puzzle_buf_size_];
+                        strncpy(dest, line.c_str(), puzzle_size_);
+                        util.PermuteSudoku(dest, options_.pencilmark);
+                    }
+                    for (const Solver &solver : options_.solvers) {
+                        microseconds start =
+                                duration_cast<microseconds>(system_clock::now().time_since_epoch());
+                        double total_guesses = 0.0;
+                        for (int i = 0; i < options_.test_dataset_size; i++) {
+                            const char *puzzle = &dataset_[i * puzzle_buf_size_];
+                            solver.Solve(puzzle, 1, solution, &guesses);
+                            total_guesses += guesses;
+                        }
+                        microseconds end =
+                                duration_cast<microseconds>(system_clock::now().time_since_epoch());
+                        double cost = (options_.rate_by_backtracks ?
+                                total_guesses : (double)(end - start).count());
+                        printf("%12.1f\t", cost / options_.test_dataset_size);
+                    }
+                    cout << endl;
+                }
+            }
+        }
     }
 };
 
@@ -360,16 +354,25 @@ struct Benchmark {
 int main(int argc, char **argv) {
     Options options{};
 
+    bool do_rating = false;
     ketopt_t opt = KETOPT_INIT;
     char c;
-    while ((c = ketopt(&opt, argc, argv, 1, "c::e:hn:pr::s:t:v::w:z::", nullptr)) != -1) {
+    while ((c = (char)ketopt(&opt, argc, argv, 1, "abc::e:hn:pr::s:t:v::w:z::", nullptr)) != -1) {
         switch (c) {
+            case 'a': {
+                do_rating = true;
+                break;
+            }
+            case 'b': {
+                options.rate_by_backtracks = true;
+                break;
+            }
             case 'c': {
                 options.csv_output = opt.arg == nullptr ? true : stoi(opt.arg) > 0;
                 break;
             }
             case 'e': {
-                options.random_seed = stoi(opt.arg);
+                options.random_seed = stoull(opt.arg);
                 break;
             }
             case 'n': {
@@ -441,7 +444,11 @@ int main(int argc, char **argv) {
         benchmark.Test("data/puzzles4_forum_hardest_1905_11+");
     } else {
         for (int i = opt.ind; i < argc; i++) {
-            benchmark.Test(argv[i]);
+            if (do_rating) {
+                benchmark.Rate(argv[i]);
+            } else {
+                benchmark.Test(argv[i]);
+            }
         }
     }
 }

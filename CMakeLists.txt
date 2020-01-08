@@ -67,6 +67,9 @@ set(BENCHMARK_SOLVER_SOURCES
         src/solver_dpll_triad_simd.cc
         other/other_solvers.cc)
 
+set(GENERATE_SOLVER_SOURCES
+        src/solver_dpll_triad_simd.cc)
+
 if (BB_SUDOKU)
     add_definitions(-DBB_SUDOKU)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
@@ -107,7 +110,7 @@ endif()
 
 if (GSS)
     add_definitions(-DGSS)
-	set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -DM32bit -DGCC_POPCNT32")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DM32bit -DGCC_POPCNT32")
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
             other/gss/sudoku.c
             other/gss/sudoku_parser.c
@@ -117,6 +120,8 @@ endif()
 if (MINISAT)
     add_definitions(-DMINISAT)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            src/solver_minisat.cc)
+    set(GENERATE_SOLVER_SOURCES ${GENERATE_SOLVER_SOURCES}
             src/solver_minisat.cc)
 endif()
 
@@ -137,12 +142,14 @@ if (SK_BFORCE2)
           other/SK_BFORCE2/sk_t.cpp)
 endif()
 
-add_executable(run_benchmark src/run_benchmark.cc ${BENCHMARK_SOLVER_SOURCES})
+add_executable(run_benchmark src/run_benchmark.cc src/util.cc ${BENCHMARK_SOLVER_SOURCES})
 add_executable(run_tests test/run_tests.cc ${BENCHMARK_SOLVER_SOURCES})
+add_executable(generate src/generate.cc src/util.cc ${GENERATE_SOLVER_SOURCES})
 
 if (MINISAT)
     target_link_libraries(run_benchmark minisat)
     target_link_libraries(run_tests minisat)
+    target_link_libraries(generate minisat)
 endif()
 
 if (RUST_SUDOKU)

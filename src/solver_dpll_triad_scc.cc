@@ -1,14 +1,13 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <cassert>
 #include <climits>
 #include <cstring>
 #include <iostream>
 #include <map>
-#include <random>
 #include <set>
 #include <vector>
-#include <assert.h>
 
 using namespace std;
 
@@ -23,6 +22,7 @@ constexpr uint16_t kAllAsserted = kNumBoxes * (kNumPosClausesPerBox - 1) * kNumV
 
 typedef uint32_t ClauseId;
 typedef uint32_t LiteralId;
+constexpr uint32_t kNoLiteral = UINT32_MAX;
 
 template<int literals>
 class FastBitset {
@@ -131,9 +131,9 @@ struct SolverDpllTriadScc {
     // based on a 4x4 grid, with the upper-left 3x3 subgrid being the actual 9 cells of the box
     // and the 3x1 and 1x3 extra column and row being horizontal and vertical triads. The last
     // element of the 4x4 grid is unused, but remains for indexing convenience.
-    static uint32_t Literal(int box, int elem, int value) {
+    static LiteralId Literal(int box, int elem, int value) {
         // this order strikes the best balance of locality and avoiding division in ValidLiteral
-        return 2 * (elem + 16 * (value + 9 * box));
+        return (uint32_t)(2 * (elem + 16 * (value + 9 * box)));
     }
 
     // return true if the literal is in use (vs. in the filler space at the end of each box).
@@ -308,17 +308,17 @@ struct SolverDpllTriadScc {
 
     int preorder_counter = 0;
     array<int, kNumLiterals> preorder_index{};
-    vector<uint16_t> stack_p;
-    vector<uint16_t> stack_s;
+    vector<LiteralId> stack_p;
+    vector<LiteralId> stack_s;
     array<int, kNumLiterals> literal_to_component_id{};
     int next_component_id = 0;
-    int best_component_literal = -1;
+    LiteralId best_component_literal = kNoLiteral;
     int best_component_size = -1;
 
     // returns false if visitation finds us to be in an inconsistent state.
     bool SccVisit(LiteralId literal, State *state) {
         if (scc_inference_) {
-            int common_ancestor = -1;
+            LiteralId common_ancestor = kNoLiteral;
             for (auto ancestor : stack_p) {
                 if (preorder_index[ancestor] <= preorder_index[Not(literal)]) {
                     common_ancestor = ancestor;
@@ -326,7 +326,7 @@ struct SolverDpllTriadScc {
                     break;
                 }
             }
-            if (common_ancestor >= 0) {
+            if (common_ancestor != kNoLiteral) {
                 // we found a proximal ancestor implying both the literal and its negation.
                 // (this ancestor might actually be the negation). we can therefore eliminate
                 // the ancestor (and as a consequence the chain of literals from the ancestor
@@ -344,7 +344,7 @@ struct SolverDpllTriadScc {
         auto &num_implications = state->implication_counts[literal];
 
         for (size_t i = 0; i < num_implications; i++) {
-            uint16_t implication = implications[i];
+            LiteralId implication = implications[i];
             if (state->asserted[implication]) {
                 // we can skip any already-asserted implications. these correspond to subsumed
                 // binary clauses that have no effect on inference.
@@ -397,7 +397,7 @@ struct SolverDpllTriadScc {
         stack_s.clear();
         literal_to_component_id.fill(-1);
         next_component_id = 0;
-        best_component_literal = -1;
+        best_component_literal = kNoLiteral;
         best_component_size = -1;
         // it suffices to explore positive literals as roots since every non-excluded negative
         // literal will be visited and will form the necessary component.
@@ -427,7 +427,7 @@ struct SolverDpllTriadScc {
     // such literal. assumes that the puzzle is *not* already solved.
     LiteralId ChooseLiteralToBranchByClause(State *state) {
         int min_free = INT8_MAX, which_clause = 0;
-        for (int clause_id : positive_cell_clauses_) {
+        for (ClauseId clause_id : positive_cell_clauses_) {
             int num_free = state->clause_free_literals[clause_id];
             if (num_free < min_free) {
                 min_free = num_free;
@@ -474,72 +474,6 @@ struct SolverDpllTriadScc {
                                        ChooseLiteralToBranchByComponent(state) :
                                        ChooseLiteralToBranchByClause(state);
             BranchOnLiteral(branch_literal, state);
-        }
-    }
-
-    ///////////////////////////////////////////////
-    // pencilmark sudoku generation
-    ///////////////////////////////////////////////
-
-    random_device rd{};
-    mt19937_64 rng{rd()};
-
-    bool Generate(bool pencilmark, const vector<int> &permutation, int level,
-                  char *clues, State *state) {
-        if (state->num_asserted == kAllAsserted) {
-            return true; // current assertions fully identify solution
-        }
-        if (level == permutation.size()) {
-            return false; // not solved, but remaining assertions all tried and failed
-        }
-        int var_idx = permutation[level];
-        int cell = var_idx / 9;
-        int box = cell / 27 * 3 + (cell % 9) / 3;
-        int elm = ((cell / 9) % 3) * 4 + (cell % 3);
-        int val = var_idx % 9;
-        LiteralId lit = Literal(box, elm, val);
-
-        if (state->asserted[lit] || state->asserted[Not(lit)]) {
-            return Generate(pencilmark, permutation, level + 1, clues, state);
-        } else {
-            State state2 = *state;
-            if (pencilmark) {
-                clues[var_idx] = '.';
-                if (Assert(Not(lit), &state2) &&
-                    Generate(pencilmark, permutation, level + 1, clues, &state2)) {
-                    return true;
-                }
-                clues[var_idx] = (char) ('1' + val);
-                return Assert(lit, state) &&
-                       Generate(pencilmark, permutation, level + 1, clues, state);
-            } else {
-                clues[cell] = (char)('1' + val);
-                if (Assert(lit, &state2) &&
-                    Generate(pencilmark, permutation, level + 1, clues, &state2)) {
-                    return true;
-                }
-                clues[cell] = '.';
-                return Assert(Not(lit), state) &&
-                       Generate(pencilmark, permutation, level + 1, clues, state);
-            }
-        }
-    }
-
-    void Minimize(bool pencilmark, const vector<int> &permutation, char *clues) {
-        limit_ = 2;
-        int max = pencilmark ? 729 : 81;
-        for (int i = 0; i < max; i++) {
-            int j = pencilmark ? permutation[729-i-1] : i;
-            char tmp = clues[j];
-            clues[j] = pencilmark ? (char)('1' + (j % 9)) : '.';
-            if (tmp == clues[j]) continue;
-            State state = initial_state_;
-            InitializePuzzle(clues, pencilmark, &state);
-            num_solutions_ = 0;
-            CountSolutionsConsistentWithPartialAssignment(&state);
-            if (num_solutions_ > 1) {
-                clues[j] = tmp;
-            }
         }
     }
 
@@ -597,23 +531,6 @@ struct SolverDpllTriadScc {
         *num_guesses = num_guesses_;
         return num_solutions_;
     }
-
-    void Generate(bool pencilmark, char *clues) {
-        vector<int> permutation;
-        permutation.reserve(729);
-        for (int i = 0; i < 729; i++) permutation.push_back(i);
-        while (true) {
-            State state = initial_state_;
-            shuffle(permutation.begin(), permutation.end(), rng);
-            for (int i = 0; i < 729; i++) {
-                clues[i] = pencilmark ? (char) ('1' + (i % 9)) : '.';
-            }
-            if (Generate(pencilmark, permutation, 0, clues, &state)) {
-                Minimize(pencilmark, permutation, clues);
-                break;
-            }
-        }
-    }
 };
 
 }  // namespace
@@ -624,10 +541,4 @@ size_t TdokuSolverDpllTriadScc(const char *input, size_t limit, uint32_t configu
                                char *solution, size_t *num_guesses) {
     static SolverDpllTriadScc solver;
     return solver.SolveSudoku(input, limit, configuration, solution, num_guesses);
-}
-
-extern "C"
-void GeneratePuzzle(bool pencilmark, char *clues) {
-    static SolverDpllTriadScc solver;
-    solver.Generate(pencilmark, clues);
 }

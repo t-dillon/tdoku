@@ -76,25 +76,39 @@ size_t OtherSolverFsss2(const char *input, size_t limit, uint32_t configuration,
                         char *solution, size_t *num_guesses) {
     nTrials = 0;
     do_locked_candidates = configuration > 0;
-    char zero_based_input[81];
     char zero_based_output[81];
-    for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-            char c = input[i * 9 + j];
-            if (c >= '1' && c <= '9') {
-                zero_based_input[i * 9 + j] = c - '0';
-            } else {
-                zero_based_input[i * 9 + j] = 0;
+    int count;
+
+    bool pencilmark = input[81] >= '.';
+    if (pencilmark) {
+        pencilmarks pm;
+        pm.initPencilmarks(input);
+        if (limit == 1) {
+            hasAnySolution has{};
+            count = has.solve(pm);
+        } else {
+            getSingleSolution gss{};
+            count = gss.solve(pm, zero_based_output);
+        }
+    } else {
+        char zero_based_input[81];
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                char c = input[i * 9 + j];
+                if (c >= '1' && c <= '9') {
+                    zero_based_input[i * 9 + j] = c - '0';
+                } else {
+                    zero_based_input[i * 9 + j] = 0;
+                }
             }
         }
-    }
-    int count;
-    if (limit == 1) {
-        hasAnySolution has{};
-        count = has.solve(zero_based_input);
-    } else {
-        getSingleSolution gss{};
-        count = gss.solve(zero_based_input, zero_based_output);
+        if (limit == 1) {
+            hasAnySolution has{};
+            count = has.solve(zero_based_input);
+        } else {
+            getSingleSolution gss{};
+            count = gss.solve(zero_based_input, zero_based_output);
+        }
     }
     *num_guesses = nTrials;
     return count;

@@ -3,11 +3,18 @@
 build/
 cmake-build-debug/
 data/
+gen/
 
 other/fsss2/fsss2.cpp
 other/fsss2/fsss2.h
 other/fsss2/t_128.cpp
 other/fsss2/t_128.h
+
+other/gss/sudoku.c
+other/gss/sudoku.h
+other/gss/sudoku_parser.c
+other/gss/sudoku_parser.h
+other/gss/sudokusolver.h
 
 other/JCZSolve/JCZSolve.c
 other/JCZSolve/JCZSolve.h

@@ -31,27 +31,27 @@ do
     OPT=${TOKS[1]}
     TARGET=${TOKS[2]}
     SSEFLAG=""
-    if [ "$TARGET" == "msse4.2" ]; then
+    if [[ "$TARGET" == "msse4.2" ]]; then
         SSEFLAG="-DSSE4_2=on"
     fi
     PGO=""
-    if [ "${TOKS[3]}" == "pgo" ]; then
+    if [[ "${TOKS[3]}" == "pgo" ]]; then
         # build for profile generation, profile a test load, move or merge profile, build using profile
         PGO="_pgo"
         rm -rf build/pgodata*
-        ./BUILD.sh -DOPT=${OPT} ${SSEFLAG} -DARGS="-fprofile-generate=build/pgodata.gen" ${ALL_SOLVERS}
+        ./BUILD.sh -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-generate=build/pgodata.gen" ${ALL_SOLVERS}
         build/run_benchmark -t15 -w15 -s${PGO_SOLVERS} data/puzzles1_17_clue
-        if echo $CC | grep -q gcc; then
+        if echo "${CC}" | grep -q gcc; then
             mv build/pgodata.gen build/pgodata.use
         else
-            $(echo $CC | sed -e "s/clang/llvm-profdata/") merge build/pgodata.gen -output build/pgodata.use
+            "${CC/clang/llvm-profdata}" merge build/pgodata.gen -output build/pgodata.use
         fi
-        ./BUILD.sh -DOPT=${OPT} ${SSEFLAG} -DARGS="-fprofile-use=pgodata.use" ${ALL_SOLVERS}
+        ./BUILD.sh -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-use=pgodata.use" ${ALL_SOLVERS}
     else
         # build witout pgo
-        ./BUILD.sh -DOPT=${OPT} ${SSEFLAG} ${ALL_SOLVERS}        
+        ./BUILD.sh -DOPT="${OPT}" "${SSEFLAG}" ${ALL_SOLVERS}
     fi
 
     # run benchmarks for this spec
-    benchmarks/bench.sh setarch `uname -m` -R taskset ${TASKSET_CPU} | tee benchmarks/${PLATFORM}_${CC}_${OPT}_${TARGET}${PGO}
+    benchmarks/bench.sh setarch $(uname -m) -R taskset ${TASKSET_CPU} | tee benchmarks/${PLATFORM}_${CC}_${OPT}_${TARGET}${PGO}
 done

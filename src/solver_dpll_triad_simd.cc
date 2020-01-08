@@ -1,5 +1,6 @@
 #include "bitutil.h"
 #include "simd_vectors.h"
+#include "util.h"
 
 #include <array>
 #include <cstring>
@@ -466,9 +467,8 @@ struct SolverDpllTriadSimd {
     const uint32_t mod3[6]{0, 1, 2, 0, 1, 2};
 
     inline pair<uint32_t, uint32_t> ChooseBandAndValueToBranch(const State &state) {
-        uint32_t best_band = UINT32_MAX, best_band_count = UINT32_MAX;
-        uint32_t best_value = UINT32_MAX, best_value_count = UINT32_MAX;
         // first find the unfixed band with the fewest possible configurations across all values.
+        uint32_t best_band = UINT32_MAX, best_band_count = UINT32_MAX;
         for (auto i = 0u; i < 6; i++) {
             const Band &band = state.bands[div3[i]][mod3[i]];
             auto band_count = (uint32_t) band.configurations.Popcount();
@@ -478,6 +478,7 @@ struct SolverDpllTriadSimd {
             }
         }
         // then choose the unfixed value with the fewest possible configurations within the band.
+        uint32_t best_value = UINT32_MAX, best_value_count = UINT32_MAX;
         if (best_band < UINT32_MAX) {
             const Band &band = state.bands[div3[best_band]][mod3[best_band]];
             for (uint32_t i = 0; i < 9; i++) {
@@ -530,6 +531,82 @@ struct SolverDpllTriadSimd {
             BranchOnBandAndValue(div3[band_and_value.first], mod3[band_and_value.first],
                                  band_and_value.second, state);
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////
+
+    void Minimize(bool pencilmark, const int *permutation, char *puzzle) {
+        for (int i = 0; i < 729; i++) {
+            int cell_or_literal = permutation[i];
+            if (pencilmark) {
+                if (puzzle[cell_or_literal] != '.') continue;
+            } else {
+                if (cell_or_literal >= 81 || puzzle[cell_or_literal] == '.') continue;
+            }
+            char constraint = puzzle[cell_or_literal];
+            State count_state;
+            if (pencilmark) {
+                puzzle[cell_or_literal] = (char)('1' + (i % 9));
+                InitBoxBatch729(puzzle, count_state);
+            } else {
+                puzzle[cell_or_literal] = '.';
+                InitBandBatch(puzzle, count_state);
+            }
+            limit_ = 2;
+            num_solutions_ = 0;
+            CountSolutionsConsistentWithPartialAssignment(count_state);
+            if (num_solutions_ > 1) {
+                puzzle[cell_or_literal] = constraint;
+            }
+        }
+    }
+
+    bool Generate(bool pencilmark, const int *permutation, char *puzzle) {
+        State state;
+        if (pencilmark) {
+            InitBoxBatch729(puzzle, state);
+        } else {
+            InitBandBatch(puzzle, state);
+        }
+        for (int i = 0; i < 729; i++) {
+            int literal = permutation[i];
+            int cell = literal / 9;
+            if ((pencilmark && puzzle[literal] == '.') || (!pencilmark && puzzle[cell] != '.')) {
+                continue;
+            }
+            int row = cell / 9;
+            int col = cell % 9;
+            int box_idx = (row / 3) * 3 + (col / 3);
+            int elm_idx = (row % 3) * 4 + (col % 3);
+            Box &box = state.boxen[box_idx];
+            uint16_t candidates = box.cells.Extract(elm_idx);
+            uint16_t candidate = 1u << (literal % 9u);
+
+            if ((candidates & candidate) && (candidates != candidate)) {
+                Cells16 restrict = box.cells;
+                restrict.Insert(elm_idx, pencilmark ? candidates ^ candidate : candidate);
+                State test_state = state;
+                if (BoxRestrict(test_state, box_idx, restrict)) {
+                    int cell_or_literal = pencilmark ? literal : cell;
+                    char prior_unconstrained_value = puzzle[cell_or_literal];
+                    puzzle[cell_or_literal] = pencilmark ? '.' : (char)('1' + (literal % 9));
+                    limit_ = 2;
+                    num_solutions_ = 0;
+                    // we need a state copy here because counting solutions modifies the state
+                    State count_state = test_state;
+                    CountSolutionsConsistentWithPartialAssignment(count_state);
+                    if (num_solutions_ == 0) {
+                        puzzle[cell_or_literal] = prior_unconstrained_value;
+                        continue;
+                    } else if (num_solutions_ == 1) {
+                        return true;
+                    } else {
+                        state = test_state;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -639,4 +716,17 @@ size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit,
                                 uint32_t /* unused configuration */,
                                 char *solution, size_t *num_guesses) {
     return solver.SolveSudoku(input, limit, solution, num_guesses);
+}
+
+extern "C"
+bool TdokuGeneratorDpllTriadSimd(bool pencilmark,
+                                 const int *permutation1,
+                                 const int *permutation2,
+                                 char *puzzle) {
+    if (solver.Generate(pencilmark, permutation1, puzzle)) {
+        solver.Minimize(pencilmark, permutation2, puzzle);
+        return true;
+    } else {
+        return false;
+    }
 }
