@@ -546,7 +546,7 @@ struct SolverDpllTriadSimd {
             char constraint = puzzle[cell_or_literal];
             State count_state;
             if (pencilmark) {
-                puzzle[cell_or_literal] = (char)('1' + (i % 9));
+                puzzle[cell_or_literal] = (char)('1' + (cell_or_literal % 9));
                 InitBoxBatch729(puzzle, count_state);
             } else {
                 puzzle[cell_or_literal] = '.';
