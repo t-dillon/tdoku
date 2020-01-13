@@ -9,8 +9,8 @@ redundancy. 100% of the puzzles are solved with naked singles only. This is  mor
 of a parsing and initialization than actual solving speed.
 
 1. [[source](http://staffhome.ecm.uwa.edu.au/~00013890/sudokumin.php)] **17_clue** \
-A complete or nearly-complete dataset of all 17-clue puzzles (49151 of them) maintained by 
-Gordon Royle of the University of Western Australia. These puzzles are also *very
+A complete or nearly-complete dataset of all 17-clue puzzles (49158 of them as of 2020-01)
+maintained by Gordon Royle of the University of Western Australia. These puzzles are also *very
 easy*. About half of them can be solved with naked and hidden singles only. This is largely a test of
 how well the solver is optimized for hidden singles.
  
