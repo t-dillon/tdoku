@@ -22,6 +22,7 @@ option(JCZSOLVE      "Include JCZSolve"      OFF)
 option(JSOLVE        "Include JSolve"        OFF)
 option(KUDOKU        "Include KUDOKU"        OFF)
 option(GSS           "Include GSS"           OFF)
+option(GUROBI        "Include GUROBI"        OFF)
 option(MINISAT       "Include MiniSat"       OFF)
 option(NORVIG        "Include norvig"        OFF)
 option(RUST_SUDOKU   "Include rust_sudoku"   OFF)
@@ -60,6 +61,18 @@ target_compile_options(tdoku PUBLIC -fno-exceptions -fno-rtti -fpic)
 add_library(rust_sudoku SHARED IMPORTED)
 set_target_properties(rust_sudoku PROPERTIES IMPORTED_LOCATION
         ${CMAKE_SOURCE_DIR}/other/rust_sudoku/libsudoku.so)
+
+set(GUROBI_DIR "gurobi900/linux64" CACHE STRING "Gurobi installation directory")
+
+add_library(gurobi_c++ STATIC IMPORTED)
+set_target_properties(gurobi_c++ PROPERTIES
+        IMPORTED_LOCATION ${GUROBI_DIR}/src/build/libgurobi_c++.a
+        INTERFACE_INCLUDE_DIRECTORIES ${GUROBI_DIR}/include)
+
+add_library(gurobi90 SHARED IMPORTED)
+set_target_properties(gurobi90 PROPERTIES
+        IMPORTED_LOCATION ${GUROBI_DIR}/lib/libgurobi90.so
+        INTERFACE_INCLUDE_DIRECTORIES ${GUROBI_DIR}/include)
 
 set(BENCHMARK_SOLVER_SOURCES
         src/solver_basic.cc
@@ -117,12 +130,20 @@ if (GSS)
             other/gss/gss.c)
 endif()
 
+if (GUROBI)
+    add_definitions(-DGUROBI)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/other_gurobi.cc)
+    set(GENERATE_SOLVER_SOURCES ${GENERATE_SOLVER_SOURCES}
+            other/other_gurobi.cc)
+endif()
+
 if (MINISAT)
     add_definitions(-DMINISAT)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            src/solver_minisat.cc)
+            other/other_minisat.cc)
     set(GENERATE_SOLVER_SOURCES ${GENERATE_SOLVER_SOURCES}
-            src/solver_minisat.cc)
+            other/other_minisat.cc)
 endif()
 
 if (NORVIG)
@@ -145,6 +166,15 @@ endif()
 add_executable(run_benchmark src/run_benchmark.cc src/util.cc ${BENCHMARK_SOLVER_SOURCES})
 add_executable(run_tests test/run_tests.cc ${BENCHMARK_SOLVER_SOURCES})
 add_executable(generate src/generate.cc src/util.cc ${GENERATE_SOLVER_SOURCES})
+
+if (GUROBI)
+    target_link_libraries(run_benchmark gurobi_c++)
+    target_link_libraries(run_benchmark gurobi90)
+    target_link_libraries(run_tests gurobi_c++)
+    target_link_libraries(run_tests gurobi90)
+    target_link_libraries(generate gurobi_c++)
+    target_link_libraries(generate gurobi90)
+endif()
 
 if (MINISAT)
     target_link_libraries(run_benchmark minisat)

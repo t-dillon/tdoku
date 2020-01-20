@@ -19,10 +19,17 @@
 using namespace std;
 
 extern "C" {
-size_t TdokuSolverMiniSat(const char *input,
+size_t OtherSolverMiniSat(const char *input,
                           size_t /*unused_limit*/,
                           uint32_t configuration,
                           char *solution, size_t *num_guesses);
+}
+
+extern "C" {
+size_t OtherSolverGurobi(const char *input,
+                         size_t limit,
+                         uint32_t configuration,
+                         char *solution, size_t *num_guesses);
 }
 
 struct Options {
@@ -34,8 +41,8 @@ struct Options {
     int num_evals = 10;
     int num_puzzles_in_pool = 500;
     bool display_all = false;
-    bool use_minisat = true;
     bool pencilmark = true;
+    int solver = 1;
 };
 
 struct Generator {
@@ -81,11 +88,18 @@ struct Generator {
         for (int j = 0; j < options_.num_evals; j++) {
             util_.PermuteSudoku(puzzle, options_.pencilmark);
             size_t guesses = 0;
-            if (options_.use_minisat) {
+            if (options_.solver == 1) {
 #ifdef MINISAT
-                TdokuSolverMiniSat(puzzle, 1, 3, solution, &guesses);
+                OtherSolverMiniSat(puzzle, 1, 3, solution, &guesses);
 #else
                 cout << "Must build with -DMINISAT=on to use minisat" << endl;
+                exit(1);
+#endif
+            } else if (options_.solver == 2) {
+#ifdef GUROBI
+                OtherSolverGurobi(puzzle, 2, 0, solution, &guesses);
+#else
+                cout << "Must build with -DGUROBI=on to use gurobi" << endl;
                 exit(1);
 #endif
             } else {
@@ -239,7 +253,7 @@ int main(int argc, char **argv) {
 
     ketopt_t opt = KETOPT_INIT;
     char c;
-    while ((c = (char) ketopt(&opt, argc, argv, 1, "a::c:g:r:d:e:n:m::p::h", nullptr)) != -1) {
+    while ((c = (char) ketopt(&opt, argc, argv, 1, "a::c:d:e:g:hn:p::r:s:", nullptr)) != -1) {
         switch (c) {
             case 'c': {
                 options.clue_weight = stod(opt.arg);
@@ -269,12 +283,12 @@ int main(int argc, char **argv) {
                 options.display_all = opt.arg == nullptr ? true : stoi(opt.arg) > 0;
                 break;
             }
-            case 'm': {
-                options.use_minisat = opt.arg == nullptr ? true : stoi(opt.arg) > 0;
-                break;
-            }
             case 'p': {
                 options.pencilmark = opt.arg == nullptr ? true : stoi(opt.arg) > 0;
+                break;
+            }
+            case 's': {
+                options.solver = stoi(opt.arg);
                 break;
             }
             case 'h':
@@ -288,8 +302,8 @@ int main(int argc, char **argv) {
                 cout << "  -e <num_evals>      number of permutations to eval for guess estimate\n";
                 cout << "  -n <pool size>      number of top scored puzzles to keep in pool\n";
                 cout << "  -a [0|1]            display all puzzles (not just top scored)\n";
-                cout << "  -m [0|1]            use minisat instead of tdoku for eval\n";
                 cout << "  -p [0|1]            generate pencilmark puzzles\n";
+                cout << "  -s [0|1|2]          solver for eval: 0=tdoku,1=minisat,2=gurobi\n";
                 cout << "  -h                  display this help message\n";
                 exit(0);
             }

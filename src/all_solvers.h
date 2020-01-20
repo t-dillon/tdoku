@@ -48,8 +48,9 @@ extern "C" {
     SolverFn TdokuSolverBasic;
     SolverFn TdokuSolverDpllTriadScc;
     SolverFn TdokuSolverDpllTriadSimd;
-    SolverFn TdokuSolverMiniSat;
 
+    SolverFn OtherSolverGurobi;
+    SolverFn OtherSolverMiniSat;
     SolverFn OtherSolverBBSudoku;
     SolverFn OtherSolverFastSolv9r2;
     SolverFn OtherSolverNorvig;
@@ -118,10 +119,13 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",              15));
     solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",    15));
 #ifdef MINISAT
-    solvers.emplace_back(Solver(TdokuSolverMiniSat,           0, "minisat_minimal_01",        9));
-    solvers.emplace_back(Solver(TdokuSolverMiniSat,           1, "minisat_natural_01",        9));
-    solvers.emplace_back(Solver(TdokuSolverMiniSat,           2, "minisat_complete_01",       9));
-    solvers.emplace_back(Solver(TdokuSolverMiniSat,           3, "minisat_augmented_01",      9));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           0, "minisat_minimal_01",        9));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           1, "minisat_natural_01",        9));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete_01",       9));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented_01",      9));
+#endif
+#ifdef GUROBI
+    solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                   15));
 #endif
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "_tdev_dpll_triad",         15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",   15));

@@ -205,7 +205,7 @@ struct SolverMiniSat {
 
 
 extern "C"
-size_t TdokuSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t config,
+size_t OtherSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t config,
                           char *solution, size_t *num_guesses) {
     bool pencilmark = input[81] >= '.';
     switch(config % 4) {
