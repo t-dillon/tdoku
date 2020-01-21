@@ -42,6 +42,8 @@ struct Options {
     // if randomizing, the random seed to use. If the given (or default) random seed is zero
     // then rd() will be used.
     uint64_t random_seed = 0;
+    // whether to stop at the first solution vs. validating uniqueness.
+    bool first_solution = false;
     // whether to validate puzzle solutions during warmup. we don't validate results during
     // actual benchmarking.
     bool validate = true;
@@ -286,7 +288,8 @@ struct Benchmark {
 
             for (int i = 0; i < puzzles_todo; i++) {
                 const char *puzzle = &dataset_[puzzle_buf_size_ * (i % options_.test_dataset_size)];
-                size_t solutions = solver.Solve(puzzle, 2, puzzle_output, &puzzle_guesses);
+                size_t solutions = solver.Solve(puzzle, options_.first_solution ? 1 : 2,
+                                                puzzle_output, &puzzle_guesses);
                 if (!allow_zero_ && !solutions) {
                     cout << "Error during benchmark" << endl;
                     PrintSudoku(puzzle, false);
@@ -324,7 +327,9 @@ struct Benchmark {
                     for (int i = 0; i < options_.test_dataset_size; i++) {
                         char *dest = &dataset_[i * puzzle_buf_size_];
                         strncpy(dest, line.c_str(), puzzle_size_);
-                        util.PermuteSudoku(dest, options_.pencilmark);
+                        if (options_.randomize) {
+                            util.PermuteSudoku(dest, options_.pencilmark);
+                        }
                     }
                     for (const Solver &solver : options_.solvers) {
                         microseconds start =
@@ -357,7 +362,7 @@ int main(int argc, char **argv) {
     bool do_rating = false;
     ketopt_t opt = KETOPT_INIT;
     char c;
-    while ((c = (char)ketopt(&opt, argc, argv, 1, "abc::e:hn:pr::s:t:v::w:z::", nullptr)) != -1) {
+    while ((c = (char)ketopt(&opt, argc, argv, 1, "abc::e:fhn:pr::s:t:v::w:z::", nullptr)) != -1) {
         switch (c) {
             case 'a': {
                 do_rating = true;
@@ -373,6 +378,10 @@ int main(int argc, char **argv) {
             }
             case 'e': {
                 options.random_seed = stoull(opt.arg);
+                break;
+            }
+            case 'f': {
+                options.first_solution = true;
                 break;
             }
             case 'n': {
