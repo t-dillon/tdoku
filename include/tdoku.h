@@ -20,8 +20,7 @@ size_t TdokuSolverDpllTriadSimd(const char *input,
                                 size_t *num_guesses);
 
 bool TdokuGeneratorDpllTriadSimd(bool pencilmark,
-                                 const int *permutation1,
-                                 const int *permutation2,
+                                 const int *permutation,
                                  char *puzzle);
 #ifdef __cplusplus
 }
@@ -60,18 +59,15 @@ size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
  * Generates a Sudoku or Pencilmark Sudoku puzzle
  * @param pencilmark
  *       A boolean indicating whether to generate a pencilmark sudoku (vs. a vanilla one)
- * @param permutation1
+ * @param permutation
  *       A permutation of range(729) for use in generating the puzzle
- * @param permutation2
- *       A permutation of range(729) for use in minimizing the puzzle
  * @param puzzle
  *       An output buffer of 81 or 729 characters depending on requested puzzle type.
  * @return
  *       A boolean indicating if generation was successful.
  */
-bool GenerateSudoku(bool pencilmark, const int *permutation1, const int *permutation2,
-                    char *puzzle) {
-    return TdokuGeneratorDpllTriadSimd(pencilmark, permutation1, permutation2, puzzle);
+bool GenerateSudoku(bool pencilmark, const int *permutation, char *puzzle) {
+    return TdokuGeneratorDpllTriadSimd(pencilmark, permutation, puzzle);
 }
 
 #endif //TDOKU_H

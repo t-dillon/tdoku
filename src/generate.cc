@@ -200,10 +200,8 @@ struct Generator {
 
             // randomly complete and minimize
             vector<int> generation_permutation = util_.Permutation(729);
-            vector<int> minimization_permutation = util_.Permutation(729);
             if (!TdokuGeneratorDpllTriadSimd(options_.pencilmark,
                                              &generation_permutation[0],
-                                             &minimization_permutation[0],
                                              puzzle)) {
                 continue;
             }

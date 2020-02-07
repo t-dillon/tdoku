@@ -227,6 +227,10 @@ struct Tables {
             Cells08::All(1u << 3u), Cells08::All(1u << 4u), Cells08::All(1u << 5u),
             Cells08::All(1u << 6u), Cells08::All(1u << 7u), Cells08::All(1u << 8u),
     };
+
+    const int div3[9]{ 0, 0, 0, 1, 1, 1, 2, 2, 2 };
+    const int mod3[9]{ 0, 1, 2, 0, 1, 2, 0, 1, 2 };
+
     // @formatter:on
 
     BoxIndexing box_indexing[81]{};
@@ -265,7 +269,7 @@ struct SolverDpllTriadSimd {
         // return immediately if there are no new eliminations
         Box &box = state.boxen[box_idx];
         auto eliminating = box.cells.and_not(candidates);
-        if (!eliminating.Intersects(box.cells)) return true;
+        if (eliminating.AllZero()) return true;
 
         Band &h_band = state.bands[0][box.box_i];
         Band &v_band = state.bands[1][box.box_j];
@@ -331,33 +335,30 @@ struct SolverDpllTriadSimd {
         // restrict to 3x3 cells; each now has elimination bits for anything asserted in any cell.
         across_box &= tables.cell3x3_mask;
         // merge back rows and columns to populate elimination bits for negative triad literals.
-        across_box = Cells16::X_or_Y_or_Z(across_box, across_rows, across_cols);
+        across_box = Cells16::X_Y_or_Z_or(across_box, across_rows, across_cols);
         // for any cell that had an assertion populate all elimination bits (ok to include >kAll).
         across_box |= cell_assertions_only.WhichNonZero();
         // then clear elimination bits for the candidates that were actually asserted.
         across_box ^= cell_assertions_only;
         box_eliminations |= across_box;
 
-        // update band eliminations to reflect the assertion of a positive triad arising from the
-        // assertion of a candidate in a regular cell. for positive triad assertions we use shifts
-        // 1 and 2 in the mask table because we want to eliminate positive triad candidates in
-        // the _other_ two peers.
+        // below we'll update band eliminations to reflect assertion of negative triads or positive
+        // literals within this box. in the case of asserted negative triads we'll eliminate the
+        // corresponding positive triads in the band (at shift 0).
+        Cells16 hv_neg_triad_assertions{HorizontalTriads(assertions), VerticalTriads(assertions)};
+        // in the case of asserted positive literals, which imply the assertion of corresponding
+        // shift 0 positive triads, we'll eliminate the triads at shifts 1 and 2 in the band.
         Cells16 hv_pos_triad_assertions{HorizontalTriads(across_rows), VerticalTriads(across_cols)};
-        Cells16 new_eliminations =
+        Cells16 new_eliminations = Cells16::X_Y_or_Z_or(
+                hv_neg_triad_assertions.Shuffle(
+                        Bitvec16x16{tables.triads_shift0_to_config_elims[box_j],
+                                    tables.triads_shift0_to_config_elims[box_i]}),
                 hv_pos_triad_assertions.Shuffle(
                         Bitvec16x16{tables.triads_shift1_to_config_elims[box_j],
-                                    tables.triads_shift1_to_config_elims[box_i]}) |
+                                    tables.triads_shift1_to_config_elims[box_i]}),
                 hv_pos_triad_assertions.Shuffle(
                         Bitvec16x16{tables.triads_shift2_to_config_elims[box_j],
-                                    tables.triads_shift2_to_config_elims[box_i]});
-
-        // update band eliminations to reflect negative triad assertions. for negative triad
-        // assertions we use shift 0 in the mask table because we are eliminating positive triad
-        // candidates in the same peer.
-        Cells16 hv_neg_triad_assertions{HorizontalTriads(assertions), VerticalTriads(assertions)};
-        new_eliminations |= hv_neg_triad_assertions.Shuffle(
-                Bitvec16x16{tables.triads_shift0_to_config_elims[box_j],
-                            tables.triads_shift0_to_config_elims[box_i]});
+                                    tables.triads_shift2_to_config_elims[box_i]}));
         h_band_eliminations |= new_eliminations.GetLo();
         v_band_eliminations |= new_eliminations.GetHi();
     }
@@ -370,15 +371,13 @@ struct SolverDpllTriadSimd {
     }
 
     // extracts a Cells08 containing (positive or negative) horizontal triad literals in positions
-    // 4, 5, and for use in shuffling an elimination message to send the horizontal band peer. we
+    // 4, 5, and 6 for use in shuffling an elimination message to send the horizontal band peer. we
     // use positions 4,5,6 so we can use the same tables in creating horizontal and vertical
     // elimination messages (and so the vertical triads can be extracted at no cost).
     static inline Cells08 HorizontalTriads(const Cells16 &cells) {
         Cells16 split_triads = cells.Shuffle(
-                Bitvec16x16{{0xffff, 0xffff, 0xffff, 0xffff,
-                                    shuf03, shuf07, 0xffff, 0xffff},
-                            {0xffff, 0xffff, 0xffff, 0xffff,
-                                    0xffff, 0xffff, shuf03, 0xffff}});
+                Bitvec16x16{{0xffff, 0xffff, 0xffff, 0xffff, shuf03, shuf07, 0xffff, 0xffff},
+                            {0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, shuf03, 0xffff}});
         return split_triads.GetLo() | split_triads.GetHi();
     }
 
@@ -393,20 +392,20 @@ struct SolverDpllTriadSimd {
         auto two_or_more = one_or_more & rotated;
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more = Cells16::X_or_Y_and_Z(two_or_more, one_or_more, rotated);
+        two_or_more = Cells16::X_Y_Z_and_or(two_or_more, one_or_more, rotated);
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more = Cells16::X_or_Y_and_Z(two_or_more, one_or_more, rotated);
+        two_or_more = Cells16::X_Y_Z_and_or(two_or_more, one_or_more, rotated);
         one_or_more |= rotated;
         // we might check here that one_or_more == kAll, but the check is a net loss.
         // now assert (in cells where they remain) candidates that occur only once an a row/col.
-        assertions |= Cells16::X_and_Y_andnot_Z(cells, one_or_more, two_or_more);
+        assertions |= Cells16::X_Y_and_Z_andnot(cells, one_or_more, two_or_more);
     }
 
     template<int vertical>
     static bool BandEliminate(State &state, int band_idx, int from_peer = 0) {
         Band &band = state.bands[vertical][band_idx];
-        const Cells08 eliminating = band.configurations & band.eliminations;
+        Cells08 eliminating = band.configurations & band.eliminations;
         if (LIKELY(eliminating.AllZero())) return true;
         // after eliminating we might check that every value is still consistent with some
         // configuration, but the check is a net loss.
@@ -415,18 +414,18 @@ struct SolverDpllTriadSimd {
         Cells16 triads = ConfigurationsToPositiveTriads(band.configurations);
         // we might check here that every cell (corresponding to a minirow or minicol) still has
         // at least three triad candidates, but the check is a net loss.
-        const Cells16 counts = triads.Popcounts9();
+        Cells16 counts = triads.Popcounts9();
 
         // we might repeat the updating of triads below until we no longer trigger new triad 3/
         // clauses. however, just once delivers most of the benefit, and it's best not to branch.
-        const Cells16 asserting = triads & counts.WhichEqual(Cells16::All(3));
-        const Cells08 lo = asserting.GetLo();
-        const Cells08 hi = asserting.GetHi();
-        band.configurations = band.configurations.and_not(Cells08::X_or_Y_or_Z(
+        Cells16 asserting = triads & counts.WhichEqual(Cells16::All(3));
+        Cells08 lo = asserting.GetLo();
+        Cells08 hi = asserting.GetHi();
+        band.configurations = band.configurations.and_not(Cells08::X_Y_or_Z_or(
                 lo.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[0]),
                 lo.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[0]),
                 lo.Shuffle(tables.triads_shift1_to_config_elims[1])));
-        band.configurations = band.configurations.and_not(Cells08::X_or_Y_or_Z(
+        band.configurations = band.configurations.and_not(Cells08::X_Y_or_Z_or(
                 lo.Shuffle(tables.triads_shift2_to_config_elims[1]),
                 hi.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[2]),
                 hi.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[2])));
@@ -434,15 +433,14 @@ struct SolverDpllTriadSimd {
 
         // convert positive triads to box restriction messages and send to the three box peers.
         // send these messages in order so that we return to the inbound peer last.
-        const Cells16 box_candidates[3]{
-                PositiveTriadsToBoxCandidates(triads.GetLo(), vertical),
-                PositiveTriadsToBoxCandidates(triads.GetLo().RotateCols(), vertical),
-                PositiveTriadsToBoxCandidates(triads.GetHi(), vertical)};
-        const int order[5]{1, 2, 0, 1, 2};
-        const int peer[3]{order[from_peer], order[from_peer + 1], order[from_peer + 2]};
-        return BoxRestrict<vertical>(state, band.box_peers[peer[0]], box_candidates[peer[0]]) &&
-               BoxRestrict<vertical>(state, band.box_peers[peer[1]], box_candidates[peer[1]]) &&
-               BoxRestrict<vertical>(state, band.box_peers[peer[2]], box_candidates[peer[2]]);
+        int peer[3]{tables.mod3[from_peer + 1], tables.mod3[from_peer + 2], from_peer};
+        Cells08 peer_triads[3]{ triads.GetLo(), triads.GetLo().RotateCols(), triads.GetHi() };
+        return (BoxRestrict<vertical>(state, band.box_peers[peer[0]],
+                        PositiveTriadsToBoxCandidates(peer_triads[peer[0]], vertical)) &&
+                BoxRestrict<vertical>(state, band.box_peers[peer[1]],
+                        PositiveTriadsToBoxCandidates(peer_triads[peer[1]], vertical)) &&
+                BoxRestrict<vertical>(state, band.box_peers[peer[2]],
+                        PositiveTriadsToBoxCandidates(peer_triads[peer[2]], vertical)));
     }
 
     // convert band configuration into an equivalent 3x3 matrix of positive triad candidates,
@@ -464,14 +462,13 @@ struct SolverDpllTriadSimd {
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    const uint32_t div3[6]{0, 0, 0, 1, 1, 1};
-    const uint32_t mod3[6]{0, 1, 2, 0, 1, 2};
+    static constexpr uint32_t NONE = UINT32_MAX;
 
-    inline pair<uint32_t, uint32_t> ChooseBandAndValueToBranch(const State &state) {
+    static inline pair<uint32_t, uint32_t> ChooseBandAndValueToBranch(const State &state) {
         // first find the unfixed band with the fewest possible configurations across all values.
-        uint32_t best_band = UINT32_MAX, best_band_count = UINT32_MAX;
+        uint32_t best_band = NONE, best_band_count = NONE;
         for (auto i = 0u; i < 6; i++) {
-            const Band &band = state.bands[div3[i]][mod3[i]];
+            const Band &band = state.bands[tables.div3[i]][tables.mod3[i]];
             auto band_count = (uint32_t) band.configurations.Popcount();
             if (band_count > 9 && band_count < best_band_count) {
                 best_band_count = band_count;
@@ -479,16 +476,15 @@ struct SolverDpllTriadSimd {
             }
         }
         // then choose the unfixed value with the fewest possible configurations within the band.
-        uint32_t best_value = UINT32_MAX, best_value_count = UINT32_MAX;
-        if (best_band < UINT32_MAX) {
-            const Band &band = state.bands[div3[best_band]][mod3[best_band]];
+        uint32_t best_value = NONE, best_value_count = NONE;
+        if (best_band != NONE) {
+            const Band &band = state.bands[tables.div3[best_band]][tables.mod3[best_band]];
             for (uint32_t i = 0; i < 9; i++) {
                 auto value_count = (uint32_t) (band.configurations &
                                                tables.one_value_mask[i]).Popcount();
                 if (value_count > 1 && value_count < best_value_count) {
                     best_value_count = value_count;
                     best_value = i;
-                    if (best_value_count == 2) break;
                 }
             }
         }
@@ -524,90 +520,89 @@ struct SolverDpllTriadSimd {
         }
     }
 
+    // do not call this twice on the same state. for efficiency this count may modify the
+    // given state instead of making copies. if called with limit > 1 this can leave the state
+    // changed in a way that makes subsequent calls return different results.
     void CountSolutionsConsistentWithPartialAssignment(State &state) {
         auto band_and_value = ChooseBandAndValueToBranch(state);
-        if (band_and_value.second == UINT32_MAX) {
+        if (band_and_value.first == NONE) {
             num_solutions_++;
             if (limit_ == 1) solution_ = state;
         } else {
-            if (div3[band_and_value.first]) {
-                BranchOnBandAndValue<1>(mod3[band_and_value.first], band_and_value.second, state);
+            if (band_and_value.first < 3) {
+                BranchOnBandAndValue<0>(
+                        tables.mod3[band_and_value.first], band_and_value.second, state);
             } else {
-                BranchOnBandAndValue<0>(mod3[band_and_value.first], band_and_value.second, state);
+                BranchOnBandAndValue<1>(
+                        tables.mod3[band_and_value.first], band_and_value.second, state);
             }
         }
+    }
+
+    size_t SafeCountSolutionsConsistentWithPartialAssignment(State state, size_t limit) {
+        limit_ = limit;
+        num_solutions_ = 0;
+        CountSolutionsConsistentWithPartialAssignment(state);
+        return num_solutions_;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    void Minimize(bool pencilmark, const int *permutation, char *puzzle) {
-        for (int i = 0; i < 729; i++) {
-            int cell_or_literal = permutation[i];
-            if (pencilmark) {
-                if (puzzle[cell_or_literal] != '.') continue;
-            } else {
-                if (cell_or_literal >= 81 || puzzle[cell_or_literal] == '.') continue;
-            }
-            char constraint = puzzle[cell_or_literal];
-            State count_state;
-            if (pencilmark) {
-                puzzle[cell_or_literal] = (char)('1' + (cell_or_literal % 9));
-                InitBoxBatch729(puzzle, count_state);
-            } else {
-                puzzle[cell_or_literal] = '.';
-                InitBandBatch(puzzle, count_state);
-            }
-            limit_ = 2;
-            num_solutions_ = 0;
-            CountSolutionsConsistentWithPartialAssignment(count_state);
-            if (num_solutions_ > 1) {
-                puzzle[cell_or_literal] = constraint;
-            }
-        }
-    }
-
-    bool Generate(bool pencilmark, const int *permutation, char *puzzle) {
+    bool Generate(bool pencilmark, const int *permutation, char *clues) {
         State state;
         if (pencilmark) {
-            InitBoxBatch729(puzzle, state);
+            InitPencilmarkByBox(clues, state);
         } else {
-            InitBandBatch(puzzle, state);
+            InitVanillaByBand(clues, state);
         }
         for (int i = 0; i < 729; i++) {
             int literal = permutation[i];
             int cell = literal / 9;
-            if ((pencilmark && puzzle[literal] == '.') || (!pencilmark && puzzle[cell] != '.')) {
-                continue;
+
+            // skip over clues that were given as part of the partial puzzle.
+            if (pencilmark) {
+                if (clues[literal] == '.') continue;
+            } else {
+                if (clues[cell] != '.') continue;
             }
-            int row = cell / 9;
-            int col = cell % 9;
+
+            int row = cell / 9, col = cell % 9;
             int box_idx = (row / 3) * 3 + (col / 3);
             int elm_idx = (row % 3) * 4 + (col % 3);
             Box &box = state.boxen[box_idx];
             uint16_t candidates = box.cells.Extract(elm_idx);
             uint16_t candidate = 1u << (literal % 9u);
 
+            // a candidate can lead to minimal puzzle only if there are currently solutions
+            // consistent with both its inclusion and exclusion. first we check quickly that
+            // it's not already eliminated, and that the cell has more than one candidate.
             if ((candidates & candidate) && (candidates != candidate)) {
-                Cells16 restrict = box.cells;
-                restrict.Insert(elm_idx, pencilmark ? candidates ^ candidate : candidate);
-                State test_state = state;
-                if (BoxRestrict<0>(test_state, box_idx, restrict)) {
-                    int cell_or_literal = pencilmark ? literal : cell;
-                    char prior_unconstrained_value = puzzle[cell_or_literal];
-                    puzzle[cell_or_literal] = pencilmark ? '.' : (char)('1' + (literal % 9));
-                    limit_ = 2;
-                    num_solutions_ = 0;
-                    // we need a state copy here because counting solutions modifies the state
-                    State count_state = test_state;
-                    CountSolutionsConsistentWithPartialAssignment(count_state);
-                    if (num_solutions_ == 0) {
-                        puzzle[cell_or_literal] = prior_unconstrained_value;
-                        continue;
-                    } else if (num_solutions_ == 1) {
-                        return true;
-                    } else {
-                        state = test_state;
-                    }
+                // then check if there's a solution that includes the candidate
+                Cells16 assertion = Cells16::All(kAll);
+                assertion.Insert(elm_idx, candidate);
+                State asserted = state;
+                if (!BoxRestrict<0>(asserted, box_idx, assertion)) continue;
+                auto count1 = SafeCountSolutionsConsistentWithPartialAssignment(asserted, 2);
+                if (count1 == 0) continue;
+
+                // and check if there's a solution that excludes the candidate
+                Cells16 elimination = Cells16::All(kAll);
+                elimination.Insert(elm_idx, kAll ^ candidate);
+                State eliminated = state;
+                if (!BoxRestrict<0>(eliminated, box_idx, elimination)) continue;
+                auto count2 = SafeCountSolutionsConsistentWithPartialAssignment(eliminated, 2);
+                if (count2 == 0) continue;
+
+                // if both are possible, then add the clue as an assertion or elimination
+                // depending on whether we're making pencilmark or vanilla puzzles.
+                if (pencilmark) {
+                    clues[literal] = '.';
+                    state = eliminated;
+                    if (count2 == 1) return true;
+                } else {
+                    clues[cell] = (char) ('1' + (literal % 9));
+                    state = asserted;
+                    if (count1 == 1) return true;
                 }
             }
         }
@@ -620,15 +615,17 @@ struct SolverDpllTriadSimd {
         const BoxIndexing &indexing = tables.box_indexing[pos];
         char digit = input[pos];
         uint16_t candidate = 1u << (uint32_t) (digit - '1');
-        // perform eliminations for digit in box, but don't propagate
+        // perform eliminations for the clue in its own box, but don't propagate. this is
+        // not strictly necessary since band eliminations will constrain the puzzle, but it
+        // turns out to be important for performance on invalid zero-solution puzzles.
         state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
                 tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
-        // merge all band eliminations; we'll propagate these below.
-        state.bands[0][indexing.box_i].eliminations = Cells08::X_or_Y_and_Z(
+        // merge band eliminations; we'll propagate after all clue are processed.
+        state.bands[0][indexing.box_i].eliminations = Cells08::X_Y_Z_and_or(
                 state.bands[0][indexing.box_i].eliminations,
                 tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i],
                 Cells08::All(candidate));
-        state.bands[1][indexing.box_j].eliminations = Cells08::X_or_Y_and_Z(
+        state.bands[1][indexing.box_j].eliminations = Cells08::X_Y_Z_and_or(
                 state.bands[1][indexing.box_j].eliminations,
                 tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j],
                 Cells08::All(candidate));
@@ -636,7 +633,7 @@ struct SolverDpllTriadSimd {
 
     // We could set the initial clues in other ways, including one box update for each clue, or
     // one batch box update for each box. But it's fastest to start with 6 batched band updates.
-    static bool InitBandBatch(const char *input, State &state) {
+    static bool InitVanillaByBand(const char *input, State &state) {
         uint64_t clues64 = WhichDots64(input) ^ (uint64_t)-1ll;
         while (clues64) {
             int cell_idx = LowOrderBitIndex64(clues64);
@@ -660,20 +657,20 @@ struct SolverDpllTriadSimd {
                BandEliminate<0>(state, 2, 0) && BandEliminate<1>(state, 2, 0);
     }
 
-    static bool InitBoxBatch729(const char *input, State &state) {
-        char buf[736]; // make sure 16 byte cell reads won't go past end of buffer
+    static bool InitPencilmarkByBox(const char *input, State &state) {
+        char buf[736]; // make sure unaligned 16 byte cell reads won't go past end of buffer
         memcpy(&buf, input, 729);
         for (int box_i = 0; box_i < 3; box_i++) {
             for (int box_j = 0; box_j < 3; box_j++) {
-                Cells16 mask = Cells16::All(kAll);
+                Cells16 box_candidates = Cells16::All(kAll);
                 for (int elm_i = 0; elm_i < 3; elm_i++) {
                     for (int elm_j = 0; elm_j < 3; elm_j++) {
                         int cell = box_i * 27 + elm_i * 9 + box_j * 3 + elm_j;
-                        auto elims = WhichDots16(&buf[cell * 9]);
-                        mask.Insert(elm_i * 4 + elm_j, kAll & ~elims);
+                        auto cell_eliminations = WhichDots16(&buf[cell * 9]);
+                        box_candidates.Insert(elm_i * 4 + elm_j, kAll & ~cell_eliminations);
                     }
                 }
-                if (!BoxRestrict<0>(state, box_i * 3 + box_j, mask)) return false;
+                if (!BoxRestrict<0>(state, box_i * 3 + box_j, box_candidates)) return false;
             }
         }
         return true;
@@ -696,14 +693,14 @@ struct SolverDpllTriadSimd {
     }
 
     size_t SolveSudoku(const char *input, size_t limit,
-                       char *solution, size_t *const num_guesses) {
+                       char *solution, size_t *num_guesses) {
         limit_ = limit;
         num_solutions_ = 0;
         num_guesses_ = 0;
         bool pencilmark = input[81] >= '.';
 
         State state;
-        if (pencilmark ? InitBoxBatch729(input, state) : InitBandBatch(input, state)) {
+        if (pencilmark ? InitPencilmarkByBox(input, state) : InitVanillaByBand(input, state)) {
             CountSolutionsConsistentWithPartialAssignment(state);
             if (limit_ == 1) ExtractSolution(solution_, solution);
         }
@@ -725,13 +722,7 @@ size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit,
 
 extern "C"
 bool TdokuGeneratorDpllTriadSimd(bool pencilmark,
-                                 const int *permutation1,
-                                 const int *permutation2,
+                                 const int *permutation,
                                  char *puzzle) {
-    if (solver.Generate(pencilmark, permutation1, puzzle)) {
-        solver.Minimize(pencilmark, permutation2, puzzle);
-        return true;
-    } else {
-        return false;
-    }
+    return solver.Generate(pencilmark, permutation, puzzle);
 }

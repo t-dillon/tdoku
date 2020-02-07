@@ -93,7 +93,7 @@ struct Bitvec08x16 {
     }
 
     static inline Bitvec08x16
-    X_or_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    X_Y_or_Z_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #ifdef __AVX512VL__
         return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 254);
 #else
@@ -102,7 +102,7 @@ struct Bitvec08x16 {
     }
 
     static inline Bitvec08x16
-    X_or_Y_and_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    X_Y_Z_and_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #ifdef __AVX512VL__
         return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 248);
 #else
@@ -111,7 +111,7 @@ struct Bitvec08x16 {
     }
 
     static inline Bitvec08x16
-    X_and_Y_andnot_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    X_Y_and_Z_andnot(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #ifdef __AVX512VL__
         return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 64);
 #else
@@ -371,17 +371,17 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    X_or_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_or_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
         return Bitvec16x16{x.lo_ | y.lo_ | z.lo_, x.hi_ | y.hi_ | z.hi_};
     }
 
     static inline Bitvec16x16
-    X_or_Y_and_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_Z_and_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
         return Bitvec16x16{x.lo_ | (y.lo_ & z.lo_), x.hi_ | (y.hi_ & z.hi_)};
     }
 
     static inline Bitvec16x16
-    X_and_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_and_Z_andnot(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
         return Bitvec16x16{x.lo_ & y.lo_.and_not(z.lo_), x.hi_ & y.hi_.and_not(z.hi_)};
     }
 
@@ -554,7 +554,7 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    X_or_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_or_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #ifdef __AVX512VL__
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 254);
 #else
@@ -563,7 +563,7 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    X_or_Y_and_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_Z_and_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #ifdef __AVX512VL__
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 248);
 #else
@@ -572,7 +572,7 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    X_and_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_and_Z_andnot(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #ifdef __AVX512VL__
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 64);
 #else
