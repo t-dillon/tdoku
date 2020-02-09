@@ -53,8 +53,7 @@ And here are results on the well-known and commonly-benchmarked dataset of ~49,0
 |kudoku                          (cov) |     35380.9 |        28.3 |        N/A |            N/A |
 |bb_sudoku                             |    111598.7 |         9.0 |      76.0% |           1.55 |
 |jsolve                                |    121918.5 |         8.2 |      49.9% |           3.25 |
-|fsss2                                 |    175285.0 |         5.7 |      44.6% |           4.46 |
-|fsss2_locked                          |    211892.2 |         4.7 |      76.0% |           0.95 |
+|fsss2                                 |    211892.2 |         4.7 |      76.0% |           0.95 |
 |jczsolve                              |    219325.6 |         4.6 |      70.5% |           1.76 |
 |sk_bforce2                            |    287232.6 |         3.5 |      74.1% |           1.02 |
 |rust_sudoku                           |    310515.0 |         3.2 |        N/A |            N/A |
