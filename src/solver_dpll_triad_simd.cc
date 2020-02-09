@@ -34,9 +34,6 @@ constexpr uint16_t kAll = 0x1ff;
 //
 struct Box {
     Cells16 cells{Cells16::All(kAll)};
-    uint32_t box_idx, box_i, box_j;
-
-    Box(uint32_t box_idx) : box_idx(box_idx), box_i(box_idx / 3), box_j(box_idx % 3) {}
 };
 
 // For a given value there are only 6 possible configurations for how that value can be
@@ -75,19 +72,11 @@ struct Box {
 struct Band {
     Cells08 configurations{kAll, kAll, kAll, kAll, kAll, kAll, 0, 0};
     Cells08 eliminations{};
-    uint32_t box_peers[3]{};
-
-    Band(int orientation, int idx) {
-        for (int i = 0; i < 3; i++) {
-            box_peers[i] = orientation ? i * 3 + idx : idx * 3 + i;
-        }
-    }
 };
 
 struct State {
-    Band bands[2][3]{{{0, 0}, {0, 1}, {0, 2}},
-                     {{1, 0}, {1, 1}, {1, 2}}};
-    Box boxen[9]{0, 1, 2, 3, 4, 5, 6, 7, 8};
+    Band bands[2][3]{};
+    Box boxen[9]{};
 };
 
 struct BoxIndexing {
@@ -228,6 +217,10 @@ struct Tables {
             Cells08::All(1u << 6u), Cells08::All(1u << 7u), Cells08::All(1u << 8u),
     };
 
+    const int box_peers[2][3][3]{
+            {{0, 1, 2}, {3, 4, 5}, {6, 7, 8}},
+            {{0, 3, 6}, {1, 4, 7}, {2, 5, 8}}
+    };
     const int div3[9]{ 0, 0, 0, 1, 1, 1, 2, 2, 2 };
     const int mod3[9]{ 0, 1, 2, 0, 1, 2, 0, 1, 2 };
 
@@ -271,8 +264,11 @@ struct SolverDpllTriadSimd {
         auto eliminating = box.cells.and_not(candidates);
         if (eliminating.AllZero()) return true;
 
-        Band &h_band = state.bands[0][box.box_i];
-        Band &v_band = state.bands[1][box.box_j];
+        int box_i = tables.div3[box_idx];
+        int box_j = tables.mod3[box_idx];
+
+        Band &h_band = state.bands[0][box_i];
+        Band &v_band = state.bands[1][box_j];
         do {
             // apply eliminations and check that no cell clause now violates its minimum
             box.cells = box.cells.and_not(eliminating);
@@ -290,7 +286,7 @@ struct SolverDpllTriadSimd {
                     box.cells, [](const Cells16 &x) { return x.RotateCols(); }, all_assertions);
 
             // construct elimination messages for this box and for our band peers
-            AssertionsToEliminations(all_assertions, box.box_i, box.box_j, eliminating,
+            AssertionsToEliminations(all_assertions, box_i, box_j, eliminating,
                                      h_band.eliminations, v_band.eliminations);
 
         } while (eliminating.Intersects(box.cells));
@@ -298,11 +294,11 @@ struct SolverDpllTriadSimd {
         // send elimination messages to horizontal and vertical peers. Prefer to send the first
         // of these messages to the peer whose orientation is opposite that of the inbound peer.
         if (from_vertical) {
-            return BandEliminate<0>(state, box.box_i, box.box_j) &&
-                   BandEliminate<1>(state, box.box_j, box.box_i);
+            return BandEliminate<0>(state, box_i, box_j) &&
+                   BandEliminate<1>(state, box_j, box_i);
         } else {
-            return BandEliminate<1>(state, box.box_j, box.box_i) &&
-                   BandEliminate<0>(state, box.box_i, box.box_j);
+            return BandEliminate<1>(state, box_j, box_i) &&
+                   BandEliminate<0>(state, box_i, box_j);
         }
     }
 
@@ -434,12 +430,13 @@ struct SolverDpllTriadSimd {
         // convert positive triads to box restriction messages and send to the three box peers.
         // send these messages in order so that we return to the inbound peer last.
         int peer[3]{tables.mod3[from_peer + 1], tables.mod3[from_peer + 2], from_peer};
+        auto &box_peers = tables.box_peers[vertical][band_idx];
         Cells08 peer_triads[3]{ triads.GetLo(), triads.GetLo().RotateCols(), triads.GetHi() };
-        return (BoxRestrict<vertical>(state, band.box_peers[peer[0]],
+        return (BoxRestrict<vertical>(state, box_peers[peer[0]],
                         PositiveTriadsToBoxCandidates(peer_triads[peer[0]], vertical)) &&
-                BoxRestrict<vertical>(state, band.box_peers[peer[1]],
+                BoxRestrict<vertical>(state, box_peers[peer[1]],
                         PositiveTriadsToBoxCandidates(peer_triads[peer[1]], vertical)) &&
-                BoxRestrict<vertical>(state, band.box_peers[peer[2]],
+                BoxRestrict<vertical>(state, box_peers[peer[2]],
                         PositiveTriadsToBoxCandidates(peer_triads[peer[2]], vertical)));
     }
 
@@ -683,9 +680,10 @@ struct SolverDpllTriadSimd {
     }
 
     static void ExtractSolution(const State &state, char *solution) {
-        for (const Box &box : state.boxen) {
+        for (int box_idx = 0; box_idx < 9; box_idx++) {
+            const Box &box = state.boxen[box_idx];
             auto box_minirows = box.cells.As_4x64();
-            int box_base = box.box_i * 27 + box.box_j * 3;
+            int box_base = tables.div3[box_idx] * 27 + tables.mod3[box_idx] * 3;
             ExtractMiniRow(box_minirows.x0, box_base, solution);
             ExtractMiniRow(box_minirows.x1, box_base + 9, solution);
             ExtractMiniRow(box_minirows.x2, box_base + 18, solution);
