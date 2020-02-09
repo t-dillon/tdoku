@@ -34,22 +34,25 @@ do
     if [[ "$TARGET" == "msse4.2" ]]; then
         SSEFLAG="-DSSE4_2=on"
     fi
+    if [[ "$TARGET" == "avx" ]]; then
+        SSEFLAG="-DAVX=on"
+    fi
     PGO=""
     if [[ "${TOKS[3]}" == "pgo" ]]; then
         # build for profile generation, profile a test load, move or merge profile, build using profile
         PGO="_pgo"
         rm -rf build/pgodata*
-        ./BUILD.sh -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-generate=build/pgodata.gen" ${ALL_SOLVERS}
+        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-generate=build/pgodata.gen" ${ALL_SOLVERS}
         build/run_benchmark -t15 -w15 -s${PGO_SOLVERS} data/puzzles1_17_clue
         if echo "${CC}" | grep -q gcc; then
             mv build/pgodata.gen build/pgodata.use
         else
             "${CC/clang/llvm-profdata}" merge build/pgodata.gen -output build/pgodata.use
         fi
-        ./BUILD.sh -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-use=pgodata.use" ${ALL_SOLVERS}
+        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-use=pgodata.use" ${ALL_SOLVERS}
     else
-        # build witout pgo
-        ./BUILD.sh -DOPT="${OPT}" "${SSEFLAG}" ${ALL_SOLVERS}
+        # build without pgo
+        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" ${ALL_SOLVERS}
     fi
 
     # run benchmarks for this spec

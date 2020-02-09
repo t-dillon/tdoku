@@ -1,4 +1,10 @@
-#!/bin/sh
+#!/bin/bash
+
+targets="(all|run_benchmark|run_tests|generate|tdoku)"
+if [[ "${1}" =~ ${targets} ]]; then
+    target=${1}
+    shift
+fi
 
 mkdir -p build
 (
@@ -6,5 +12,5 @@ mkdir -p build
     rm -f CMakeCache.txt
     rm -rf CMakeFiles
     cmake .. $*
-    make
+    make ${target}
 )
