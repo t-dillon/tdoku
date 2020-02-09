@@ -26,17 +26,17 @@ difficult puzzles with Sudoku Explainer ratings of 11 or higher:
 <pre>
 |data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
-|norvig                                |       292.6 |      3417.7 |       0.0% |         186.19 |
-|minisat_augmented_01 *          (sat) |       680.3 |      1469.9 |       0.0% |          63.17 |
-|kudoku                          (cov) |      1976.2 |       506.0 |        N/A |            N/A |
-|fast_solv_9r2                   (dlx) |      1993.1 |       501.7 |       0.0% |         172.39 |
-|bb_sudoku                             |      4656.2 |       214.8 |       0.0% |         200.41 |
-|jsolve                                |      5347.7 |       187.0 |       0.0% |         213.38 |
-|jczsolve                              |      9341.4 |       107.1 |       0.0% |         171.20 |
-|fsss2                                 |     10183.2 |        98.2 |       0.0% |         139.23 |
-|sk_bforce2                            |     10947.9 |        91.3 |       0.0% |         122.64 |
-|rust_sudoku                           |     11522.1 |        86.8 |        N/A |            N/A |
-|<b>tdoku                                 |     18963.2 |        52.7 |       0.0% |          64.95 </b>|
+|norvig                                |       284.7 |      3512.8 |       0.0% |         185.64 |
+|minisat_augmented_01 *          (sat) |       680.4 |      1469.8 |       0.0% |          63.29 |
+|fast_solv_9r2                   (dlx) |      1989.5 |       502.6 |       0.0% |         172.32 |
+|kudoku                          (cov) |      2034.6 |       491.5 |        N/A |            N/A |
+|bb_sudoku                             |      4839.0 |       206.7 |       0.0% |         200.41 |
+|jsolve                                |      5317.5 |       188.1 |       0.0% |         213.38 |
+|fsss2                                 |      9331.6 |       107.2 |       0.0% |         139.23 |
+|jczsolve                              |      9377.1 |       106.6 |       0.0% |         171.20 |
+|sk_bforce2                            |     10849.4 |        92.2 |       0.0% |         122.64 |
+|rust_sudoku                           |     11506.4 |        86.9 |        N/A |            N/A |
+|<b>tdoku                                 |     19716.8 |        50.7 |       0.0% |          64.95 </b>|
 </pre>
 <small>* Note: minisat appears faster than it really is in this comparison because the minisat-based solver 
 is only looking for the first solution, while the others are all finding the solution <b>and</b> 
@@ -47,26 +47,27 @@ And here are results on the well-known and commonly-benchmarked dataset of ~49,0
 <pre>
 |data/puzzles1_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
-|minisat_augmented_01 *          (sat) |      3972.4 |       251.7 |      76.3% |           0.83 |
-|norvig                                |      6469.1 |       154.6 |      44.6% |           4.98 |
-|fast_solv_9r2                   (dlx) |     33167.3 |        30.2 |      44.6% |           4.62 |
-|kudoku                          (cov) |     34265.3 |        29.2 |        N/A |            N/A |
-|bb_sudoku                             |    106279.2 |         9.4 |      76.0% |           1.56 |
-|jsolve                                |    120971.1 |         8.3 |      50.1% |           3.20 |
-|jczsolve                              |    213868.4 |         4.7 |      69.6% |           1.89 |
-|fsss2                                 |    257772.9 |         3.9 |      72.5% |           1.31 |
-|sk_bforce2                            |    288829.0 |         3.5 |      73.7% |           1.00 |
-|rust_sudoku                           |    304866.3 |         3.3 |        N/A |            N/A |
-|<b>tdoku                                 |    312914.6 |         3.2 |      78.7% |           0.61 </b>|
+|minisat_augmented_01 *          (sat) |      4032.7 |       248.0 |      76.3% |           0.84 |
+|norvig                                |      6388.9 |       156.5 |      44.6% |           4.84 |
+|fast_solv_9r2                   (dlx) |     33502.9 |        29.8 |      44.6% |           4.47 |
+|kudoku                          (cov) |     35380.9 |        28.3 |        N/A |            N/A |
+|bb_sudoku                             |    111598.7 |         9.0 |      76.0% |           1.55 |
+|jsolve                                |    121918.5 |         8.2 |      49.9% |           3.25 |
+|fsss2                                 |    175285.0 |         5.7 |      44.6% |           4.46 |
+|fsss2_locked                          |    211892.2 |         4.7 |      76.0% |           0.95 |
+|jczsolve                              |    219325.6 |         4.6 |      70.5% |           1.76 |
+|sk_bforce2                            |    287232.6 |         3.5 |      74.1% |           1.02 |
+|rust_sudoku                           |    310515.0 |         3.2 |        N/A |            N/A |
+|<b>tdoku                                 |    316959.4 |         3.2 |      78.7% |           0.61 </b>|
 </pre>
 
-For configuration and full details of the runs used for this comparison, [see here](https://github.com/t-dillon/tdoku/tree/master/benchmarks/GCE-c2-standard-4_clang-9_O3_native_pgo).
+For configuration and full details of the runs used for this comparison, [see here](https://github.com/t-dillon/tdoku/tree/master/benchmarks/GCE-c2-standard-4_clang-8_O3_native_pgo).
 
 Here is a chart comparing a narrower set of the fastest solvers on a wider range of datasets 
 ordered roughly from easiest to hardest, and for each solver using the results from its most 
 favorable tested compiler and compiler options:
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1180131374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1180131374&format=image)
 
 #### Building and Running
 

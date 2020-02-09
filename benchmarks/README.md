@@ -25,13 +25,14 @@ it generally contains puzzles with Sudoku Explainer difficulty ratings above 10.
 dataset is huge and its puzzles are hard this is a good dataset for testing solving speed. 
 
 1. [[source](http://forum.enjoysudoku.com/the-hardest-sudokus-new-thread-t6539-600.html#p277835)] **forum_hardest_1905_11+** \
-A *harder* subset of the list forum_hardest_1905 list having a Sudoku Explainer difficulty rating 
-above 11.0 (coincidentally also about 49,000 puzzles, same as the 17-clue list).
+A *harder* subset of the forum_hardest_1905 list sampled from puzzles having a Sudoku Explainer difficulty rating 
+above 11.0 (around 49,000 puzzles; about the same size as the 17-clue list).
 
 1. [[source](http://forum.enjoysudoku.com/the-hardest-sudokus-new-thread-t6539.html#p65791)] **forum_hardest_1106** \
 The list of 376 puzzles that originally kicked off the linked player's forum hardest puzzle thread, 
-and which seems to contain on average the *hardest* puzzles of all (i.e., the puzzles take the longest
-to solve and require the most backtracking for all solvers).
+and which seems to contain on average the *hardest* puzzles of all, at least in terms of backtracking
+difficulty (i.e., these puzzles take the longest to solve and require the most backtracking across
+a wide range of solvers).
 
 1. [[source](http://sites.google.com/site/sergsudoku/benchmark.zip)] **serg_benchmark** \
 A benchmark dataset maintained by user Serg of the Enjoy Sudoku Player's Forum. This dataset 
@@ -61,15 +62,13 @@ An AMD platorm with AVX2 (but faster for Tdoku without it)
 
 # Benchmark Summary
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1180131374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1180131374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=860792693&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=860792693&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1929162374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1929162374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1085609822&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1085609822&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTcHtc3eI08xv5pPBsy5_c7D5oRY_0XbFuJbXaIqQNNiopueRNnbdRguq_lH45xaGYHGEiWr1voOZBy/pubchart?oid=1298913250&format=image)
-
-
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1298913250&format=image)
 

@@ -1,0 +1,222 @@
+###########################################
+# BUILD INFO
+###########################################
+build info: GNU 9.2.1 -O3 -fprofile-use=pgodata.use -march=native
+
+###########################################
+# CPU INFO
+###########################################
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                12
+On-line CPU(s) list:   0-11
+Thread(s) per core:    2
+Core(s) per socket:    6
+Socket(s):             1
+NUMA node(s):          1
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 62
+Model name:            Intel(R) Core(TM) i7-4930K CPU @ 3.40GHz
+Stepping:              4
+CPU MHz:               2581.737
+CPU max MHz:           3600.0000
+CPU min MHz:           1200.0000
+BogoMIPS:              6800.62
+Virtualization:        VT-x
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              256K
+L3 cache:              12288K
+NUMA node0 CPU(s):     0-11
+Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm cpuid_fault epb pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt dtherm ida arat pln pts md_clear flush_l1d
+
+###########################################
+# BENCHMARK
+###########################################
+setarch x86_64 -R taskset 0x20 build/run_benchmark -t15 -w5 -n250000 -e1 -s_tdev_basic,_tdev_basic_heuristic,minisat_minimal_01,minisat_natural_01,minisat_complete_01,minisat_augmented_01,_tdev_dpll_triad,_tdev_dpll_triad_scc_i,_tdev_dpll_triad_scc_h,_tdev_dpll_triad_scc_ih,norvig,fast_solv_9r2,kudoku,bb_sudoku,jsolve,fsss2,fsss2_locked,jczsolve,sk_bforce2,tdoku data/*
+
+|data/puzzles0_kaggle                  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |   242,553.7 |         4.1 |       0.0% |          54.45 |
+|_tdev_basic_heuristic                 |    74,465.7 |        13.4 |     100.0% |           0.00 |
+|minisat_minimal_01                    |    11,615.2 |        86.1 |     100.0% |           0.00 |
+|minisat_natural_01                    |    12,215.2 |        81.9 |     100.0% |           0.00 |
+|minisat_complete_01                   |    16,817.8 |        59.5 |     100.0% |           0.00 |
+|minisat_augmented_01                  |    10,942.7 |        91.4 |     100.0% |           0.00 |
+|_tdev_dpll_triad                      |     8,477.3 |       118.0 |     100.0% |           0.00 |
+|_tdev_dpll_triad_scc_i                |     8,475.2 |       118.0 |     100.0% |           0.00 |
+|_tdev_dpll_triad_scc_h                |     8,476.9 |       118.0 |     100.0% |           0.00 |
+|_tdev_dpll_triad_scc_ih               |     8,475.6 |       118.0 |     100.0% |           0.00 |
+|norvig                                |     9,570.7 |       104.5 |     100.0% |           0.00 |
+|fast_solv_9r2                         |    45,306.0 |        22.1 |     100.0% |           0.00 |
+|kudoku                                |    69,711.7 |        14.3 |        N/A |            N/A |
+|bb_sudoku                             |   236,667.2 |         4.2 |     100.0% |           0.00 |
+|jsolve                                |   350,129.6 |         2.9 |     100.0% |           0.00 |
+|fsss2                                 | 1,147,746.8 |         0.9 |     100.0% |           0.00 |
+|fsss2_locked                          | 1,145,305.3 |         0.9 |     100.0% |           0.00 |
+|jczsolve                              |   417,218.6 |         2.4 |     100.0% |           0.00 |
+|sk_bforce2                            |   867,990.7 |         1.2 |     100.0% |           0.00 |
+|tdoku                                 |   685,925.9 |         1.5 |     100.0% |           0.00 |
+
+|data/puzzles1_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |         0.1 |10,281,380.0 |       0.0% | 250,028,237.09 |
+|_tdev_basic_heuristic                 |        70.6 |    14,166.3 |       0.0% |       4,892.68 |
+|minisat_minimal_01                    |       305.4 |     3,274.6 |       0.0% |         461.16 |
+|minisat_natural_01                    |       301.7 |     3,314.5 |       0.0% |         414.83 |
+|minisat_complete_01                   |     3,391.7 |       294.8 |      52.5% |           3.04 |
+|minisat_augmented_01                  |     3,315.7 |       301.6 |      76.5% |           0.83 |
+|_tdev_dpll_triad                      |     7,128.6 |       140.3 |      78.9% |           0.76 |
+|_tdev_dpll_triad_scc_i                |     6,642.9 |       150.5 |      88.6% |           0.22 |
+|_tdev_dpll_triad_scc_h                |     6,851.1 |       146.0 |      78.9% |           0.27 |
+|_tdev_dpll_triad_scc_ih               |     6,998.5 |       142.9 |      88.6% |           0.13 |
+|norvig                                |     4,850.7 |       206.2 |      44.7% |           4.82 |
+|fast_solv_9r2                         |    28,198.3 |        35.5 |      44.6% |           4.47 |
+|kudoku                                |    31,747.9 |        31.5 |        N/A |            N/A |
+|bb_sudoku                             |   119,361.1 |         8.4 |      76.0% |           1.55 |
+|jsolve                                |   138,387.2 |         7.2 |      49.9% |           3.25 |
+|fsss2                                 |   184,946.6 |         5.4 |      44.6% |           4.46 |
+|fsss2_locked                          |   222,509.6 |         4.5 |      76.0% |           0.95 |
+|jczsolve                              |   198,219.2 |         5.0 |      70.5% |           1.76 |
+|sk_bforce2                            |   253,228.8 |         3.9 |      74.1% |           1.02 |
+|tdoku                                 |   234,304.2 |         4.3 |      78.7% |           0.61 |
+
+|data/puzzles2_magictour_top1465       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |         5.5 |   180,895.6 |       0.0% |   4,326,910.75 |
+|_tdev_basic_heuristic                 |       414.1 |     2,415.1 |       0.0% |         664.45 |
+|minisat_minimal_01                    |       595.5 |     1,679.3 |       0.0% |         197.19 |
+|minisat_natural_01                    |       575.3 |     1,738.1 |       0.0% |         175.57 |
+|minisat_complete_01                   |     1,760.9 |       567.9 |       0.0% |          25.03 |
+|minisat_augmented_01                  |     1,955.8 |       511.3 |       4.1% |          12.93 |
+|_tdev_dpll_triad                      |     2,731.8 |       366.1 |       7.9% |          12.64 |
+|_tdev_dpll_triad_scc_i                |     1,428.4 |       700.1 |      15.3% |           5.30 |
+|_tdev_dpll_triad_scc_h                |     2,029.6 |       492.7 |       7.9% |           4.31 |
+|_tdev_dpll_triad_scc_ih               |     2,147.5 |       465.7 |      15.2% |           2.87 |
+|norvig                                |     1,000.5 |       999.5 |       0.0% |          43.71 |
+|fast_solv_9r2                         |     6,931.0 |       144.3 |       0.0% |          42.76 |
+|kudoku                                |     7,741.4 |       129.2 |        N/A |            N/A |
+|bb_sudoku                             |    34,526.5 |        29.0 |       4.1% |          24.58 |
+|jsolve                                |    37,546.5 |        26.6 |       0.1% |          30.54 |
+|fsss2                                 |    35,906.9 |        27.8 |       0.0% |          37.37 |
+|fsss2_locked                          |    39,816.7 |        25.1 |       4.1% |          14.01 |
+|jczsolve                              |    54,138.1 |        18.5 |       2.3% |          20.76 |
+|sk_bforce2                            |    53,327.7 |        18.8 |       3.6% |          15.42 |
+|tdoku                                 |    82,229.5 |        12.2 |       7.9% |           9.05 |
+
+|data/puzzles3_forum_hardest_1905      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |       110.3 |     9,066.2 |       0.0% |     197,114.31 |
+|_tdev_basic_heuristic                 |       293.7 |     3,404.3 |       0.0% |         757.21 |
+|minisat_minimal_01                    |       184.4 |     5,422.1 |       0.0% |         435.00 |
+|minisat_natural_01                    |       179.8 |     5,561.9 |       0.0% |         407.23 |
+|minisat_complete_01                   |       598.6 |     1,670.6 |       0.0% |          73.19 |
+|minisat_augmented_01                  |       646.7 |     1,546.3 |       0.0% |          53.97 |
+|_tdev_dpll_triad                      |       469.5 |     2,129.8 |       0.0% |         111.08 |
+|_tdev_dpll_triad_scc_i                |       212.0 |     4,716.3 |       0.0% |          45.51 |
+|_tdev_dpll_triad_scc_h                |       281.5 |     3,552.8 |       0.0% |          44.49 |
+|_tdev_dpll_triad_scc_ih               |       321.1 |     3,113.8 |       0.0% |          29.17 |
+|norvig                                |       329.9 |     3,031.6 |       0.0% |         147.14 |
+|fast_solv_9r2                         |     2,350.5 |       425.4 |       0.0% |         141.34 |
+|kudoku                                |     2,344.8 |       426.5 |        N/A |            N/A |
+|bb_sudoku                             |     6,307.0 |       158.6 |       0.0% |         168.79 |
+|jsolve                                |     7,381.1 |       135.5 |       0.0% |         180.06 |
+|fsss2                                 |    11,828.6 |        84.5 |       0.0% |         117.86 |
+|fsss2_locked                          |     7,308.8 |       136.8 |       0.0% |          97.42 |
+|jczsolve                              |    11,194.9 |        89.3 |       0.0% |         138.56 |
+|sk_bforce2                            |    11,255.2 |        88.8 |       0.0% |         103.25 |
+|tdoku                                 |    17,269.5 |        57.9 |       0.0% |          54.95 |
+
+|data/puzzles4_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |        98.4 |    10,161.5 |       0.0% |     219,128.21 |
+|_tdev_basic_heuristic                 |       239.2 |     4,179.9 |       0.0% |         918.93 |
+|minisat_minimal_01                    |       147.2 |     6,793.1 |       0.0% |         526.21 |
+|minisat_natural_01                    |       152.2 |     6,570.8 |       0.0% |         478.75 |
+|minisat_complete_01                   |       526.6 |     1,898.9 |       0.0% |          86.60 |
+|minisat_augmented_01                  |       569.5 |     1,755.9 |       0.0% |          62.84 |
+|_tdev_dpll_triad                      |       374.8 |     2,668.2 |       0.0% |         137.24 |
+|_tdev_dpll_triad_scc_i                |       171.1 |     5,846.1 |       0.0% |          55.59 |
+|_tdev_dpll_triad_scc_h                |       226.5 |     4,415.9 |       0.0% |          53.65 |
+|_tdev_dpll_triad_scc_ih               |       259.0 |     3,860.9 |       0.0% |          35.53 |
+|norvig                                |       262.7 |     3,806.9 |       0.0% |         184.15 |
+|fast_solv_9r2                         |     1,838.8 |       543.8 |       0.0% |         171.77 |
+|kudoku                                |     1,847.0 |       541.4 |        N/A |            N/A |
+|bb_sudoku                             |     5,148.0 |       194.3 |       0.0% |         200.41 |
+|jsolve                                |     6,004.7 |       166.5 |       0.0% |         213.38 |
+|fsss2                                 |     9,657.9 |       103.5 |       0.0% |         139.23 |
+|fsss2_locked                          |     6,034.2 |       165.7 |       0.0% |         112.92 |
+|jczsolve                              |     8,664.3 |       115.4 |       0.0% |         171.20 |
+|sk_bforce2                            |     8,904.1 |       112.3 |       0.0% |         122.64 |
+|tdoku                                 |    14,382.0 |        69.5 |       0.0% |          64.95 |
+
+|data/puzzles5_forum_hardest_1106      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |        31.4 |    31,843.4 |       0.0% |     708,962.62 |
+|_tdev_basic_heuristic                 |       117.7 |     8,497.2 |       0.0% |       1,949.82 |
+|minisat_minimal_01                    |       110.0 |     9,094.5 |       0.0% |         717.59 |
+|minisat_natural_01                    |       109.7 |     9,114.8 |       0.0% |         671.00 |
+|minisat_complete_01                   |       397.2 |     2,517.7 |       0.0% |         122.28 |
+|minisat_augmented_01                  |       444.0 |     2,252.1 |       0.0% |          83.97 |
+|_tdev_dpll_triad                      |       209.4 |     4,774.9 |       0.0% |         268.36 |
+|_tdev_dpll_triad_scc_i                |       104.0 |     9,616.1 |       0.0% |          92.69 |
+|_tdev_dpll_triad_scc_h                |       122.5 |     8,161.3 |       0.0% |         103.80 |
+|_tdev_dpll_triad_scc_ih               |       140.6 |     7,110.5 |       0.0% |          67.22 |
+|norvig                                |       126.7 |     7,894.0 |       0.0% |         396.10 |
+|fast_solv_9r2                         |       929.5 |     1,075.9 |       0.0% |         373.00 |
+|kudoku                                |       913.6 |     1,094.6 |        N/A |            N/A |
+|bb_sudoku                             |     3,028.0 |       330.3 |       0.0% |         360.46 |
+|jsolve                                |     3,487.7 |       286.7 |       0.0% |         388.55 |
+|fsss2                                 |     5,177.5 |       193.1 |       0.0% |         280.06 |
+|fsss2_locked                          |     3,343.9 |       299.1 |       0.0% |         222.22 |
+|jczsolve                              |     4,428.1 |       225.8 |       0.0% |         366.22 |
+|sk_bforce2                            |     4,436.8 |       225.4 |       0.0% |         270.88 |
+|tdoku                                 |     9,130.2 |       109.5 |       0.0% |         113.12 |
+
+|data/puzzles6_serg_benchmark          |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |    30,271.3 |        33.0 |       0.0% |         639.31 |
+|_tdev_basic_heuristic                 |    43,176.6 |        23.2 |       0.0% |           9.82 |
+|minisat_minimal_01                    |     4,769.4 |       209.7 |       0.0% |          14.07 |
+|minisat_natural_01                    |     4,078.3 |       245.2 |       0.0% |          11.61 |
+|minisat_complete_01                   |     3,637.5 |       274.9 |       0.0% |           8.72 |
+|minisat_augmented_01                  |     3,269.1 |       305.9 |       0.0% |           8.18 |
+|_tdev_dpll_triad                      |     7,233.8 |       138.2 |       0.0% |           7.10 |
+|_tdev_dpll_triad_scc_i                |     2,651.6 |       377.1 |       0.0% |           6.91 |
+|_tdev_dpll_triad_scc_h                |     2,644.1 |       378.2 |       0.0% |           8.30 |
+|_tdev_dpll_triad_scc_ih               |     2,515.7 |       397.5 |       0.0% |           8.27 |
+|norvig                                |     6,098.3 |       164.0 |       0.0% |           7.18 |
+|fast_solv_9r2                         |    39,882.9 |        25.1 |       0.0% |           7.17 |
+|kudoku                                |    68,988.2 |        14.5 |        N/A |            N/A |
+|bb_sudoku                             |   132,526.8 |         7.5 |       0.0% |           7.41 |
+|jsolve                                |   179,013.8 |         5.6 |       0.0% |           8.42 |
+|fsss2                                 |   303,105.0 |         3.3 |       0.0% |           7.75 |
+|fsss2_locked                          |   139,710.8 |         7.2 |       0.0% |           7.60 |
+|jczsolve                              |   212,482.9 |         4.7 |       0.0% |           7.09 |
+|sk_bforce2                            |   223,087.2 |         4.5 |       0.0% |           7.07 |
+|tdoku                                 |   254,303.9 |         3.9 |       0.0% |           7.13 |
+
+|data/puzzles7_gen_puzzles             |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|_tdev_basic                           |         7.9 |   126,143.1 |      25.0% |   2,480,144.94 |
+|_tdev_basic_heuristic                 |   478,527.6 |         2.1 |      97.4% |           0.35 |
+|minisat_minimal_01                    |    14,851.5 |        67.3 |      95.8% |           1.72 |
+|minisat_natural_01                    |    11,004.8 |        90.9 |      95.8% |           1.30 |
+|minisat_complete_01                   |    11,653.3 |        85.8 |      97.4% |           0.40 |
+|minisat_augmented_01                  |    12,656.6 |        79.0 |      97.4% |           0.35 |
+|_tdev_dpll_triad                      |    20,531.0 |        48.7 |      97.4% |           0.28 |
+|_tdev_dpll_triad_scc_i                |    16,266.7 |        61.5 |      97.4% |           0.28 |
+|_tdev_dpll_triad_scc_h                |    15,856.3 |        63.1 |      97.4% |           0.34 |
+|_tdev_dpll_triad_scc_ih               |    15,671.3 |        63.8 |      97.4% |           0.34 |
+|norvig                                |    19,242.2 |        52.0 |      97.4% |           0.29 |
+|fast_solv_9r2                         |    67,697.6 |        14.8 |      97.4% |           0.30 |
+|kudoku                                |   136,187.1 |         7.3 |        N/A |            N/A |
+|bb_sudoku                             |   671,875.7 |         1.5 |      97.4% |           0.29 |
+|jsolve                                | 1,106,829.6 |         0.9 |      97.4% |           0.31 |
+|fsss2                                 | 1,988,857.1 |         0.5 |      97.4% |           0.30 |
+|fsss2_locked                          | 1,509,231.6 |         0.7 |      97.4% |           0.29 |
+|jczsolve                              | 1,270,101.3 |         0.8 |      97.4% |           0.31 |
+|sk_bforce2                            | 1,464,199.3 |         0.7 |      97.4% |           0.30 |
+|tdoku                                 | 1,717,504.0 |         0.6 |      97.4% |           0.30 |
