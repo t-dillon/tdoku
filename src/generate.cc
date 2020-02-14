@@ -41,6 +41,7 @@ struct Options {
     int num_evals = 10;
     int num_puzzles_in_pool = 500;
     bool display_all = false;
+    bool minimize = true;
     bool pencilmark = true;
     int solver = 1;
 };
@@ -199,11 +200,11 @@ struct Generator {
             }
 
             // randomly complete and minimize
-            vector<int> generation_permutation = util_.Permutation(729);
-            if (!TdokuGeneratorDpllTriadSimd(options_.pencilmark,
-                                             &generation_permutation[0],
-                                             puzzle)) {
+            if (!TdokuConstrain(options_.pencilmark, puzzle)) {
                 continue;
+            }
+            if (options_.minimize) {
+                TdokuMinimize(options_.pencilmark, puzzle);
             }
 
             // evaluate difficulty via guess counting
@@ -251,7 +252,7 @@ int main(int argc, char **argv) {
 
     ketopt_t opt = KETOPT_INIT;
     char c;
-    while ((c = (char) ketopt(&opt, argc, argv, 1, "a::c:d:e:g:hn:p::r:s:", nullptr)) != -1) {
+    while ((c = (char) ketopt(&opt, argc, argv, 1, "a::c:d:e:g:hl:m:n:p::r:s:u", nullptr)) != -1) {
         switch (c) {
             case 'c': {
                 options.clue_weight = stod(opt.arg);
@@ -271,6 +272,14 @@ int main(int argc, char **argv) {
             }
             case 'e': {
                 options.num_evals = stoi(opt.arg);
+                break;
+            }
+            case 'l': {
+                options.max_puzzles = stoll(opt.arg);
+                break;
+            }
+            case 'm': {
+                options.minimize = opt.arg == nullptr ? true : stoi(opt.arg) > 0;
                 break;
             }
             case 'n': {
@@ -298,6 +307,8 @@ int main(int argc, char **argv) {
                 cout << "  -r <random weight>  scoring weight for uniform noise\n";
                 cout << "  -d <drop>           number of clues to drop before re-completing\n";
                 cout << "  -e <num_evals>      number of permutations to eval for guess estimate\n";
+                cout << "  -l <limit>          limit number of puzzles to generate\n";
+                cout << "  -m [0|1]            minimize generated puzzles\n";
                 cout << "  -n <pool size>      number of top scored puzzles to keep in pool\n";
                 cout << "  -a [0|1]            display all puzzles (not just top scored)\n";
                 cout << "  -p [0|1]            generate pencilmark puzzles\n";

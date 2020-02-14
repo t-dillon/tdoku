@@ -19,9 +19,9 @@ size_t TdokuSolverDpllTriadSimd(const char *input,
                                 char *solution,
                                 size_t *num_guesses);
 
-bool TdokuGeneratorDpllTriadSimd(bool pencilmark,
-                                 const int *permutation,
-                                 char *puzzle);
+bool TdokuConstrain(bool pencilmark, char *puzzle);
+
+bool TdokuMinimize(bool pencilmark, char *puzzle);
 #ifdef __cplusplus
 }
 #endif
@@ -50,24 +50,38 @@ bool TdokuGeneratorDpllTriadSimd(bool pencilmark,
  * @return
  *       The number of solutions found up to the given limit.
  */
-size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
-                   char *solution, size_t *num_guesses) {
+inline size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
+                          char *solution, size_t *num_guesses) {
     return TdokuSolverDpllTriadSimd(input, limit, configuration, solution, num_guesses);
 }
 
 /**
- * Generates a Sudoku or Pencilmark Sudoku puzzle
+ * Given a partially constrained puzzle adds random clues until the solution is unique. This
+ * procedure is fast, but biased in the sense that different puzzles may arise with widely
+ * varying probabilities and it makes no effort to adjust for these differences or to estimate
+ * these probabilities. It also does not guarantee that the resulting puzzle is minimal.
  * @param pencilmark
- *       A boolean indicating whether to generate a pencilmark sudoku (vs. a vanilla one)
- * @param permutation
- *       A permutation of range(729) for use in generating the puzzle
+ *       A boolean indicating if the second argument is a pencilmark sudoku (vs. a vanilla one)
  * @param puzzle
- *       An output buffer of 81 or 729 characters depending on requested puzzle type.
+ *       An in/out buffer of 81 or 729 characters containing the input partial puzzle and
+ *       output re-constrained puzzle.
  * @return
- *       A boolean indicating if generation was successful.
+ *       A boolean indicating success or failure.
  */
-bool GenerateSudoku(bool pencilmark, const int *permutation, char *puzzle) {
-    return TdokuGeneratorDpllTriadSimd(pencilmark, permutation, puzzle);
+inline bool Constrain(bool pencilmark, char *puzzle) {
+    return TdokuConstrain(pencilmark, puzzle);
+}
+
+/**
+ * Minimized Sudoku or Pencilmark Sudoku puzzle by randomly removing clues until no clue
+ * can be removed without producing a puzzle with multiple solutions.
+ * @param pencilmark
+ *       A boolean indicating whether to minimize a pencilmark sudoku (vs. a vanilla one)
+ * @param puzzle
+ *       An 81 or 729 character puzzle to minimize (for vanilla vs. pencilmark)
+ */
+inline void Minimize(bool pencilmark, char *puzzle) {
+    TdokuMinimize(pencilmark, puzzle);
 }
 
 #endif //TDOKU_H

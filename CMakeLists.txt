@@ -58,7 +58,7 @@ configure_file (
     "${CMAKE_SOURCE_DIR}/src/build_info.h")
 
 # a gcc-linkable library with just the fast solver
-add_library(tdoku STATIC src/solver_dpll_triad_simd.cc)
+add_library(tdoku STATIC src/solver_dpll_triad_simd.cc src/util.cc)
 target_compile_options(tdoku PUBLIC -fno-exceptions -fno-rtti -fpic)
 
 add_library(rust_sudoku SHARED IMPORTED)
@@ -167,7 +167,7 @@ if (SK_BFORCE2)
 endif()
 
 add_executable(run_benchmark src/run_benchmark.cc src/util.cc ${BENCHMARK_SOLVER_SOURCES})
-add_executable(run_tests test/run_tests.cc ${BENCHMARK_SOLVER_SOURCES})
+add_executable(run_tests test/run_tests.cc src/util.cc ${BENCHMARK_SOLVER_SOURCES})
 add_executable(generate src/generate.cc src/util.cc ${GENERATE_SOLVER_SOURCES})
 
 if (GUROBI)

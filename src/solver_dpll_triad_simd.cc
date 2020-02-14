@@ -545,69 +545,6 @@ struct SolverDpllTriadSimd {
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    bool Generate(bool pencilmark, const int *permutation, char *clues) {
-        State state;
-        if (pencilmark) {
-            InitPencilmarkByBox(clues, state);
-        } else {
-            InitVanillaByBand(clues, state);
-        }
-        for (int i = 0; i < 729; i++) {
-            int literal = permutation[i];
-            int cell = literal / 9;
-
-            // skip over clues that were given as part of the partial puzzle.
-            if (pencilmark) {
-                if (clues[literal] == '.') continue;
-            } else {
-                if (clues[cell] != '.') continue;
-            }
-
-            int row = cell / 9, col = cell % 9;
-            int box_idx = (row / 3) * 3 + (col / 3);
-            int elm_idx = (row % 3) * 4 + (col % 3);
-            Box &box = state.boxen[box_idx];
-            uint16_t candidates = box.cells.Extract(elm_idx);
-            uint16_t candidate = 1u << (literal % 9u);
-
-            // a candidate can lead to minimal puzzle only if there are currently solutions
-            // consistent with both its inclusion and exclusion. first we check quickly that
-            // it's not already eliminated, and that the cell has more than one candidate.
-            if ((candidates & candidate) && (candidates != candidate)) {
-                // then check if there's a solution that includes the candidate
-                Cells16 assertion = Cells16::All(kAll);
-                assertion.Insert(elm_idx, candidate);
-                State asserted = state;
-                if (!BoxRestrict<0>(asserted, box_idx, assertion)) continue;
-                auto count1 = SafeCountSolutionsConsistentWithPartialAssignment(asserted, 2);
-                if (count1 == 0) continue;
-
-                // and check if there's a solution that excludes the candidate
-                Cells16 elimination = Cells16::All(kAll);
-                elimination.Insert(elm_idx, kAll ^ candidate);
-                State eliminated = state;
-                if (!BoxRestrict<0>(eliminated, box_idx, elimination)) continue;
-                auto count2 = SafeCountSolutionsConsistentWithPartialAssignment(eliminated, 2);
-                if (count2 == 0) continue;
-
-                // if both are possible, then add the clue as an assertion or elimination
-                // depending on whether we're making pencilmark or vanilla puzzles.
-                if (pencilmark) {
-                    clues[literal] = '.';
-                    state = eliminated;
-                    if (count2 == 1) return true;
-                } else {
-                    clues[cell] = (char) ('1' + (literal % 9));
-                    state = asserted;
-                    if (count1 == 1) return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////
-
     static inline void InitClue(const char *input, State &state, int pos) {
         const BoxIndexing &indexing = tables.box_indexing[pos];
         char digit = input[pos];
@@ -707,20 +644,114 @@ struct SolverDpllTriadSimd {
     };
 };
 
+
+struct GeneratorDpllTriadSimd {
+    SolverDpllTriadSimd solver_{};
+    Util util_;
+
+    // takes a partial puzzle (vanilla or pencilmark) and adds random clues to reconstrain it
+    // until there is a unique solution. this procedure is fast, but biased in the sense that
+    // different puzzles may arise with widely varying probabilities and we make no effort
+    // to adjust for these differences or to estimate these probabilities. it also does not
+    // guarantee that the resulting puzzle is minimal.
+    bool Constrain(bool pencilmark, char *puzzle) {
+        State state;
+        if (pencilmark) {
+            SolverDpllTriadSimd::InitPencilmarkByBox(puzzle, state);
+        } else {
+            SolverDpllTriadSimd::InitVanillaByBand(puzzle, state);
+        }
+        vector<int> permutation = util_.Permutation(729);
+        for (int literal : permutation) {
+            int cell = literal / 9;
+
+            // skip over clues that were given as part of the partial puzzle.
+            if (pencilmark) {
+                if (puzzle[literal] == '.') continue;
+            } else {
+                if (puzzle[cell] != '.') continue;
+            }
+
+            int row = cell / 9, col = cell % 9;
+            int box_idx = (row / 3) * 3 + (col / 3);
+            int elm_idx = (row % 3) * 4 + (col % 3);
+            Box &box = state.boxen[box_idx];
+            uint16_t candidates = box.cells.Extract(elm_idx);
+            uint16_t candidate = 1u << (literal % 9u);
+
+            // quick check that the candidate is not trivially included or excluded before
+            // adding as a clue.
+            if ((candidates & candidate) && (candidates != candidate)) {
+                Cells16 restrict = box.cells;
+                restrict.Insert(elm_idx, pencilmark ? candidates ^ candidate : candidate);
+                State test_state = state;
+                if (SolverDpllTriadSimd::BoxRestrict<0>(test_state, box_idx, restrict)) {
+                    int cell_or_literal = pencilmark ? literal : cell;
+                    char prior_unconstrained_value = puzzle[cell_or_literal];
+                    puzzle[cell_or_literal] = pencilmark ? '.' : (char)('1' + (literal % 9));
+                    switch (solver_.SafeCountSolutionsConsistentWithPartialAssignment(
+                            test_state, 2)) {
+                        case 0:
+                            puzzle[cell_or_literal] = prior_unconstrained_value;
+                            continue;
+                        case 1:
+                            return true;
+                        default:
+                            state = test_state;
+                            continue;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // minimize a vanilla or pencilmark puzzle by removing redundant clues in random order
+    // until no clue can be removed while still having a unique solution.
+    void Minimize(bool pencilmark, char *puzzle) {
+        vector<int> permutation = util_.Permutation(729);
+        for (int cell_or_literal : permutation) {
+            if (pencilmark) {
+                if (puzzle[cell_or_literal] != '.') continue;
+            } else {
+                if (cell_or_literal >= 81 || puzzle[cell_or_literal] == '.') continue;
+            }
+            char constraint = puzzle[cell_or_literal];
+            State state;
+            if (pencilmark) {
+                puzzle[cell_or_literal] = (char)('1' + (cell_or_literal % 9));
+                SolverDpllTriadSimd::InitPencilmarkByBox(puzzle, state);
+            } else {
+                puzzle[cell_or_literal] = '.';
+                SolverDpllTriadSimd::InitVanillaByBand(puzzle, state);
+            }
+            if (solver_.SafeCountSolutionsConsistentWithPartialAssignment(state, 2) > 1) {
+                puzzle[cell_or_literal] = constraint;
+            }
+        }
+    }
+};
+
+
 SolverDpllTriadSimd solver{};
+
+GeneratorDpllTriadSimd generator{};
 
 } // namespace
 
 extern "C"
-size_t TdokuSolverDpllTriadSimd(const char *input, size_t limit,
+size_t TdokuSolverDpllTriadSimd(const char *puzzle, size_t limit,
                                 uint32_t /* unused configuration */,
                                 char *solution, size_t *num_guesses) {
-    return solver.SolveSudoku(input, limit, solution, num_guesses);
+    return solver.SolveSudoku(puzzle, limit, solution, num_guesses);
 }
 
 extern "C"
-bool TdokuGeneratorDpllTriadSimd(bool pencilmark,
-                                 const int *permutation,
-                                 char *puzzle) {
-    return solver.Generate(pencilmark, permutation, puzzle);
+bool TdokuConstrain(bool pencilmark, char *puzzle) {
+    return generator.Constrain(pencilmark, puzzle);
+}
+
+extern "C"
+void TdokuMinimize(bool pencilmark, char *puzzle) {
+    generator.Minimize(pencilmark, puzzle);
 }
