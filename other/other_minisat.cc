@@ -1,12 +1,18 @@
 #include <minisat/core/Solver.h>
+#include <memory>
 
 namespace {
 
 using Minisat::Lit;
 using Minisat::mkLit;
 
+const Minisat::lbool True = Minisat::lbool((uint8_t) 1);
+const Minisat::lbool False = Minisat::lbool((uint8_t) 0);
+
 struct SolverMiniSat {
-    Minisat::Solver solver;
+    int config_;
+    std::unique_ptr<Minisat::Solver> solver_;
+    int num_normal_vars_ = 0;
 
     // Construct a solver using one of four CNF representations of Sudoku logic:
     // 0 = minimal representation: each cell has a value. no group has a value twice.
@@ -26,11 +32,15 @@ struct SolverMiniSat {
     //   2. complete           X     X        X      X
     //   3. augmented          X     X                       X      X
     //
-    SolverMiniSat(int config) {
-        InitializeVariables(config == 3);
-        InitializeCellConstraints(config > 0);
-        if (config < 3) {
-            InitializeGroupConstraints(config > 1);
+    SolverMiniSat(int config) : config_(config), solver_(std::make_unique<Minisat::Solver>()) {
+        Reinitialize();
+    }
+
+    void Reinitialize() {
+        InitializeVariables(config_ == 3);
+        InitializeCellConstraints(config_ > 0);
+        if (config_ < 3) {
+            InitializeGroupConstraints(config_ > 1);
         } else {
             InitializeTriadDefinitions();
             InitializeTriadConstraints();
@@ -56,19 +66,20 @@ struct SolverMiniSat {
 
     void InitializeVariables(bool with_triads) {
         for (int i = 0; i < (with_triads ? 15 : 9) * 9 * 9; i++) {
-            solver.newVar();
+            solver_->newVar();
         }
+        num_normal_vars_ = solver_->nVars();
     }
 
     // create one or both sides of an exactly-one constraint over a set of literals
     void Constrain(const Minisat::vec<Minisat::Lit> &literals, bool one, bool only_one) {
         if (one) {
-            solver.addClause(literals);
+            solver_->addClause(literals);
         }
         if (only_one) {
             for (int i = 0; i < literals.size() - 1; i++) {
                 for (int j = i + 1; j < literals.size(); j++) {
-                    solver.addClause(~literals[i], ~literals[j]);
+                    solver_->addClause(~literals[i], ~literals[j]);
                 }
             }
         }
@@ -162,7 +173,58 @@ struct SolverMiniSat {
         }
     }
 
-    size_t SolveSudoku(const char *input, char *solution, bool pencilmark, size_t *num_guesses) {
+    // count the number of satisfying assignments up to the given limit.
+    size_t SatCount(Minisat::vec<Minisat::Lit> &assumptions, int limit) {
+        // minisat does not have a native way to count satisfying assignments. to achieve
+        // this we have to repeatedly solve(), each time adding a blocking clause that
+        // excludes the last solution found. since minisat also doesn't have a general way
+        // to remove clauses, and it would be too expensive to reinitialize a solver
+        // from scratch for each puzzle, we add a variable for each call to SatCount that
+        // can control the activity of the blocking clauses and allow minisat to simplify
+        // them away later.
+
+        // still, we will want to periodically reinitialize the solver. while this is
+        // expensive to do, it is also expensive to accumulate the blocking clause activator
+        // variables and associated unit clauses that we make below. more frequent
+        // reinitialization is better for hard puzzles, less frequent is better for easy ones.
+        // here we'll reinitialize every 20 SatCounts, which seems a good compromise.
+        if (solver_->nVars() - num_normal_vars_ > 20) {
+            solver_.reset(new Minisat::Solver());
+            Reinitialize();
+        }
+
+        // create activator variable and temporarily add as an assumption
+        auto blocking_clause_activator = solver_->newVar();
+        assumptions.push(Minisat::mkLit(blocking_clause_activator, true));
+
+        Minisat::vec<Minisat::Lit> blocking_clause;
+        size_t num_solutions = 0;
+        while (num_solutions < limit && solver_->solve(assumptions)) {
+            num_solutions++;
+            solver_->decisions--;  // adjust for counting discrepancy (see comment below)
+
+            blocking_clause.clear();
+            // add a clause which, when the activator is true, ...
+            blocking_clause.push(Minisat::mkLit(blocking_clause_activator, false));
+            // asserts that some component of the current solution as reversed polarity
+            for (int i = 0; i < num_normal_vars_; i++) {
+                blocking_clause.push(Minisat::mkLit(i, solver_->modelValue(i) == False));
+            }
+            solver_->addClause(blocking_clause);
+        }
+        solver_->decisions++;  // adjust for counting discrepancy (see comment below)
+
+        // we now want to make the blocking clauses for this puzzle go away. we remove
+        // the activator assumption and add a clause asserting deactivation. minisat will
+        // simplify the blocking clauses away on the next call to solve().
+        assumptions.pop();
+        solver_->addClause(Minisat::mkLit(blocking_clause_activator, false));
+
+        return num_solutions;
+    }
+
+    size_t SolveSudoku(const char *input, bool pencilmark, size_t limit,
+                       char *solution, size_t *num_guesses) {
         Minisat::vec<Minisat::Lit> assumptions;
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < 9; column++) {
@@ -180,46 +242,44 @@ struct SolverMiniSat {
                 }
             }
         }
-        solver.decisions = 0;
-        bool satisfied = solver.solve(assumptions);
-        if (satisfied) {
-            for (int row = 0; row < 9; row++) {
-                for (int column = 0; column < 9; column++) {
-                    for (int value = 0; value < 9; value++) {
-                        if (solver.model[value + 9 * (column + 9 * row)] ==
-                            Minisat::lbool((uint8_t) 1)) {
-                            solution[row * 9 + column] = value + '1';
+        size_t count = 0;
+        solver_->decisions = 0;
+        if (limit == 1) {
+            if (solver_->solve(assumptions)) {
+                count = 1;
+                for (int row = 0; row < 9; row++) {
+                    for (int column = 0; column < 9; column++) {
+                        for (int value = 0; value < 9; value++) {
+                            if (solver_->model[value + 9 * (column + 9 * row)] == True) {
+                                solution[row * 9 + column] = value + '1';
+                            }
                         }
                     }
                 }
             }
+        } else {
+           count = SatCount(assumptions, limit);
         }
         // minisat doesn't report decisions consistently. If satisfied it reports 1 + the
         // actual decision count.
-        *num_guesses = solver.decisions - (satisfied ? 1 : 0);
-        return satisfied ? 1 : 0;
+        *num_guesses = solver_->decisions - (count ? 1 : 0);
+        return count;
     }
 };
+
+SolverMiniSat s0{0};
+SolverMiniSat s1{1};
+SolverMiniSat s2{2};
+SolverMiniSat s3{3};
+
+SolverMiniSat *solvers[4]{&s0, &s1, &s2, &s3};
 
 } //end anonymous namespace
 
 
 extern "C"
-size_t OtherSolverMiniSat(const char *input, size_t /*unused_limit*/, uint32_t config,
+size_t OtherSolverMiniSat(const char *input, size_t limit, uint32_t config,
                           char *solution, size_t *num_guesses) {
     bool pencilmark = input[81] >= '.';
-    switch(config % 4) {
-        case 0:
-            static SolverMiniSat s0{0};
-            return s0.SolveSudoku(input, solution, pencilmark, num_guesses);
-        case 1:
-            static SolverMiniSat s1{1};
-            return s1.SolveSudoku(input, solution, pencilmark, num_guesses);
-        case 2:
-            static SolverMiniSat s2{2};
-            return s2.SolveSudoku(input, solution, pencilmark, num_guesses);
-        default:
-            static SolverMiniSat s3{3};
-            return s3.SolveSudoku(input, solution, pencilmark, num_guesses);
-    }
+    return solvers[config % 4]->SolveSudoku(input, pencilmark, limit, solution, num_guesses);
 }

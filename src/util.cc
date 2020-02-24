@@ -22,7 +22,7 @@ double Util::RandomDouble() {
 vector<int> Util::Permutation(size_t size) {
     vector<int> permutation;
     permutation.reserve(size);
-    for (int i = 0; i < size; i++) permutation.push_back(i);
+    for (size_t i = 0; i < size; i++) permutation.push_back(i);
     shuffle(permutation.begin(), permutation.end(), rng_);
     return permutation;
 }

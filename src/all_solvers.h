@@ -119,10 +119,10 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",              15));
     solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",    15));
 #ifdef MINISAT
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           0, "minisat_minimal_01",        9));
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           1, "minisat_natural_01",        9));
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete_01",       9));
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented_01",      9));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           0, "minisat_minimal",          15));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           1, "minisat_natural",          15));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete",         15));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented",        15));
 #endif
 #ifdef GUROBI
     solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                   15));
