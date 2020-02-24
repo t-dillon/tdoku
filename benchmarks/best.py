@@ -17,7 +17,8 @@ def merge_results(filename, results):
 solvers = ['_tdev_basic', '_tdev_basic_heuristic', 'minisat_minimal', 'minisat_natural',
            'minisat_complete', 'minisat_augmented', '_tdev_dpll_triad', '_tdev_dpll_triad_scc_i',
            '_tdev_dpll_triad_scc_h', '_tdev_dpll_triad_scc_ih', 'norvig', 'fast_solv_9r2', 'kudoku',
-           'bb_sudoku', 'jsolve', 'fsss2', 'fsss2_locked', 'jczsolve', 'sk_bforce2', 'rust_sudoku', 'tdoku']
+           'bb_sudoku', 'fsss', 'jsolve', 'fsss2', 'fsss2_locked', 'jczsolve', 'sk_bforce2',
+           'rust_sudoku', 'tdoku']
 
 def main(args):
     results = {}

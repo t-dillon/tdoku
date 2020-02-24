@@ -18,6 +18,8 @@ option(AVX512      "Compile with AVX512BITALG support" OFF)
 
 option(BB_SUDOKU     "Include BB_SUDOKU"     OFF)
 option(FAST_SOLV_9R2 "Include FAST_SOLV_9R2" OFF)
+option(ZERODOKU      "Include ZeroDoku"      OFF)
+option(FSSS          "Include fsss"          OFF)
 option(FSSS2         "Include fsss2"         OFF)
 option(JCZSOLVE      "Include JCZSolve"      OFF)
 option(JSOLVE        "Include JSolve"        OFF)
@@ -96,6 +98,18 @@ if (FAST_SOLV_9R2)
     add_definitions(-DFAST_SOLV_9R2)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
             other/fast_solv_9r2/fast_solv_9r2.c)
+endif()
+
+if (ZERODOKU)
+    add_definitions(-DZERODOKU)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/zerodoku/zerodoku_v2.c)
+endif()
+
+if (FSSS)
+    add_definitions(-DFSSS)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/fsss/fsss.cc)
 endif()
 
 if (FSSS2)

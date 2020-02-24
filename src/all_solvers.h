@@ -51,12 +51,14 @@ extern "C" {
 
     SolverFn OtherSolverGurobi;
     SolverFn OtherSolverMiniSat;
-    SolverFn OtherSolverBBSudoku;
     SolverFn OtherSolverFastSolv9r2;
     SolverFn OtherSolverNorvig;
-    SolverFn OtherSolverJSolve;
     SolverFn OtherSolverKudoku;
     SolverFn OtherSolverGss;
+    SolverFn OtherSolverZeroDoku;
+    SolverFn OtherSolverBBSudoku;
+    SolverFn OtherSolverFsss;
+    SolverFn OtherSolverJSolve;
     SolverFn OtherSolverFsss2;
     SolverFn OtherSolverJCZSolve;
     SolverFn OtherSolverSKBFORCE2;
@@ -118,14 +120,14 @@ std::vector<Solver> GetAllSolvers() {
 
     solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",              15));
     solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",    15));
+#ifdef GUROBI
+    solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                   15));
+#endif
 #ifdef MINISAT
     solvers.emplace_back(Solver(OtherSolverMiniSat,           0, "minisat_minimal",          15));
     solvers.emplace_back(Solver(OtherSolverMiniSat,           1, "minisat_natural",          15));
     solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete",         15));
     solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented",        15));
-#endif
-#ifdef GUROBI
-    solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                   15));
 #endif
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "_tdev_dpll_triad",         15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",   15));
@@ -142,18 +144,24 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku",                    7));
 #endif
 #ifdef GSS
-    solvers.emplace_back(Solver(OtherSolverGss,               1, "gss1",                      7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  2, "gss2",         			  7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  3, "gss3",         			  7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  4, "gss4",         			  7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  5, "gss5",         			  7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  6, "gss6",         			  7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  7, "gss7",         			  7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  8, "gss8",         			  7));
-    solvers.emplace_back(Solver(OtherSolverGss,      		  0, "gss",         			  7));
+    solvers.emplace_back(Solver(OtherSolverGss,               1, "gss1",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               2, "gss2",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               3, "gss3",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               4, "gss4",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               5, "gss5",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               6, "gss6",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               7, "gss7",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               8, "gss8",                     15));
+    solvers.emplace_back(Solver(OtherSolverGss,               0, "gss",                      15));
+#endif
+#ifdef ZERODOKU
+    solvers.emplace_back(Solver(OtherSolverZeroDoku,          0, "zerodoku",                  6));
 #endif
 #ifdef BB_SUDOKU
     solvers.emplace_back(Solver(OtherSolverBBSudoku,          0, "bb_sudoku",                15));
+#endif
+#ifdef FSSS
+    solvers.emplace_back(Solver(OtherSolverFsss,              0, "fsss",                     11));
 #endif
 #ifdef JSOLVE
     solvers.emplace_back(Solver(OtherSolverJSolve,            0, "jsolve",                   15));

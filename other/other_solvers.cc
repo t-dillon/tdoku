@@ -66,6 +66,37 @@ size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_conf
 #endif
 
 
+#ifdef ZERODOKU
+extern "C"
+size_t ZeroDokuSolve(const char *puzzle, size_t limit);
+
+extern "C"
+size_t OtherSolverZeroDoku(const char *input, size_t limit, uint32_t /*unused_configuration*/,
+                           char *solution, size_t *num_guesses) {
+    *num_guesses = 0;
+    int count = ZeroDokuSolve(input, limit);
+    return count;
+}
+#endif
+
+
+#ifdef FSSS
+extern "C"
+int fsss_solve(const char* in, char* out, size_t *num_guesses, const int mode=0);
+
+extern "C"
+size_t OtherSolverFsss(const char *input, size_t limit, uint32_t /*unused_configuration*/,
+                       char *solution, size_t *num_guesses) {
+    char buffer[81];
+    for (int i = 0; i < 81; i++) {
+        buffer[i] = input[i] == '.' ? 0 : (input[i] - '0');
+    }
+    int count = fsss_solve(buffer, solution, num_guesses, limit > 1 ? 1 : 0);
+    return count;
+}
+#endif
+
+
 #ifdef FSSS2
 #include "fsss2/fsss2.h"
 int nTrials;

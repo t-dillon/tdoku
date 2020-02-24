@@ -66,6 +66,8 @@ int S_ReadCompactStandard(const char *s, Sudoku *S)
 	return 1;
 }
 
+int gss_num_guesses = 0;
+
 size_t OtherSolverGss(const char *input, size_t limit, uint32_t configuration, char *solution, size_t *num_guesses) 
 {
 	int maxlevel;
@@ -89,7 +91,9 @@ size_t OtherSolverGss(const char *input, size_t limit, uint32_t configuration, c
 		return 0;
 		
 	sol=malloc(sizeof(MASKINT *));
+	gss_num_guesses = 0;
 	state=Solve(&S, &maxlevel, &sol, &ns, (int)limit, (int)configuration, STRAT);
+	*num_guesses = gss_num_guesses;
 	solution[81]='\0';
 	switch(state)
 	{
