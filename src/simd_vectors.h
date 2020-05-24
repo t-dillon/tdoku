@@ -22,6 +22,7 @@
  * sse4_1 - penryn 2007
  *   _mm_testz_si128       // sse2 alt: movemask(cmpeq(setzero())) in sse2
  *   _mm_blend_epi16       // sse2 alt: &| with masks
+ *   _mm_minpos_epu8
  *
  * sse4_2 - nehalem 2007
  *   _mm_cmpgt_epi64
@@ -36,12 +37,13 @@
  *   _mm_popcnt_epi64
  *   _mm256_popcnt_epi16
  *
- * October 2019 Steam monthly hardware survey:
- *   SSE2        100.00%  +0.00%
- *   SSSE3        97.95%  +0.14%
- *   SSE4.1       96.92%  +0.20%
- *   SSE4.2       95.95%  +0.25%
- *   AVX          89.47%  +0.33%
+ * May 2020 Steam monthly hardware survey:
+ *   SSE2        100.00%
+ *   SSSE3        98.52%
+ *   SSE4.1       97.80%
+ *   SSE4.2       97.05%
+ *   AVX          92.25%
+ *   AVX2         73.88%
  */
 
 // for functions like extract below where we use switches to determine which immediate to use
@@ -93,29 +95,29 @@ struct Bitvec08x16 {
     }
 
     static inline Bitvec08x16
-    X_Y_or_Z_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    or_X_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #ifdef __AVX512VL__
-        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 254);
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11111110);
 #else
         return x | y | z;
 #endif
     }
 
     static inline Bitvec08x16
-    X_Y_Z_and_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    and_X_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #ifdef __AVX512VL__
-        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 248);
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11101010);
 #else
-        return x | (y & z);
+        return (x & y) | z;
 #endif
     }
 
     static inline Bitvec08x16
-    X_Y_and_Z_andnot(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    and_X_Y_andnot_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #ifdef __AVX512VL__
-        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 64);
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b01000000);
 #else
-        return x & y.and_not(z);
+        return (x & y).and_not(z);
 #endif
     }
 
@@ -227,6 +229,34 @@ struct Bitvec08x16 {
         // but works on windows where extract_epi64 is missing.
         return NumBitsSet64((uint64_t) _mm_cvtsi128_si64(vec)) +
                NumBitsSet64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec)));
+#endif
+    }
+
+    inline uint32_t MinPosGreaterThanOrEqual(uint16_t min_val) {
+#ifdef __SSE4_1__
+        return _mm_cvtsi128_si32(_mm_minpos_epu16(_mm_sub_epi16(vec, _mm_set1_epi16(min_val))));
+#else
+        uint32_t min = 0xffff;
+        uint32_t pos = 0;
+        uint64_t lo = _mm_cvtsi128_si64(vec);
+        for (int i = 0; i < 4; i++) {
+            uint32_t val = ((int32_t)(lo & 0xffffu) - min_val);
+            if (val < min) {
+                min = val;
+                pos = i;
+            }
+            lo >>= 16u;
+        }
+        uint64_t hi = _mm_cvtsi128_si64(_mm_unpackhi_epi64(vec, vec));
+        for (int i = 4; i < 8; i++) {
+            uint32_t val = ((int32_t)(hi & 0xffffu) - min_val);
+            if (val < min) {
+                min = val;
+                pos = i;
+            }
+            hi >>= 16u;
+        }
+        return (pos << 16u) | min;
 #endif
     }
 
@@ -371,18 +401,23 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    X_Y_or_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    or_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
         return Bitvec16x16{x.lo_ | y.lo_ | z.lo_, x.hi_ | y.hi_ | z.hi_};
     }
 
     static inline Bitvec16x16
-    X_Y_Z_and_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-        return Bitvec16x16{x.lo_ | (y.lo_ & z.lo_), x.hi_ | (y.hi_ & z.hi_)};
+    and_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+        return Bitvec16x16{(x.lo_ & y.lo_) | z.lo_, (x.hi_ & y.hi_) | z.hi_};
     }
 
     static inline Bitvec16x16
-    X_Y_and_Z_andnot(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    and_X_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
         return Bitvec16x16{x.lo_ & y.lo_.and_not(z.lo_), x.hi_ & y.hi_.and_not(z.hi_)};
+    }
+
+    static inline Bitvec16x16
+    xor_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+        return Bitvec16x16{(x.lo_ ^ y.lo_) | z.lo_, (x.hi_ ^ y.hi_) | z.hi_};
     }
 
     inline Bitvec16x16 &operator=(const Bitvec16x16 &other) = default;
@@ -554,29 +589,38 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    X_Y_or_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    or_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #ifdef __AVX512VL__
-        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 254);
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11111110);
 #else
         return x | y | z;
 #endif
     }
 
     static inline Bitvec16x16
-    X_Y_Z_and_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    and_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #ifdef __AVX512VL__
-        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 248);
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11101010);
 #else
-        return x | (y & z);
+        return (x & y) | z;
 #endif
     }
 
     static inline Bitvec16x16
-    X_Y_and_Z_andnot(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    and_X_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #ifdef __AVX512VL__
-        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 64);
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b01000000);
 #else
         return x & y.and_not(z);
+#endif
+    }
+
+static inline Bitvec16x16
+    xor_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+#ifdef __AVX512VL__
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b10111110);
+#else
+        return (x ^ y) | z;
 #endif
     }
 

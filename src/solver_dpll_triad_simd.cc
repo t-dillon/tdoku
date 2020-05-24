@@ -4,7 +4,6 @@
 
 #include <array>
 #include <cstring>
-#include <immintrin.h>
 
 #define LIKELY(x) __builtin_expect(!!(x),1)
 
@@ -185,6 +184,13 @@ struct Tables {
                                 kAll, kAll, kAll,    0,
                                    0,    0,    0,    0
     };
+    // row rotation shuffle controls vectors for just the 3x3 submatrix of a Cells16
+    const Cells16 row_rotate_3x3_1{
+        shuf01, shuf02, shuf00, shuf03, shuf05, shuf06, shuf04, shuf07,
+        shuf01, shuf02, shuf00, shuf03, shuf04, shuf05, shuf06, shuf07};
+    const Cells16 row_rotate_3x3_2{
+        shuf02, shuf00, shuf01, shuf03, shuf06, shuf04, shuf05, shuf07,
+        shuf02, shuf00, shuf01, shuf03, shuf04, shuf05, shuf06, shuf07};
 
 
     //   config       0       1       2       3       4       5
@@ -249,11 +255,13 @@ struct Tables {
 
 const Tables tables{};
 
+template<int solution_mode>
 struct SolverDpllTriadSimd {
     State solution_{};
     size_t limit_ = 1;
     size_t num_solutions_ = 0;
     size_t num_guesses_ = 0;
+    void (*callback_)(const char *) = 0;
 
     // restrict the cell, minirow, and minicol clauses of the box to contain only the given
     // cell and triad candidates.
@@ -316,36 +324,34 @@ struct SolverDpllTriadSimd {
 
         // update the self eliminations for new assertions in the box.
         auto cell_assertions_only = assertions & tables.cell3x3_mask;
-        // compute matrix broadcasting all assertions across the rows in which they occur.
+        // compute matrices broadcasting assertions across rows and columns in which they occur.
         Cells16 across_rows = cell_assertions_only;
         across_rows |= across_rows.RotateRows();
         across_rows |= across_rows.RotateRows2();
-        // compute matrix broadcasting all assertions across the cols in which they occur.
         Cells16 across_cols = cell_assertions_only;
         across_cols |= across_cols.RotateCols();
         across_cols |= across_cols.RotateCols2();
-        // compute matrix broadcasting all assertions everywhere.
-        Cells16 across_box = across_rows;
-        across_box |= across_box.RotateCols();
-        across_box |= across_box.RotateCols2();
-        // restrict to 3x3 cells; each now has elimination bits for anything asserted in any cell.
-        across_box &= tables.cell3x3_mask;
-        // merge back rows and columns to populate elimination bits for negative triad literals.
-        across_box = Cells16::X_Y_or_Z_or(across_box, across_rows, across_cols);
-        // for any cell that had an assertion populate all elimination bits (ok to include >kAll).
-        across_box |= cell_assertions_only.WhichNonZero();
-        // then clear elimination bits for the candidates that were actually asserted.
-        across_box ^= cell_assertions_only;
-        box_eliminations |= across_box;
+        // let 3x3 submatrix have assertions occuring anywhere
+        Cells16 new_box_eliminations = Cells16::or_X_Y_or_Z(across_cols,
+                                                            across_cols.Shuffle(tables.row_rotate_3x3_1),
+                                                            across_cols.Shuffle(tables.row_rotate_3x3_2));
+        // join 3x3 submatrix, row/col margins, and all elimination bits in asserted cells
+        new_box_eliminations = Cells16::or_X_Y_or_Z(
+                new_box_eliminations, across_rows, cell_assertions_only.WhichNonZero());
+        // then apply after clearing elimination bits for the asserted candidates.
+        box_eliminations = Cells16::xor_X_Y_or_Z(
+                new_box_eliminations, cell_assertions_only, box_eliminations);
 
         // below we'll update band eliminations to reflect assertion of negative triads or positive
         // literals within this box. in the case of asserted negative triads we'll eliminate the
         // corresponding positive triads in the band (at shift 0).
-        Cells16 hv_neg_triad_assertions{HorizontalTriads(assertions), VerticalTriads(assertions)};
+        Cells16 hv_neg_triad_assertions{HorizontalTriads(assertions),
+                                        VerticalTriads(assertions)};
         // in the case of asserted positive literals, which imply the assertion of corresponding
         // shift 0 positive triads, we'll eliminate the triads at shifts 1 and 2 in the band.
-        Cells16 hv_pos_triad_assertions{HorizontalTriads(across_rows), VerticalTriads(across_cols)};
-        Cells16 new_eliminations = Cells16::X_Y_or_Z_or(
+        Cells16 hv_pos_triad_assertions{HorizontalTriads(new_box_eliminations),
+                                        VerticalTriads(new_box_eliminations)};
+        Cells16 new_eliminations = Cells16::or_X_Y_or_Z(
                 hv_neg_triad_assertions.Shuffle(
                         Bitvec16x16{tables.triads_shift0_to_config_elims[box_j],
                                     tables.triads_shift0_to_config_elims[box_i]}),
@@ -388,14 +394,14 @@ struct SolverDpllTriadSimd {
         auto two_or_more = one_or_more & rotated;
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more = Cells16::X_Y_Z_and_or(two_or_more, one_or_more, rotated);
+        two_or_more = Cells16::and_X_Y_or_Z(one_or_more, rotated, two_or_more);
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more = Cells16::X_Y_Z_and_or(two_or_more, one_or_more, rotated);
+        two_or_more = Cells16::and_X_Y_or_Z(one_or_more, rotated, two_or_more);
         one_or_more |= rotated;
         // we might check here that one_or_more == kAll, but the check is a net loss.
         // now assert (in cells where they remain) candidates that occur only once an a row/col.
-        assertions |= Cells16::X_Y_and_Z_andnot(cells, one_or_more, two_or_more);
+        assertions |= Cells16::and_X_Y_andnot_Z(cells, one_or_more, two_or_more);
     }
 
     template<int vertical>
@@ -417,11 +423,11 @@ struct SolverDpllTriadSimd {
         Cells16 asserting = triads & counts.WhichEqual(Cells16::All(3));
         Cells08 lo = asserting.GetLo();
         Cells08 hi = asserting.GetHi();
-        band.configurations = band.configurations.and_not(Cells08::X_Y_or_Z_or(
+        band.configurations = band.configurations.and_not(Cells08::or_X_Y_or_Z(
                 lo.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[0]),
                 lo.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[0]),
                 lo.Shuffle(tables.triads_shift1_to_config_elims[1])));
-        band.configurations = band.configurations.and_not(Cells08::X_Y_or_Z_or(
+        band.configurations = band.configurations.and_not(Cells08::or_X_Y_or_Z(
                 lo.Shuffle(tables.triads_shift2_to_config_elims[1]),
                 hi.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[2]),
                 hi.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[2])));
@@ -462,26 +468,42 @@ struct SolverDpllTriadSimd {
     static constexpr uint32_t NONE = UINT32_MAX;
 
     static inline pair<uint32_t, uint32_t> ChooseBandAndValueToBranch(const State &state) {
-        // first find the unfixed band with the fewest possible configurations across all values.
         uint32_t best_band = NONE, best_band_count = NONE;
-        for (auto i = 0u; i < 6; i++) {
-            const Band &band = state.bands[tables.div3[i]][tables.mod3[i]];
-            auto band_count = (uint32_t) band.configurations.Popcount();
-            if (band_count > 9 && band_count < best_band_count) {
-                best_band_count = band_count;
-                best_band = i;
-            }
-        }
-        // then choose the unfixed value with the fewest possible configurations within the band.
         uint32_t best_value = NONE, best_value_count = NONE;
-        if (best_band != NONE) {
-            const Band &band = state.bands[tables.div3[best_band]][tables.mod3[best_band]];
-            for (uint32_t i = 0; i < 9; i++) {
-                auto value_count = (uint32_t) (band.configurations &
-                                               tables.one_value_mask[i]).Popcount();
-                if (value_count > 1 && value_count < best_value_count) {
-                    best_value_count = value_count;
-                    best_value = i;
+
+        // first find the unfixed band with the fewest possible configurations across all values.
+        uint32_t config_minpos = Bitvec08x16{
+                (uint16_t)state.bands[0][0].configurations.Popcount(),
+                (uint16_t)state.bands[0][1].configurations.Popcount(),
+                (uint16_t)state.bands[0][2].configurations.Popcount(),
+                (uint16_t)state.bands[1][0].configurations.Popcount(),
+                (uint16_t)state.bands[1][1].configurations.Popcount(),
+                (uint16_t)state.bands[1][2].configurations.Popcount(),
+                (uint16_t)0xffff,
+                (uint16_t)0xffff
+        }.MinPosGreaterThanOrEqual(10);
+
+        if ((config_minpos & 0xff00u) == 0) {
+            best_band = config_minpos >> 16u;
+            const auto &configurations =
+                    state.bands[tables.div3[best_band]][tables.mod3[best_band]].configurations;
+            uint32_t value_minpos = Bitvec08x16{
+                    (uint16_t)(configurations & tables.one_value_mask[0]).Popcount(),
+                    (uint16_t)(configurations & tables.one_value_mask[1]).Popcount(),
+                    (uint16_t)(configurations & tables.one_value_mask[2]).Popcount(),
+                    (uint16_t)(configurations & tables.one_value_mask[3]).Popcount(),
+                    (uint16_t)(configurations & tables.one_value_mask[4]).Popcount(),
+                    (uint16_t)(configurations & tables.one_value_mask[5]).Popcount(),
+                    (uint16_t)(configurations & tables.one_value_mask[6]).Popcount(),
+                    (uint16_t)(configurations & tables.one_value_mask[7]).Popcount()
+            }.MinPosGreaterThanOrEqual(2);
+
+            best_value = value_minpos >> 16u;
+            uint32_t excess_over_two = value_minpos & 0xffffu;
+            if (excess_over_two) {
+                uint32_t last_count = (configurations & tables.one_value_mask[8]).Popcount();
+                if (last_count > 1 && last_count < excess_over_two + 2) {
+                    best_value = 8;
                 }
             }
         }
@@ -524,7 +546,8 @@ struct SolverDpllTriadSimd {
         auto band_and_value = ChooseBandAndValueToBranch(state);
         if (band_and_value.first == NONE) {
             num_solutions_++;
-            if (limit_ == 1) solution_ = state;
+            if (solution_mode == 1 && num_solutions_ == limit_) solution_ = state;
+            if (solution_mode == 2) ReportSolution(state);
         } else {
             if (band_and_value.first < 3) {
                 BranchOnBandAndValue<0>(
@@ -555,14 +578,14 @@ struct SolverDpllTriadSimd {
         state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
                 tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
         // merge band eliminations; we'll propagate after all clue are processed.
-        state.bands[0][indexing.box_i].eliminations = Cells08::X_Y_Z_and_or(
-                state.bands[0][indexing.box_i].eliminations,
+        state.bands[0][indexing.box_i].eliminations = Cells08::and_X_Y_or_Z(
                 tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i],
-                Cells08::All(candidate));
-        state.bands[1][indexing.box_j].eliminations = Cells08::X_Y_Z_and_or(
-                state.bands[1][indexing.box_j].eliminations,
+                Cells08::All(candidate),
+                state.bands[0][indexing.box_i].eliminations);
+        state.bands[1][indexing.box_j].eliminations = Cells08::and_X_Y_or_Z(
                 tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j],
-                Cells08::All(candidate));
+                Cells08::All(candidate),
+                state.bands[1][indexing.box_j].eliminations);
     }
 
     // We could set the initial clues in other ways, including one box update for each clue, or
@@ -627,6 +650,14 @@ struct SolverDpllTriadSimd {
         }
     }
 
+    void ReportSolution(const State &state) {
+        char solution[81];
+        if (callback_) {
+            ExtractSolution(state, solution);
+            callback_(solution);
+        }
+    }
+
     size_t SolveSudoku(const char *input, size_t limit,
                        char *solution, size_t *num_guesses) {
         limit_ = limit;
@@ -637,16 +668,16 @@ struct SolverDpllTriadSimd {
         State state;
         if (pencilmark ? InitPencilmarkByBox(input, state) : InitVanillaByBand(input, state)) {
             CountSolutionsConsistentWithPartialAssignment(state);
-            if (limit_ == 1) ExtractSolution(solution_, solution);
+            if (solution_mode == 1) ExtractSolution(solution_, solution);
         }
-        *num_guesses = num_guesses_;
+        if (solution_mode != 2) *num_guesses = num_guesses_;
         return num_solutions_;
     };
 };
 
 
 struct GeneratorDpllTriadSimd {
-    SolverDpllTriadSimd solver_{};
+    SolverDpllTriadSimd<0> solver_{};
     Util util_;
 
     // takes a partial puzzle (vanilla or pencilmark) and adds random clues to reconstrain it
@@ -657,9 +688,9 @@ struct GeneratorDpllTriadSimd {
     bool Constrain(bool pencilmark, char *puzzle) {
         State state;
         if (pencilmark) {
-            SolverDpllTriadSimd::InitPencilmarkByBox(puzzle, state);
+            SolverDpllTriadSimd<0>::InitPencilmarkByBox(puzzle, state);
         } else {
-            SolverDpllTriadSimd::InitVanillaByBand(puzzle, state);
+            SolverDpllTriadSimd<0>::InitVanillaByBand(puzzle, state);
         }
         vector<int> permutation = util_.Permutation(729);
         for (int literal : permutation) {
@@ -685,7 +716,7 @@ struct GeneratorDpllTriadSimd {
                 Cells16 restrict = box.cells;
                 restrict.Insert(elm_idx, pencilmark ? candidates ^ candidate : candidate);
                 State test_state = state;
-                if (SolverDpllTriadSimd::BoxRestrict<0>(test_state, box_idx, restrict)) {
+                if (SolverDpllTriadSimd<0>::BoxRestrict<0>(test_state, box_idx, restrict)) {
                     int cell_or_literal = pencilmark ? literal : cell;
                     char prior_unconstrained_value = puzzle[cell_or_literal];
                     puzzle[cell_or_literal] = pencilmark ? '.' : (char)('1' + (literal % 9));
@@ -706,9 +737,11 @@ struct GeneratorDpllTriadSimd {
         return false;
     }
 
-    // minimize a vanilla or pencilmark puzzle by removing redundant clues in random order
-    // until no clue can be removed while still having a unique solution.
-    void Minimize(bool pencilmark, char *puzzle) {
+    // minimizes a vanilla or pencilmark puzzle by testing removal of all clues in random order,
+    // restoring any clue that's required to keep the solution unique. if the 'monotonic' flag
+    // is passed, returns true only if we had a minimal puzzle after the first restored clue.
+    bool Minimize(bool pencilmark, bool monotonic, char *puzzle) {
+        bool restored_clue = false;
         vector<int> permutation = util_.Permutation(729);
         for (int cell_or_literal : permutation) {
             if (pencilmark) {
@@ -720,20 +753,26 @@ struct GeneratorDpllTriadSimd {
             State state;
             if (pencilmark) {
                 puzzle[cell_or_literal] = (char)('1' + (cell_or_literal % 9));
-                SolverDpllTriadSimd::InitPencilmarkByBox(puzzle, state);
+                SolverDpllTriadSimd<0>::InitPencilmarkByBox(puzzle, state);
             } else {
                 puzzle[cell_or_literal] = '.';
-                SolverDpllTriadSimd::InitVanillaByBand(puzzle, state);
+                SolverDpllTriadSimd<0>::InitVanillaByBand(puzzle, state);
             }
             if (solver_.SafeCountSolutionsConsistentWithPartialAssignment(state, 2) > 1) {
                 puzzle[cell_or_literal] = constraint;
+                restored_clue = true;
+            } else if (monotonic && restored_clue) {
+                return false;
             }
         }
+        return true;
     }
 };
 
 
-SolverDpllTriadSimd solver{};
+SolverDpllTriadSimd<0> solver_none{};
+SolverDpllTriadSimd<1> solver_last{};
+SolverDpllTriadSimd<2> solver_enum{};
 
 GeneratorDpllTriadSimd generator{};
 
@@ -741,9 +780,20 @@ GeneratorDpllTriadSimd generator{};
 
 extern "C"
 size_t TdokuSolverDpllTriadSimd(const char *puzzle, size_t limit,
-                                uint32_t /* unused configuration */,
+                                uint32_t configuration,
                                 char *solution, size_t *num_guesses) {
-    return solver.SolveSudoku(puzzle, limit, solution, num_guesses);
+    bool return_last = limit == 1 || configuration > 0;
+    if (return_last) {
+        return solver_last.SolveSudoku(puzzle, limit, solution, num_guesses);
+    } else {
+        return solver_none.SolveSudoku(puzzle, limit, solution, num_guesses);
+    }
+}
+
+extern "C"
+size_t TdokuEnumerate(const char *puzzle, size_t limit, void (*callback)(const char *)) {
+    solver_enum.callback_ = callback;
+    return solver_enum.SolveSudoku(puzzle, limit, nullptr, nullptr);
 }
 
 extern "C"
@@ -752,6 +802,6 @@ bool TdokuConstrain(bool pencilmark, char *puzzle) {
 }
 
 extern "C"
-void TdokuMinimize(bool pencilmark, char *puzzle) {
-    generator.Minimize(pencilmark, puzzle);
+bool TdokuMinimize(bool pencilmark, bool monotonic, char *puzzle) {
+    return generator.Minimize(pencilmark, monotonic, puzzle);
 }

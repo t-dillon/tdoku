@@ -118,8 +118,6 @@ std::vector<Solver> GetAllSolvers() {
     std::vector<Solver> solvers;
     // @formatter:off
 
-    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",              15));
-    solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",    15));
 #ifdef GUROBI
     solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                   15));
 #endif
@@ -129,11 +127,14 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete",         15));
     solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented",        15));
 #endif
+#ifdef TDEV
+    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",              15));
+    solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",    15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "_tdev_dpll_triad",         15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",   15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      2, "_tdev_dpll_triad_scc_h",   15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      3, "_tdev_dpll_triad_scc_ih",  15));
-
+#endif
 #ifdef NORVIG
     solvers.emplace_back(Solver(OtherSolverNorvig,            0, "norvig",                   15));
 #endif

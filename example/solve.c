@@ -11,10 +11,10 @@ int main(int argc, const char **argv) {
 
     while (getline(&puzzle, &size, stdin) != -1) {
         solution[0] = '\0';
-        int count = SolveSudoku(puzzle, limit, 0, solution, &guesses);
+        size_t count = SolveSudoku(puzzle, limit, 0, solution, &guesses);
         if (limit > 1 && count == 1) {
             SolveSudoku(puzzle, 1, 0, solution, &guesses);
         }
-        printf("%.81s:%d:%.81s\n", puzzle, count, solution);
+        printf("%.81s:%ld:%.81s\n", puzzle, count, solution);
     }
 }

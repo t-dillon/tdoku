@@ -16,6 +16,8 @@ option(AVX         "Compile with AVX support"          OFF)
 option(AVX2        "Compile with AVX2 support"         OFF)
 option(AVX512      "Compile with AVX512BITALG support" OFF)
 
+option(TDEV          "Include development solvers"     OFF)
+
 option(BB_SUDOKU     "Include BB_SUDOKU"     OFF)
 option(FAST_SOLV_9R2 "Include FAST_SOLV_9R2" OFF)
 option(ZERODOKU      "Include ZeroDoku"      OFF)
@@ -80,13 +82,18 @@ set_target_properties(gurobi90 PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES ${GUROBI_DIR}/include)
 
 set(BENCHMARK_SOLVER_SOURCES
-        src/solver_basic.cc
-        src/solver_dpll_triad_scc.cc
         src/solver_dpll_triad_simd.cc
         other/other_solvers.cc)
 
 set(GENERATE_SOLVER_SOURCES
         src/solver_dpll_triad_simd.cc)
+
+if (TDEV)
+    add_definitions(-DTDEV)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            src/solver_basic.cc
+            src/solver_dpll_triad_scc.cc)
+endif()
 
 if (BB_SUDOKU)
     add_definitions(-DBB_SUDOKU)
@@ -183,6 +190,16 @@ endif()
 add_executable(run_benchmark src/run_benchmark.cc src/util.cc ${BENCHMARK_SOLVER_SOURCES})
 add_executable(run_tests test/run_tests.cc src/util.cc ${BENCHMARK_SOLVER_SOURCES})
 add_executable(generate src/generate.cc src/util.cc ${GENERATE_SOLVER_SOURCES})
+
+add_library(grid_lib STATIC src/grid_lib.cc)
+target_compile_options(grid_lib PUBLIC -fno-exceptions -fno-rtti -fpic)
+target_include_directories(grid_lib PUBLIC include)
+target_link_libraries(grid_lib tdoku)
+
+add_executable(grid_tools src/grid_tools.cc)
+target_include_directories(grid_tools PUBLIC include)
+target_link_libraries(grid_tools grid_lib)
+target_link_libraries(grid_tools tdoku)
 
 if (GUROBI)
     target_link_libraries(run_benchmark gurobi_c++)

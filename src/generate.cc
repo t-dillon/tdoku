@@ -200,11 +200,14 @@ struct Generator {
             }
 
             // randomly complete and minimize
-            if (!TdokuConstrain(options_.pencilmark, puzzle)) {
-                continue;
-            }
-            if (options_.minimize) {
-                TdokuMinimize(options_.pencilmark, puzzle);
+
+            if (options_.clues_to_drop > 0) {
+                if (!TdokuConstrain(options_.pencilmark, puzzle)) {
+                    continue;
+                }
+                if (options_.minimize) {
+                    TdokuMinimize(options_.pencilmark, false, puzzle);
+                }
             }
 
             // evaluate difficulty via guess counting
@@ -214,11 +217,13 @@ struct Generator {
             double loss = get<2>(eval_stats);
 
             // skip if the puzzle is a duplicate of one still in the pool
-            if (strncmp(puzzle, pattern.c_str(), 729) == 0) {
-                continue;
-            }
-            if (pattern_set.find(puzzle) != pattern_set.end()) {
-                continue;
+            if (options_.clues_to_drop > 0) {
+                if (strncmp(puzzle, pattern.c_str(), 729) == 0) {
+                    continue;
+                }
+                if (pattern_set.find(puzzle) != pattern_set.end()) {
+                    continue;
+                }
             }
 
             if (options_.display_all) {

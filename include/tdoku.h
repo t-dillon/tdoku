@@ -15,13 +15,17 @@ extern "C" {
 #endif
 size_t TdokuSolverDpllTriadSimd(const char *input,
                                 size_t limit,
-                                uint32_t flags,
+                                uint32_t configuration,
                                 char *solution,
                                 size_t *num_guesses);
 
+size_t TdokuEnumerate(const char *puzzle,
+                      size_t limit,
+                      void (*callback)(const char *));
+
 bool TdokuConstrain(bool pencilmark, char *puzzle);
 
-bool TdokuMinimize(bool pencilmark, char *puzzle);
+bool TdokuMinimize(bool pencilmark, bool monotonic, char *puzzle);
 #ifdef __cplusplus
 }
 #endif
@@ -50,9 +54,14 @@ bool TdokuMinimize(bool pencilmark, char *puzzle);
  * @return
  *       The number of solutions found up to the given limit.
  */
-inline size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
+static inline size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
                           char *solution, size_t *num_guesses) {
     return TdokuSolverDpllTriadSimd(input, limit, configuration, solution, num_guesses);
+}
+
+static inline size_t Enumerate(const char *puzzle, size_t limit,
+                               void (*callback)(const char *)) {
+    return TdokuEnumerate(puzzle, limit, callback);
 }
 
 /**
@@ -68,20 +77,23 @@ inline size_t SolveSudoku(const char *input, size_t limit, uint32_t configuratio
  * @return
  *       A boolean indicating success or failure.
  */
-inline bool Constrain(bool pencilmark, char *puzzle) {
+static inline bool Constrain(bool pencilmark, char *puzzle) {
     return TdokuConstrain(pencilmark, puzzle);
 }
 
 /**
- * Minimized Sudoku or Pencilmark Sudoku puzzle by randomly removing clues until no clue
- * can be removed without producing a puzzle with multiple solutions.
+ * Minimizes a vanilla or pencilmark puzzle by testing removal of all clues in random order,
+ * restoring any clue that's required to keep the solution unique.
  * @param pencilmark
  *       A boolean indicating whether to minimize a pencilmark sudoku (vs. a vanilla one)
+ * @param monotonic
+ *       A boolean indicating the minimizer should return true only if we have a minimal
+ *       puzzle after the first restored clue.
  * @param puzzle
  *       An 81 or 729 character puzzle to minimize (for vanilla vs. pencilmark)
  */
-inline void Minimize(bool pencilmark, char *puzzle) {
-    TdokuMinimize(pencilmark, puzzle);
+static inline bool Minimize(bool pencilmark, bool monotonic, char *puzzle) {
+    return TdokuMinimize(pencilmark, monotonic, puzzle);
 }
 
 #endif //TDOKU_H

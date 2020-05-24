@@ -426,6 +426,8 @@ int main(int argc, char **argv) {
             default: {
                 cout << "usage: run_benchmark <options> puzzle_file_1 [...] " << endl;
                 cout << "options:" << endl;
+                cout << "  -a                  // do rating" << endl;
+                cout << "  -b                  // rate by backtracks" << endl;
                 cout << "  -c [0|1]            // output csv instead of table [default 0]" << endl;
                 cout << "  -e <seed>           // random seed [default random_device{}()]" << endl;
                 cout << "  -h                  // display this help message" << endl;

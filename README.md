@@ -83,7 +83,7 @@ simple test program that reads Sudoku (or 729-character pencilmark Sudoku) from 
 the solution count and solution (if unique) like so:
 
 ```bash
-gcc example/solve.c build/libtdoku.a -o solve
+gcc example/solve.c build/libtdoku.a -O3 -o solve -lstdc++ -lm
 # count solutions:
 ./solve < data/puzzles0_kaggle
 # find single solution:
