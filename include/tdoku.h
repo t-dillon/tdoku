@@ -21,7 +21,8 @@ size_t TdokuSolverDpllTriadSimd(const char *input,
 
 size_t TdokuEnumerate(const char *puzzle,
                       size_t limit,
-                      void (*callback)(const char *));
+                      void (*callback)(const char *, void *),
+                      void *callback_arg);
 
 bool TdokuConstrain(bool pencilmark, char *puzzle);
 
@@ -55,13 +56,27 @@ bool TdokuMinimize(bool pencilmark, bool monotonic, char *puzzle);
  *       The number of solutions found up to the given limit.
  */
 static inline size_t SolveSudoku(const char *input, size_t limit, uint32_t configuration,
-                          char *solution, size_t *num_guesses) {
+                                 char *solution, size_t *num_guesses) {
     return TdokuSolverDpllTriadSimd(input, limit, configuration, solution, num_guesses);
 }
 
+/**
+ * Enumerates all solutions to a given Sudoku or Pencilmark Sudoku puzzle.
+ * @param puzzle
+ *      The input puzzle, as described above.
+ * @param limit
+ *      The maximum number of solutions to return
+ * @param callback
+ *      A callback for notifying the caller of each solution
+ * @param callback_arg
+ *      An optional callback argument that will be returned as the second callback argument to
+ *      facilitate thunks for capturing closures.
+ * @return
+ */
 static inline size_t Enumerate(const char *puzzle, size_t limit,
-                               void (*callback)(const char *)) {
-    return TdokuEnumerate(puzzle, limit, callback);
+                               void (*callback)(const char *, void *),
+                               void *callback_arg) {
+    return TdokuEnumerate(puzzle, limit, callback, callback_arg);
 }
 
 /**

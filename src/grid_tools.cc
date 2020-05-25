@@ -85,11 +85,9 @@ void ListGrids(uint64_t grid_id, uint64_t limit) {
     void *table = MMapFile("grid.counts");
     void *index = MMapFile("grid.index");
 
-    char grid[81];
-    for (int i = 0; i < limit; i++) {
-        GetGrid(grid_id + i, index, table, grid);
-        printf("%.81s\t%zu\n", grid, grid_id + i);
-    }
+    EnumerateGrids(grid_id, limit, index, table, [](const char *grid) {
+        printf("%.81s\n", grid);
+    });
 }
 
 constexpr size_t num_equivalence_classes = 27704267971ll * 128;

@@ -52,27 +52,78 @@ void GetPattern(int pattern_id, char *pattern) {
 }
 
 extern "C"
-void GetGrid(size_t grid_id, const void *index, const void *table, char *grid) {
-    size_t indexed_grid_id = grid_id & ~((1ull << 20u) - 1);
-    size_t lookup = grid_id >> 20u;
-    size_t offset = grid_id - indexed_grid_id;
+void GetGrid(size_t grid_idx, const void *index, const void *table, char *grid) {
+    size_t indexed_grid_idx = grid_idx & ~((1ull << 20u) - 1);
+    uint32_t current_pattern_idx = *(uint32_t *)(((char *)index) + (grid_idx >> 20u)* 6);
+    uint16_t indexed_grid_offset = *(uint16_t *)(((char *)index) + (grid_idx  >> 20u)* 6 + 4);
 
-    uint32_t pattern_id = *(uint32_t *)(((char *)index) + lookup * 6);
-    uint16_t indexed_offset = *(uint16_t *)(((char *)index) + lookup * 6 + 4);
-
-    offset += indexed_offset;
-    do {
-        uint16_t pattern_count = *(((uint16_t *) table) + pattern_id);
-        if (offset < pattern_count) {
-            char pattern[82];
-            GetPattern(pattern_id, pattern);
-            size_t guesses;
-            SolveSudoku(pattern, offset + 1, 1, grid, &guesses);
-            break;
-        } else {
-            offset -= pattern_count;
-            pattern_id++;
-        }
-    } while (true);
+    size_t to_skip = indexed_grid_offset + (grid_idx  - indexed_grid_idx);
+    uint16_t pattern_count = *(((uint16_t *) table) + current_pattern_idx);
+    while (to_skip >= pattern_count) {
+        to_skip -= pattern_count;
+        current_pattern_idx++;
+        pattern_count = *(((uint16_t *) table) + current_pattern_idx);
+    }
+    char pattern[82];
+    GetPattern(current_pattern_idx, pattern);
+    size_t guesses;
+    SolveSudoku(pattern, to_skip + 1, 1, grid, &guesses);
 }
+
+extern "C"
+void EnumerateGrids(size_t first_grid_idx, size_t count,
+                    const void *index, const void *table,
+                    void (*callback)(const char *)) {
+    size_t indexed_grid_idx = first_grid_idx & ~((1ull << 20u) - 1);
+    uint32_t current_pattern_idx = *(uint32_t *)(((char *)index) + (first_grid_idx >> 20u)* 6);
+    uint16_t indexed_grid_offset = *(uint16_t *)(((char *)index) + (first_grid_idx  >> 20u)* 6 + 4);
+
+    size_t to_skip = indexed_grid_offset + (first_grid_idx  - indexed_grid_idx);
+    uint16_t pattern_count = *(((uint16_t *) table) + current_pattern_idx);
+    while (to_skip >= pattern_count) {
+        to_skip -= pattern_count;
+        current_pattern_idx++;
+        pattern_count = *(((uint16_t *) table) + current_pattern_idx);
+    }
+    size_t remaining = count;
+    while (remaining > 0) {
+        size_t limit = to_skip + remaining;
+        if (limit > pattern_count) limit = pattern_count;
+
+        char pattern[82];
+        GetPattern(current_pattern_idx, pattern);
+
+        auto skipping_callback=[&](const char *grid){
+            if (to_skip > 0) {
+                to_skip--;
+            } else {
+                callback(grid);
+                remaining--;
+            }
+        };
+        // pass a thunk since we can't pass a capturing lambda as a function pointer
+        TdokuEnumerate(pattern, limit, [](const char *grid, void *thunked_callback) {
+            (*static_cast<decltype(skipping_callback)*>(thunked_callback))(grid);
+        }, &skipping_callback);
+
+        current_pattern_idx++;
+        pattern_count = *(((uint16_t *) table) + current_pattern_idx);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

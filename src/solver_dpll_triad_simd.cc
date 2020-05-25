@@ -261,7 +261,8 @@ struct SolverDpllTriadSimd {
     size_t limit_ = 1;
     size_t num_solutions_ = 0;
     size_t num_guesses_ = 0;
-    void (*callback_)(const char *) = 0;
+    void (*callback_)(const char *, void *) = nullptr;
+    void *callback_arg_ = nullptr;
 
     // restrict the cell, minirow, and minicol clauses of the box to contain only the given
     // cell and triad candidates.
@@ -654,7 +655,7 @@ struct SolverDpllTriadSimd {
         char solution[81];
         if (callback_) {
             ExtractSolution(state, solution);
-            callback_(solution);
+            callback_(solution, callback_arg_);
         }
     }
 
@@ -791,8 +792,10 @@ size_t TdokuSolverDpllTriadSimd(const char *puzzle, size_t limit,
 }
 
 extern "C"
-size_t TdokuEnumerate(const char *puzzle, size_t limit, void (*callback)(const char *)) {
+size_t TdokuEnumerate(const char *puzzle, size_t limit,
+                      void (*callback)(const char *, void *), void *callback_arg) {
     solver_enum.callback_ = callback;
+    solver_enum.callback_arg_ = callback_arg;
     return solver_enum.SolveSudoku(puzzle, limit, nullptr, nullptr);
 }
 
