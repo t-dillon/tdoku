@@ -129,8 +129,11 @@ struct Bitvec08x16 {
     inline Bitvec08x16 &operator=(const Bitvec08x16 &other) = default;
 
     inline bool operator==(const Bitvec08x16 &other) const {
-        Bitvec08x16 which_equal = WhichEqual(other);
-        return _mm_movemask_epi8(which_equal.vec) == 0xffff;
+#ifdef __AVX512VL__
+    return _mm_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_EQ) == 0xf;
+#else
+        return (*this ^ other).AllZero();
+#endif
     }
 
     inline bool operator!=(const Bitvec08x16 &other) const {
@@ -160,13 +163,21 @@ struct Bitvec08x16 {
     }
 
     inline bool AnyZero() const {
+#ifdef __AVX512VL__
+        return _mm_cmp_epi16_mask(vec, _mm_setzero_si128(), _MM_CMPINT_EQ) != 0;
+#else
         Bitvec08x16 which_equal_zero = WhichEqual(_mm_setzero_si128());
         return _mm_movemask_epi8(which_equal_zero.vec) != 0;
+#endif
     }
 
     inline bool AnyLessThan(const Bitvec08x16 &other) const {
+#ifdef __AVX512VL__
+        return _mm_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_LT) != 0;
+#else
         Bitvec08x16 which_less_than = _mm_cmpgt_epi16(other.vec, vec);
         return _mm_movemask_epi8(which_less_than.vec) != 0;
+#endif
     }
 
     inline bool Intersects(const Bitvec08x16 &other) const {
@@ -615,7 +626,7 @@ struct Bitvec16x16 {
 #endif
     }
 
-static inline Bitvec16x16
+    static inline Bitvec16x16
     xor_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #ifdef __AVX512VL__
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b10111110);
@@ -627,7 +638,11 @@ static inline Bitvec16x16
     inline Bitvec16x16 &operator=(const Bitvec16x16 &other) = default;
 
     inline bool operator==(const Bitvec16x16 &other) const {
+#ifdef __AVX512VL__
+    return _mm256_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_EQ) == 0xf;
+#else
         return (*this ^ other).AllZero();
+#endif
     }
 
     inline bool operator!=(const Bitvec16x16 &other) const {
@@ -664,13 +679,21 @@ static inline Bitvec16x16
     }
 
     inline bool AnyZero() const {
+#ifdef __AVX512VL__
+        return _mm256_cmp_epi16_mask(vec, _mm256_setzero_si256(), _MM_CMPINT_EQ) != 0;
+#else
         Bitvec16x16 which_equal_zero = WhichEqual(_mm256_setzero_si256());
         return _mm256_movemask_epi8(which_equal_zero.vec) != 0;
+#endif
     }
 
     inline bool AnyLessThan(const Bitvec16x16 &other) const {
+#ifdef __AVX512VL__
+        return _mm256_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_LT) != 0;
+#else
         Bitvec16x16 which_less_than = _mm256_cmpgt_epi16(other.vec, vec);
         return _mm256_movemask_epi8(which_less_than.vec) != 0;
+#endif
     }
 
     inline bool Intersects(const Bitvec16x16 &other) const {
@@ -796,18 +819,26 @@ static inline Bitvec16x16
 
 inline uint32_t WhichDots16(const char *x) {
     const __m128i dots = _mm_set1_epi8('.');
-    return ((uint32_t) _mm_movemask_epi8(
-            _mm_cmpeq_epi8(_mm_loadu_si128((const __m128i *) x), dots)));
+    const __m128i src = _mm_loadu_si128((const __m128i *) x);
+#ifdef __AVX512VL__
+    return ((uint32_t) _mm_cmpeq_epi8_mask(src, dots));
+#else
+    return ((uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(src, dots)));
+#endif
 }
 
 inline uint32_t WhichDots32(const char *x) {
-#ifdef __AVX2__
-    const __m256i dots = _mm256_set1_epi8('.');
-    return ((uint32_t) _mm256_movemask_epi8(
-            _mm256_cmpeq_epi8(_mm256_loadu_si256((const __m256i *) x), dots)));
-#else
+#ifndef __AVX2__
     return WhichDots16(x) | (WhichDots16(x + 16) << 16u);
-#endif // __AVX2__
+#else
+    const __m256i dots = _mm256_set1_epi8('.');
+    const __m256i src = _mm256_loadu_si256((const __m256i *) x);
+#ifdef __AVX512VL__
+    return _mm256_cmpeq_epi8_mask(src, dots);
+#else
+    return ((uint32_t) _mm256_movemask_epi8(_mm256_cmpeq_epi8(src, dots)));
+#endif
+#endif
 }
 
 inline uint64_t WhichDots64(const char *x) {
