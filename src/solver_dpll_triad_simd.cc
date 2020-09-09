@@ -408,11 +408,10 @@ struct SolverDpllTriadSimd {
     template<int vertical>
     static bool BandEliminate(State &state, int band_idx, int from_peer = 0) {
         Band &band = state.bands[vertical][band_idx];
-        Cells08 eliminating = band.configurations & band.eliminations;
-        if (LIKELY(eliminating.AllZero())) return true;
+        if (LIKELY(!band.configurations.Intersects(band.eliminations))) return true;
         // after eliminating we might check that every value is still consistent with some
         // configuration, but the check is a net loss.
-        band.configurations ^= eliminating;
+        band.configurations = band.configurations.and_not(band.eliminations);
 
         Cells16 triads = ConfigurationsToPositiveTriads(band.configurations);
         // we might check here that every cell (corresponding to a minirow or minicol) still has
@@ -529,14 +528,7 @@ struct SolverDpllTriadSimd {
         Cells08 negation1_mask = configurations ^assignment1_mask;
         state.bands[vertical][band_idx].eliminations |= negation1_mask;
         if (BandEliminate<vertical>(state, band_idx)) {
-            if ((band.configurations & tables.one_value_mask[value]).Popcount() == 1) {
-                CountSolutionsConsistentWithPartialAssignment(state);
-            } else {
-                // rarely after negating the first configuration we may still have more than one
-                // left. in this case branch again on the same band and value, instead of going
-                // through the process of choosing again.
-                BranchOnBandAndValue<vertical>(band_idx, value, state);
-            }
+            CountSolutionsConsistentWithPartialAssignment(state);
         }
     }
 
