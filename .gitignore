@@ -23,6 +23,8 @@ other/JCZSolve/JCZSolve.h
 
 other/norvig/sudoku.en.cc
 
+other/lhl_sudoku/Sudoku2.cpp
+
 other/SK_BFORCE2/Zhn.h
 other/SK_BFORCE2/Zhn_cpp.h
 other/SK_BFORCE2/Zhtables_cpp.h
@@ -37,3 +39,6 @@ solve
 
 *.so
 *.a
+
+grid.counts
+grid.index
