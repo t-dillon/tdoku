@@ -30,6 +30,7 @@ option(GSS           "Include GSS"           OFF)
 option(GUROBI        "Include GUROBI"        OFF)
 option(MINISAT       "Include MiniSat"       OFF)
 option(NORVIG        "Include norvig"        OFF)
+option(LHL           "Include lhl_sudoku"    OFF)
 option(RUST_SUDOKU   "Include rust_sudoku"   OFF)
 option(SK_BFORCE2    "Include SK_BFORCE2"    OFF)
 
@@ -174,6 +175,12 @@ if (NORVIG)
     add_definitions(-DNORVIG)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
             other/norvig/sudoku.en.cc)
+endif()
+
+if (LHL)
+    add_definitions(-DLHL)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/lhl_sudoku/Sudoku2.cpp)
 endif()
 
 if (RUST_SUDOKU)

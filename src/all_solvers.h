@@ -63,6 +63,7 @@ extern "C" {
     SolverFn OtherSolverJCZSolve;
     SolverFn OtherSolverSKBFORCE2;
     SolverFn OtherSolverRustSudoku;
+    SolverFn OtherSolverLHLSudoku;
 #ifdef __cplusplus
 }
 #endif
@@ -134,6 +135,9 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",   15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      2, "_tdev_dpll_triad_scc_h",   15));
     solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      3, "_tdev_dpll_triad_scc_ih",  15));
+#endif
+#ifdef LHL
+    solvers.emplace_back(Solver(OtherSolverLHLSudoku,         0, "lhl_sudoku",               14));
 #endif
 #ifdef NORVIG
     solvers.emplace_back(Solver(OtherSolverNorvig,            0, "norvig",                   15));
