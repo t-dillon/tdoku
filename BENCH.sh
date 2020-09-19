@@ -12,7 +12,8 @@
 
 # flags to tell BUILD.sh to include all solvers
 ALL_SOLVERS="-DMINISAT=on -DBB_SUDOKU=on -DFAST_SOLV_9R2=on -DKUDOKU=on -DNORVIG=on \
-             -DJSOLVE=on -DFSSS=on -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on"
+             -DJSOLVE=on -DFSSS=on -DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on \
+             -DTDEV=on -DZERODOKU=on -DLHL=on"
 # which solvers to run for profile generation
 PGO_SOLVERS="norvig,fast_solv_9r2,kudoku,bb_sudoku,jsolve,fsss2,jczsolve,sk_bforce2,tdoku"
 
