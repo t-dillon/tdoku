@@ -31,12 +31,17 @@ struct SolverBasic {
 
     // move a cell with the fewest candidates to the head of the sublist [todo_index:end]
     void MoveBestTodoToFront(size_t todo_index) {
-        nth_element(cells_todo_.begin() + todo_index,
-                    cells_todo_.begin() + todo_index,
-                    cells_todo_.end(),
-                    [&](const RowColBox &cell1, const RowColBox &cell2) {
-                        return NumCandidates(cell1) < NumCandidates(cell2);
-                    });
+        auto first = cells_todo_.begin() + todo_index;
+        auto best = first;
+        int best_count = NumCandidates(*best);
+        for (auto next = first + 1; best_count > 1 && next < cells_todo_.end(); ++next) {
+            int next_count = NumCandidates(*next);
+            if (next_count < best_count) {
+                best_count = next_count;
+                best = next;
+            }
+        }
+        swap(*first, *best);
     }
 
     // Returns true if a solution is found, updates *solution to reflect assignments
@@ -65,7 +70,7 @@ struct SolverBasic {
             if (num_solutions_ == 0)
                 solution[row * 9 + col] = (char) ('1' + LowOrderBitIndex(candidate));
 
-            // recursively solve remaining todo cells and back out with the solution.
+            // recursively solve remaining todo cells and back out with the first solution.
             if (todo_index == num_todo_) {
                 ++num_solutions_;
             } else {
@@ -84,7 +89,7 @@ struct SolverBasic {
         }
     }
 
-    void Initialize(const char *input, size_t limit, uint32_t configuration, char *solution) {
+    bool Initialize(const char *input, size_t limit, uint32_t configuration, char *solution) {
         rows_.fill(kAll);
         cols_.fill(kAll);
         boxes_.fill(kAll);
@@ -106,13 +111,18 @@ struct SolverBasic {
                 } else {
                     // a given clue: clear availability bits for row, col, and box
                     uint32_t value = 1u << (uint32_t) (input[row * 9 + col] - '1');
-                    rows_[row] ^= value;
-                    cols_[col] ^= value;
-                    boxes_[box] ^= value;
+                    if (rows_[row] & value && cols_[col] & value && boxes_[box] & value) {
+                        rows_[row] ^= value;
+                        cols_[col] ^= value;
+                        boxes_[box] ^= value;
+                    } else {
+                        return false;
+                    }
                 }
             }
         }
         num_todo_ = cells_todo_.size() - 1;
+        return true;
     }
 };
 
@@ -123,8 +133,12 @@ extern "C"
 size_t TdokuSolverBasic(const char *input, size_t limit, uint32_t configuration,
                         char *solution, size_t *num_guesses) {
     static SolverBasic solver;
-    solver.Initialize(input, limit, configuration, solution);
-    solver.SatisfyGivenPartialAssignment(0, solution);
-    *num_guesses = solver.num_guesses_;
-    return solver.num_solutions_;
+    if (solver.Initialize(input, limit, configuration, solution)) {
+        solver.SatisfyGivenPartialAssignment(0, solution);
+        *num_guesses = solver.num_guesses_;
+        return solver.num_solutions_;
+    } else {
+        *num_guesses = 0;
+        return 0;
+    }
 }
