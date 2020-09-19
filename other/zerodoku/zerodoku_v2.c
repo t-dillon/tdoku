@@ -17,6 +17,7 @@
 #include <memory.h>     // memset
 #include <stdio.h>      // printf, FILE, fopen, etc
 #include <unistd.h>     // getopt
+#include <stdint.h>
 
 // modify BOX to be 2, 3, 4, or 5 for different size puzzles
 #define BOX 3
@@ -34,6 +35,8 @@ unsigned int errCnt = 0;
 
 // Options
 unsigned int maxSolutions = 1;
+
+size_t *numGuesses;
 
 // The actual puzzle itself with conflicts for row/col/box
 struct Puzzle {
@@ -104,8 +107,6 @@ int findSingles(int* pos, int* val) {
    }
    // search for hidden zeros and singles
    for (i = 0; i < UNIT*3; i++) {
-      if(p.r[i] == MASK)
-         continue;
       int once = 0, twice = 0, all = 0;
       for (j = 0; j < UNIT; j++) {
          x = g[i][j];
@@ -153,12 +154,13 @@ int backTrackSolve() {
    }
    // iterate through the possible moves in this square
    for (i = (val & -val); val; i = (val & -val)) {
+      val &= ~i;
+      if (val) (*numGuesses)++;
       set(x, i);                        // try this move
       solnsFound += backTrackSolve();   // recurse
       if (solnsFound >= maxSolutions)
          return solnsFound;
       clear(x);                         // undo the move
-      val &= ~i;
    }
    return solnsFound;
 }
@@ -178,15 +180,18 @@ void initializeTables() {
     uninitialized = 0;
 }
 
-size_t ZeroDokuSolve(const char *puzzle, size_t limit) {
+size_t OtherSolverZeroDoku(const char *input, size_t limit, uint32_t unused_configuration,
+                           char *solution, size_t *num_guesses) {
     if (uninitialized) {
         initializeTables();
     }
     maxSolutions = limit;
+    numGuesses = num_guesses;
+    *numGuesses = 0;
     memset(&p, 0, sizeof(p)); // clear for new puzzle
     for (int i = 0; i < 81; i++) {
-        if (puzzle[i] != '.') {
-            set(i, 1 << (puzzle[i] - '0'));
+        if (input[i] != '.') {
+            set(i, 1 << (input[i] - '0'));
         }
     }
     return backTrackSolve();

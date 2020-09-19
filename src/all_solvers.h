@@ -119,6 +119,14 @@ std::vector<Solver> GetAllSolvers() {
     std::vector<Solver> solvers;
     // @formatter:off
 
+#ifdef TDEV
+    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",              15));
+    solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",    15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "_tdev_dpll_triad",         15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",   15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      2, "_tdev_dpll_triad_scc_h",   15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      3, "_tdev_dpll_triad_scc_ih",  15));
+#endif
 #ifdef GUROBI
     solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                   15));
 #endif
@@ -127,14 +135,6 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(OtherSolverMiniSat,           1, "minisat_natural",          15));
     solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete",         15));
     solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented",        15));
-#endif
-#ifdef TDEV
-    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",              15));
-    solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",    15));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "_tdev_dpll_triad",         15));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",   15));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      2, "_tdev_dpll_triad_scc_h",   15));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      3, "_tdev_dpll_triad_scc_ih",  15));
 #endif
 #ifdef LHL
     solvers.emplace_back(Solver(OtherSolverLHLSudoku,         0, "lhl_sudoku",               14));
@@ -146,7 +146,10 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(OtherSolverFastSolv9r2,       0, "fast_solv_9r2",            14));
 #endif
 #ifdef KUDOKU
-    solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku",                    7));
+    solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku",                   15));
+#endif
+#ifdef ZERODOKU
+    solvers.emplace_back(Solver(OtherSolverZeroDoku,          0, "zerodoku",                  14));
 #endif
 #ifdef GSS
     solvers.emplace_back(Solver(OtherSolverGss,               1, "gss1",                     15));
@@ -158,9 +161,6 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(OtherSolverGss,               7, "gss7",                     15));
     solvers.emplace_back(Solver(OtherSolverGss,               8, "gss8",                     15));
     solvers.emplace_back(Solver(OtherSolverGss,               0, "gss",                      15));
-#endif
-#ifdef ZERODOKU
-    solvers.emplace_back(Solver(OtherSolverZeroDoku,          0, "zerodoku",                  6));
 #endif
 #ifdef BB_SUDOKU
     solvers.emplace_back(Solver(OtherSolverBBSudoku,          0, "bb_sudoku",                15));
@@ -182,7 +182,7 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(OtherSolverSKBFORCE2,         0, "sk_bforce2",               10));
 #endif
 #ifdef RUST_SUDOKU
-    solvers.emplace_back(Solver(OtherSolverRustSudoku,        0, "rust_sudoku",               6));
+    solvers.emplace_back(Solver(OtherSolverRustSudoku,        0, "rust_sudoku",              14));
 #endif
     solvers.emplace_back(Solver(TdokuSolverDpllTriadSimd,     0, "tdoku",                    15));
     // @formatter:on

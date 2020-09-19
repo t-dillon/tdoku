@@ -134,7 +134,7 @@ static inline int sd_update(const sdaux_t *aux, int8_t sr[729], uint8_t sc[324],
 	return min<<16 | min_c; // return the col that has been modified and with the minimal available choices
 }
 // solve a Sudoku; _s is the standard dot/number representation
-int sd_solve(const sdaux_t *aux, const char *_s, char *solution, size_t limit)
+int sd_solve(const sdaux_t *aux, const char *_s, char *solution, size_t limit, size_t *num_guesses)
 {
 	int i, j, r, c, r2, dir, cand, n = 0, min, hints = 0; // dir=1: forward; dir=-1: backtrack
 	int8_t sr[729], cr[81]; // sr[r]: # times the row is forbidden by others; cr[i]: row chosen at step i
@@ -170,6 +170,7 @@ int sd_solve(const sdaux_t *aux, const char *_s, char *solution, size_t limit)
 			for (r2 = cr[i] + 1; r2 < 9; ++r2) // search for the choice to make
 				if (sr[aux->r[c][r2]] == 0) break; // found if the state equals 0
 			if (r2 < 9) {
+			    if (min > 1) (*num_guesses)++;
 				cand = sd_update(aux, sr, sc, aux->r[c][r2], 1); // set the choice
 				cr[i++] = r2; dir = 1; // moving forward
 			} else cr[i--] = dir = -1; // backtrack
@@ -189,5 +190,5 @@ size_t OtherSolverKudoku(const char *input, size_t limit /* unused */,
                          char *solution, size_t *num_guesses) {
     if (aux == NULL)  aux = sd_genmat();
     *num_guesses = 0;
-    return sd_solve(aux, input, solution, limit);
+    return sd_solve(aux, input, solution, limit, num_guesses);
 }

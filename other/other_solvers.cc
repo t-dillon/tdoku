@@ -4,14 +4,20 @@
 
 
 #ifdef RUST_SUDOKU
+struct count_and_guesses {
+    size_t count;
+    size_t guesses;
+};
+
 extern "C"
-size_t rust_solve_sudoku(const char *input, size_t limit);
+struct count_and_guesses rust_solve_sudoku(const char *input, size_t limit);
 
 extern "C"
 size_t OtherSolverRustSudoku(const char *input, size_t limit, uint32_t /*unused_configuration*/,
                              char *solution, size_t *num_guesses) {
-    *num_guesses = 0;
-    return rust_solve_sudoku(input, limit);
+    auto result = rust_solve_sudoku(input, limit);
+    *num_guesses = result.guesses;
+    return result.count;
 }
 #endif
 
@@ -61,20 +67,6 @@ size_t OtherSolverJSolve(const char *input, size_t limit, uint32_t /*unused_conf
     JSolve_guesses = 0;
     int count = JSolve(input, solution, limit);
     *num_guesses = JSolve_guesses;
-    return count;
-}
-#endif
-
-
-#ifdef ZERODOKU
-extern "C"
-size_t ZeroDokuSolve(const char *puzzle, size_t limit);
-
-extern "C"
-size_t OtherSolverZeroDoku(const char *input, size_t limit, uint32_t /*unused_configuration*/,
-                           char *solution, size_t *num_guesses) {
-    *num_guesses = 0;
-    int count = ZeroDokuSolve(input, limit);
     return count;
 }
 #endif
