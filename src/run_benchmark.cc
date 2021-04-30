@@ -15,7 +15,7 @@
 #include <vector>
 
 using namespace std;
-using chrono::system_clock;
+using chrono::steady_clock;
 using chrono::microseconds;
 using chrono::duration_cast;
 
@@ -181,7 +181,7 @@ struct Benchmark {
         size_t num_guesses;
         int warmup_count = 0;
         microseconds start =
-                duration_cast<microseconds>(system_clock::now().time_since_epoch());
+                duration_cast<microseconds>(steady_clock::now().time_since_epoch());
         microseconds end = start;
         while ((end - start).count() < options_.min_seconds_warmup * 1000000) {
             const char *puzzle = &dataset_[puzzle_buf_size_ *
@@ -196,7 +196,7 @@ struct Benchmark {
                 exit(1);
             }
             warmup_count++;
-            end = duration_cast<microseconds>(system_clock::now().time_since_epoch());
+            end = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
         }
         double puzzles_per_second = 1000000.0 * warmup_count / (end - start).count();
         return puzzles_per_second;
@@ -284,7 +284,7 @@ struct Benchmark {
             size_t total_no_guess = 0;
 
             microseconds start =
-                    duration_cast<microseconds>(system_clock::now().time_since_epoch());
+                    duration_cast<microseconds>(steady_clock::now().time_since_epoch());
 
             for (int i = 0; i < puzzles_todo; i++) {
                 const char *puzzle = &dataset_[puzzle_buf_size_ * (i % options_.test_dataset_size)];
@@ -299,7 +299,7 @@ struct Benchmark {
                 total_no_guess += (puzzle_guesses == 0);
             }
 
-            microseconds end = duration_cast<microseconds>(system_clock::now().time_since_epoch());
+            microseconds end = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
             auto total_usec = (end - start).count();
             OutputResult(solver, filename, puzzles_todo, total_usec, total_guesses, total_no_guess);
         }
@@ -333,7 +333,7 @@ struct Benchmark {
                     }
                     for (const Solver &solver : options_.solvers) {
                         microseconds start =
-                                duration_cast<microseconds>(system_clock::now().time_since_epoch());
+                                duration_cast<microseconds>(steady_clock::now().time_since_epoch());
                         double total_guesses = 0.0;
                         for (int i = 0; i < options_.test_dataset_size; i++) {
                             const char *puzzle = &dataset_[i * puzzle_buf_size_];
@@ -341,7 +341,7 @@ struct Benchmark {
                             total_guesses += guesses;
                         }
                         microseconds end =
-                                duration_cast<microseconds>(system_clock::now().time_since_epoch());
+                                duration_cast<microseconds>(steady_clock::now().time_since_epoch());
                         double cost = (options_.rate_by_backtracks ?
                                 total_guesses : (double)(end - start).count());
                         printf("%12.1f\t", cost / options_.test_dataset_size);
