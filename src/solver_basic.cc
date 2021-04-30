@@ -10,11 +10,13 @@ using namespace std;
 
 namespace {
 
-constexpr uint32_t kAll = 0x1ff;
+typedef uint32_t Bits;
+  
+constexpr Bits kAll = 0x1ff;
 typedef tuple<int, int, int> RowColBox;
 
 struct SolverBasic {
-    array<uint32_t, 9> rows_{}, cols_{}, boxes_{};
+    array<Bits, 9> rows_{}, cols_{}, boxes_{};
     vector<RowColBox> cells_todo_;
     size_t limit_ = 1;
     bool min_heuristic_ = false;
@@ -66,29 +68,31 @@ struct SolverBasic {
             rows_[row] ^= candidate;
             cols_[col] ^= candidate;
             boxes_[box] ^= candidate;
- 
-            if (num_solutions_ == 0)
-                solution[row * 9 + col] = (char) ('1' + LowOrderBitIndex(candidate));
 
-            // recursively solve remaining todo cells and back out with the first solution.
-            if (todo_index == num_todo_) {
-                ++num_solutions_;
-            } else {
+            solution[row * 9 + col] = (char) ('1' + LowOrderBitIndex(candidate));
+
+            // recursively solve remaining cells and back out with the last solution.
+            if (todo_index < num_todo_) {
                 SatisfyGivenPartialAssignment(todo_index + 1, solution);
-                if (num_solutions_ == limit_) {
-                    break;
-                }
+            } else {
+                ++num_solutions_;
             }
 
+            if (num_solutions_ == limit_) return;
+
             // restore the candidate to available candidate sets for row, col, box
-            rows_[row] |= candidate;
-            cols_[col] |= candidate;
-            boxes_[box] |= candidate;
+            rows_[row] ^= candidate;
+            cols_[col] ^= candidate;
+            boxes_[box] ^= candidate;
 
             candidates = ClearLowBit(candidates);
         }
     }
 
+    const int boxen[81] = {0, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 0, 1, 1, 1, 2, 2, 2,
+                           3, 3, 3, 4, 4, 4, 5, 5, 5, 3, 3, 3, 4, 4, 4, 5, 5, 5, 3, 3, 3, 4, 4, 4, 5, 5, 5,
+                           6, 6, 6, 7, 7, 7, 8, 8, 8, 6, 6, 6, 7, 7, 7, 8, 8, 8, 6, 6, 6, 7, 7, 7, 8, 8, 8};
+  
     bool Initialize(const char *input, size_t limit, uint32_t configuration, char *solution) {
         rows_.fill(kAll);
         cols_.fill(kAll);
@@ -104,13 +108,14 @@ struct SolverBasic {
 
         for (int row = 0; row < 9; ++row) {
             for (int col = 0; col < 9; ++col) {
-                int box = (row / 3) * 3 + col / 3;
+                int cell = row * 9 + col;
+                int box = boxen[cell];
                 if (input[row * 9 + col] == '.') {
                     // blank cell: add to the todo list
                     cells_todo_.emplace_back(make_tuple(row, col, box));
                 } else {
                     // a given clue: clear availability bits for row, col, and box
-                    uint32_t value = 1u << (uint32_t) (input[row * 9 + col] - '1');
+                    uint32_t value = 1u << (uint32_t) (input[cell] - '1');
                     if (rows_[row] & value && cols_[col] & value && boxes_[box] & value) {
                         rows_[row] ^= value;
                         cols_[col] ^= value;
