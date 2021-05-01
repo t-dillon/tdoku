@@ -1,5 +1,6 @@
 #include <minisat/core/Solver.h>
 #include <memory>
+#include <iostream>
 
 namespace {
 
@@ -201,7 +202,6 @@ struct SolverMiniSat {
         size_t num_solutions = 0;
         while (num_solutions < limit && solver_->solve(assumptions)) {
             num_solutions++;
-            solver_->decisions--;  // adjust for counting discrepancy (see comment below)
 
             blocking_clause.clear();
             // add a clause which, when the activator is true, ...
@@ -212,7 +212,6 @@ struct SolverMiniSat {
             }
             solver_->addClause(blocking_clause);
         }
-        solver_->decisions++;  // adjust for counting discrepancy (see comment below)
 
         // we now want to make the blocking clauses for this puzzle go away. we remove
         // the activator assumption and add a clause asserting deactivation. minisat will
@@ -260,9 +259,10 @@ struct SolverMiniSat {
         } else {
            count = SatCount(assumptions, limit);
         }
-        // minisat doesn't report decisions consistently. If satisfied it reports 1 + the
-        // actual decision count.
-        *num_guesses = solver_->decisions - (count ? 1 : 0);
+        // minisat doesn't report decisions correctly. For each call to solve it accrues
+        // 1 + the actual decision count, so we have to subtract the number of number of
+        // models found.
+        *num_guesses = solver_->decisions - count;
         return count;
     }
 };
