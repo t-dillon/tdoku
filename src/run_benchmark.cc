@@ -237,12 +237,12 @@ struct Benchmark {
                       size_t num_solved, double usec_total,
                       size_t total_guesses, size_t total_no_guess) {
         setlocale(LC_NUMERIC, "");
-        const char *f1 = "%.0s%.0s%0.s%0.s|%-38s|"
+        const char *f1 = "%.0s%.0s%.0s%.0s|%-30s%-8s|"
                          "%" COMMAS "12.1f |%" COMMAS "12.1f |%10.1f%% |%" COMMAS "15.2f |";
-        const char *f2 = "%.0s%.0s%0.s%0.s|%-38s|"
+        const char *f2 = "%.0s%.0s%.0s%.0s|%-30s%-8s|"
                          "%" COMMAS "12.1f |%" COMMAS "12.1f |        N/A |            N/A |";
-        const char *f3 = "%s,%s,%s,%s,%f,%f,%f,%f";
-        const char *f4 = "%s,%s,%s,%s,%f,%f,N/A,N/A";
+        const char *f3 = "%s,%s,%s,%s,%s%.0s,%f,%f,%f,%f";
+        const char *f4 = "%s,%s,%s,%s,%s%.0s,%f,%f,N/A,N/A";
 
         const char *fmt = options_.csv_output ?
                           (solver.ReturnsGuessCount() ? f3 : f4) :
@@ -256,7 +256,7 @@ struct Benchmark {
         char str[1024];
         sprintf(str, fmt,
                 CXX_COMPILER_ID, CXX_COMPILER_VERSION, CXX_FLAGS,
-                dataset_filename.c_str(), solver.Id().c_str(),
+                dataset_filename.c_str(), solver.Id().c_str(), solver.Desc().c_str(),
                 puzzles_per_second, usec_per_puzzle, percent_no_guess, guesses_per_puzzle);
         cout << str << endl;
     }

@@ -16,23 +16,42 @@ option(AVX         "Compile with AVX support"          OFF)
 option(AVX2        "Compile with AVX2 support"         OFF)
 option(AVX512      "Compile with AVX512BITALG support" OFF)
 
-option(TDEV          "Include development solvers"     OFF)
+option(ALL           "Include all solvers"             OFF)
 
-option(BB_SUDOKU     "Include BB_SUDOKU"     OFF)
-option(FAST_SOLV_9R2 "Include FAST_SOLV_9R2" OFF)
-option(ZERODOKU      "Include ZeroDoku"      OFF)
-option(FSSS          "Include fsss"          OFF)
-option(FSSS2         "Include fsss2"         OFF)
-option(JCZSOLVE      "Include JCZSolve"      OFF)
-option(JSOLVE        "Include JSolve"        OFF)
-option(KUDOKU        "Include KUDOKU"        OFF)
-option(GSS           "Include GSS"           OFF)
-option(GUROBI        "Include GUROBI"        OFF)
-option(MINISAT       "Include MiniSat"       OFF)
-option(NORVIG        "Include norvig"        OFF)
-option(LHL           "Include lhl_sudoku"    OFF)
-option(RUST_SUDOKU   "Include rust_sudoku"   OFF)
-option(SK_BFORCE2    "Include SK_BFORCE2"    OFF)
+option(GSS           "Include GSS"                     OFF)
+option(Z3            "Include Z3"                      OFF)
+option(GUROBI        "Include GUROBI"                  OFF)
+option(MINISAT       "Include MiniSat"                 OFF)
+option(TDEV          "Include development solvers"     OFF)
+option(ZERODOKU      "Include ZeroDoku"                OFF)
+option(FAST_SOLV_9R2 "Include FAST_SOLV_9R2"           OFF)
+option(KUDOKU        "Include KUDOKU"                  OFF)
+option(LHL           "Include lhl_sudoku"              OFF)
+option(NORVIG        "Include norvig"                  OFF)
+option(BB_SUDOKU     "Include BB_SUDOKU"               OFF)
+option(FSSS          "Include fsss"                    OFF)
+option(JSOLVE        "Include JSolve"                  OFF)
+option(FSSS2         "Include fsss2"                   OFF)
+option(JCZSOLVE      "Include JCZSolve"                OFF)
+option(SK_BFORCE2    "Include SK_BFORCE2"              OFF)
+option(RUST_SUDOKU   "Include rust_sudoku"             OFF)
+
+if (ALL)
+    set(MINISAT ON)
+    set(TDEV ON)
+    set(ZERODOKU ON)
+    set(FAST_SOLV_9R2 ON)
+    set(KUDOKU ON)
+    set(LHL ON)
+    set(NORVIG ON)
+    set(BB_SUDOKU ON)
+    set(FSSS ON)
+    set(JSOLVE ON)
+    set(FSSS2 ON)
+    set(JCZSOLVE ON)
+    set(SK_BFORCE2 ON)
+    set(RUST_SUDOKU ON)
+endif()
 
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -${OPT} ${ARGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -${OPT} ${ARGS}")
@@ -89,63 +108,6 @@ set(BENCHMARK_SOLVER_SOURCES
 set(GENERATE_SOLVER_SOURCES
         src/solver_dpll_triad_simd.cc)
 
-if (TDEV)
-    add_definitions(-DTDEV)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            src/solver_basic.cc
-            src/solver_dpll_triad_scc.cc)
-endif()
-
-if (BB_SUDOKU)
-    add_definitions(-DBB_SUDOKU)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/bb_sudoku/bb_sudoku_solver.cpp)
-endif()
-
-if (FAST_SOLV_9R2)
-    add_definitions(-DFAST_SOLV_9R2)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/fast_solv_9r2/fast_solv_9r2.c)
-endif()
-
-if (ZERODOKU)
-    add_definitions(-DZERODOKU)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/zerodoku/zerodoku_v2.c)
-endif()
-
-if (FSSS)
-    add_definitions(-DFSSS)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/fsss/fsss.cc)
-endif()
-
-if (FSSS2)
-    add_definitions(-DFSSS2)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/fsss2/fsss2.cpp
-            other/fsss2/t_128.cpp)
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
-endif()
-
-if (JCZSOLVE)
-    add_definitions(-DJCZSOLVE)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/JCZSolve/JCZSolve.c)
-endif()
-
-if (JSOLVE)
-    add_definitions(-DJSOLVE)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/JSolve/JSolve.c)
-endif()
-
-if (KUDOKU)
-    add_definitions(-DKUDOKU)
-    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/kudoku/kudoku.c)
-endif()
-
 if (GSS)
     add_definitions(-DGSS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DM32bit -DGCC_POPCNT32")
@@ -153,6 +115,12 @@ if (GSS)
             other/gss/sudoku.c
             other/gss/sudoku_parser.c
             other/gss/gss.c)
+endif()
+
+if (Z3)
+    add_definitions(-DZ3)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/other_z3.cc)
 endif()
 
 if (GUROBI)
@@ -171,10 +139,29 @@ if (MINISAT)
             other/other_minisat.cc)
 endif()
 
-if (NORVIG)
-    add_definitions(-DNORVIG)
+if (TDEV)
+    add_definitions(-DTDEV)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/norvig/sudoku.en.cc)
+            src/solver_basic.cc
+            src/solver_dpll_triad_scc.cc)
+endif()
+
+if (ZERODOKU)
+    add_definitions(-DZERODOKU)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/zerodoku/zerodoku_v2.c)
+endif()
+
+if (FAST_SOLV_9R2)
+    add_definitions(-DFAST_SOLV_9R2)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/fast_solv_9r2/fast_solv_9r2.c)
+endif()
+
+if (KUDOKU)
+    add_definitions(-DKUDOKU)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/kudoku/kudoku.c)
 endif()
 
 if (LHL)
@@ -183,8 +170,42 @@ if (LHL)
             other/lhl_sudoku/Sudoku2.cpp)
 endif()
 
-if (RUST_SUDOKU)
-    add_definitions(-DRUST_SUDOKU)
+if (NORVIG)
+    add_definitions(-DNORVIG)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/norvig/sudoku.en.cc)
+endif()
+
+if (BB_SUDOKU)
+    add_definitions(-DBB_SUDOKU)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/bb_sudoku/bb_sudoku_solver.cpp)
+endif()
+
+if (FSSS)
+    add_definitions(-DFSSS)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/fsss/fsss.cc)
+endif()
+
+if (JSOLVE)
+    add_definitions(-DJSOLVE)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/JSolve/JSolve.c)
+endif()
+
+if (FSSS2)
+    add_definitions(-DFSSS2)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/fsss2/fsss2.cpp
+            other/fsss2/t_128.cpp)
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
+endif()
+
+if (JCZSOLVE)
+    add_definitions(-DJCZSOLVE)
+    set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
+            other/JCZSolve/JCZSolve.c)
 endif()
 
 if (SK_BFORCE2)
@@ -192,6 +213,10 @@ if (SK_BFORCE2)
   set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
           other/SK_BFORCE2/sk_bitfields.cpp
           other/SK_BFORCE2/sk_t.cpp)
+endif()
+
+if (RUST_SUDOKU)
+    add_definitions(-DRUST_SUDOKU)
 endif()
 
 add_executable(run_benchmark src/run_benchmark.cc src/util.cc ${BENCHMARK_SOLVER_SOURCES})
@@ -207,6 +232,11 @@ add_executable(grid_tools src/grid_tools.cc)
 target_include_directories(grid_tools PUBLIC include)
 target_link_libraries(grid_tools grid_lib)
 target_link_libraries(grid_tools tdoku)
+
+if (Z3)
+    target_link_libraries(run_benchmark z3)
+    target_link_libraries(run_tests z3)
+endif()
 
 if (GUROBI)
     target_link_libraries(run_benchmark gurobi_c++)
