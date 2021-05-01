@@ -22,23 +22,47 @@ if build/run_benchmark -h | grep build.info | grep -q Clang; then
     # If clang, pass no -s arg, so we'll run everything
     solver_arg=""
 fi
-cmd="build/run_benchmark -t15 -w5 -n250000 -e1 ${solver_arg}"
+cmd="build/run_benchmark -t5 -w1 -n250000 -e1 ${solver_arg}"
 
-echo "###########################################"
+echo "##################################################################################################"
 echo "# BUILD INFO"
-echo "###########################################"
+echo "##################################################################################################"
 build/run_benchmark -h | grep build.info
 
 echo
-echo "###########################################"
+echo "##################################################################################################"
 echo "# CPU INFO"
-echo "###########################################"
+echo "##################################################################################################"
 lscpu
 
 echo
-echo "###########################################"
+echo "##################################################################################################"
+echo "# SOLVER DESCRIPTION KEY"
+echo "##################################################################################################"
+echo "The first character indicates the solver's primary representation:"
+echo "   B: Band-oriented"
+echo "   C: Cell-oriented"
+echo "   D: Digit-oriented"
+echo "   E: Exact-cover"
+echo "   G: Group-oriented"
+echo "   I: Integer-MIP"
+echo "   S: propositional-SAT"
+echo "   T: Tdoku-box-band"
+echo "The middle section describes the solver's forward propagation capabilities:"
+echo "   s: Singles within a cell"
+echo "   h: Hidden singles"
+echo "   r: Row-oriented locked candidates"
+echo "   c: Col-oriented locked candidates"
+echo "   -: Something falling short of full propagation of the above"
+echo "   +: Something extra (++ two or more extras)"
+echo "The last section describes the solver's heuristics:"
+echo "   m: Min-candidates branching (generally finding a bivalue)"
+echo "   +: Extra considerations to choose between bivalues"
+
+echo
+echo "##################################################################################################"
 echo "# BENCHMARK"
-echo "###########################################"
+echo "##################################################################################################"
 echo "${prefix} ${cmd} data/*"
 for f in data/*; do ${prefix} ${cmd} ${f}; done
 

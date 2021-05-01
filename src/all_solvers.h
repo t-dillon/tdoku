@@ -100,6 +100,28 @@ public:
         return name_;
     }
 
+    /*
+     * Solver descriptions:
+     * The first character indicates the solver's primary representation:
+     *    B: Band-oriented
+     *    C: Cell-oriented
+     *    D: Digit-oriented
+     *    E: Exact-cover
+     *    G: Group-oriented
+     *    I: Integer-mip
+     *    S: propositional-Sat
+     *    T: Tdoku-box-band
+     * The middle section describes the solver's forward propagation capabilities:
+     *    s: Singles within a cell
+     *    h: Hidden singles
+     *    r: Row-oriented locked candidates
+     *    c: Col-oriented locked candidates
+     *    -: Something falling short of full propagation of the above
+     *    +: Something extra (++ two or more extras)
+     * The last section describes the solver's heuristics:
+     *    m: Min-candidates branching (generally finding a bivalue)
+     *    +: Extra considerations to choose between bivalues
+     */
     inline std::string Desc() const {
         return desc_;
     }
@@ -126,74 +148,74 @@ std::vector<Solver> GetAllSolvers() {
     // @formatter:off
 
 #ifdef GSS
-    solvers.emplace_back(Solver(OtherSolverGss,               1, "gss1",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               2, "gss2",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               3, "gss3",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               4, "gss4",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               5, "gss5",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               6, "gss6",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               7, "gss7",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               8, "gss8",                      "        ", 15));
-    solvers.emplace_back(Solver(OtherSolverGss,               0, "gss",                       "        ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               1, "gss1",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               2, "gss2",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               3, "gss3",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               4, "gss4",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               5, "gss5",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               6, "gss6",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               7, "gss7",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               8, "gss8",                      "           ", 15));
+    solvers.emplace_back(Solver(OtherSolverGss,               0, "gss",                       "           ", 15));
 #endif
 #ifdef GUROBI
-    solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                    "Lsh  xmh", 15));
+    solvers.emplace_back(Solver(OtherSolverGurobi,            0, "gurobi",                    "I/sh..+./m+", 15));
 #endif
 #ifdef Z3
-    solvers.emplace_back(Solver(OtherSolverZ3,                0, "z3",                        "Lsh  xmh",  1));
+    solvers.emplace_back(Solver(OtherSolverZ3,                0, "z3",                        "I/sh..+./m+",  1));
 #endif
 #ifdef MINISAT
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           0, "minisat_minimal",           "Ps   xmh", 15));
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           1, "minisat_natural",           "Ps   xmh", 15));
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete",          "Psh  xmh", 15));
-    solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented",         "Pshrcxmh", 15));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           0, "minisat_minimal",           "S/s...+./m+", 15));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           1, "minisat_natural",           "S/s...+./m+", 15));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           2, "minisat_complete",          "S/sh..+./m+", 15));
+    solvers.emplace_back(Solver(OtherSolverMiniSat,           3, "minisat_augmented",         "S/shrc+./m+", 15));
 #endif
 #ifdef TDEV
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "_tdev_dpll_triad",          "Pshrcxm ", 15));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",    "PshrcXm ", 15));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      2, "_tdev_dpll_triad_scc_h",    "Pshrcxmh", 15));
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      3, "_tdev_dpll_triad_scc_ih",   "PshrcXmh", 15));
-    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",               "G       ", 15));
-    solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",     "Gs    m ", 15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      0, "_tdev_dpll_triad",          "S/shrc+./m.", 15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      1, "_tdev_dpll_triad_scc_i",    "S/shrc++/m.", 15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      2, "_tdev_dpll_triad_scc_h",    "S/shrc+./m+", 15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadScc,      3, "_tdev_dpll_triad_scc_ih",   "S/shrc++/m+", 15));
+    solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",               "G/....../..", 15));
+    solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",     "G/s...../m.", 15));
 #endif
 #ifdef ZERODOKU
-    solvers.emplace_back(Solver(OtherSolverZeroDoku,          0, "zerodoku",                  "Gsh   m ", 14));
+    solvers.emplace_back(Solver(OtherSolverZeroDoku,          0, "zerodoku",                  "G/sh..../m.", 14));
 #endif
 #ifdef FAST_SOLV_9R2
-    solvers.emplace_back(Solver(OtherSolverFastSolv9r2,       0, "fast_solv_9r2",             "Msh   m ", 14));
+    solvers.emplace_back(Solver(OtherSolverFastSolv9r2,       0, "fast_solv_9r2",             "E/sh..../m.", 14));
 #endif
 #ifdef KUDOKU
-    solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku",                    "Msh   m ", 15));
+    solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku",                    "E/sh..../m.", 15));
 #endif
 #ifdef LHL
-    solvers.emplace_back(Solver(OtherSolverLHLSudoku,         0, "lhl_sudoku",                "Cs    m ", 14));
+    solvers.emplace_back(Solver(OtherSolverLHLSudoku,         0, "lhl_sudoku",                "C/s...../m.", 14));
 #endif
 #ifdef NORVIG
-    solvers.emplace_back(Solver(OtherSolverNorvig,            0, "norvig",                    "Csh   m ", 15));
+    solvers.emplace_back(Solver(OtherSolverNorvig,            0, "norvig",                    "C/sh..../m.", 15));
 #endif
 #ifdef BB_SUDOKU
-    solvers.emplace_back(Solver(OtherSolverBBSudoku,          0, "bb_sudoku",                 "Cshrc m ", 15));
+    solvers.emplace_back(Solver(OtherSolverBBSudoku,          0, "bb_sudoku",                 "C/shrc../m.", 15));
 #endif
 #ifdef FSSS
-    solvers.emplace_back(Solver(OtherSolverFsss,              0, "fsss",                      "Cshrc m ", 11));
+    solvers.emplace_back(Solver(OtherSolverFsss,              0, "fsss",                      "C/shrc../m.", 11));
 #endif
 #ifdef JSOLVE
-    solvers.emplace_back(Solver(OtherSolverJSolve,            0, "jsolve",                    "Cshrc m ", 15));
+    solvers.emplace_back(Solver(OtherSolverJSolve,            0, "jsolve",                    "C/shrc../m.", 15));
 #endif
 #ifdef FSSS2
-    solvers.emplace_back(Solver(OtherSolverFsss2,             0, "fsss2",                     "Dsh   m ", 10));
-    solvers.emplace_back(Solver(OtherSolverFsss2,             1, "fsss2_locked",              "Dshrc m ", 10));
+    solvers.emplace_back(Solver(OtherSolverFsss2,             0, "fsss2",                     "D/sh..../m.", 10));
+    solvers.emplace_back(Solver(OtherSolverFsss2,             1, "fsss2_locked",              "D/shrc../m.", 10));
 #endif
 #ifdef JCZSOLVE
-    solvers.emplace_back(Solver(OtherSolverJCZSolve,          0, "jczsolve",                  "Bshr  m ", 15));
+    solvers.emplace_back(Solver(OtherSolverJCZSolve,          0, "jczsolve",                  "B/shr.../m.", 15));
 #endif
 #ifdef SK_BFORCE2
-    solvers.emplace_back(Solver(OtherSolverSKBFORCE2,         0, "sk_bforce2",                "Bshr  m ", 10));
+    solvers.emplace_back(Solver(OtherSolverSKBFORCE2,         0, "sk_bforce2",                "B/shrc-./m+", 10));
 #endif
 #ifdef RUST_SUDOKU
-    solvers.emplace_back(Solver(OtherSolverRustSudoku,        0, "rust_sudoku",               "Bshr  m ", 14));
+    solvers.emplace_back(Solver(OtherSolverRustSudoku,        0, "rust_sudoku",               "B/shr.../m.", 14));
 #endif
-    solvers.emplace_back(Solver(TdokuSolverDpllTriadSimd,     0, "tdoku",                     "Xshrcxmh", 15));
+    solvers.emplace_back(Solver(TdokuSolverDpllTriadSimd,     0, "tdoku",                     "T/shrc+./m+", 15));
     // @formatter:on
     return solvers;
 }

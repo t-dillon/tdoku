@@ -237,9 +237,9 @@ struct Benchmark {
                       size_t num_solved, double usec_total,
                       size_t total_guesses, size_t total_no_guess) {
         setlocale(LC_NUMERIC, "");
-        const char *f1 = "%.0s%.0s%.0s%.0s|%-30s%-8s|"
+        const char *f1 = "%.0s%.0s%.0s%.0s|%-27s%-11s|"
                          "%" COMMAS "12.1f |%" COMMAS "12.1f |%10.1f%% |%" COMMAS "15.2f |";
-        const char *f2 = "%.0s%.0s%.0s%.0s|%-30s%-8s|"
+        const char *f2 = "%.0s%.0s%.0s%.0s|%-27s%-11s|"
                          "%" COMMAS "12.1f |%" COMMAS "12.1f |        N/A |            N/A |";
         const char *f3 = "%s,%s,%s,%s,%s%.0s,%f,%f,%f,%f";
         const char *f4 = "%s,%s,%s,%s,%s%.0s,%f,%f,N/A,N/A";
