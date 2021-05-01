@@ -533,6 +533,8 @@ restart:
 	} //group loop
 }
 
+static int did_elimination = 0;
+
 //Based on bb_sudoku by Brian Turner.
 static void FindLockedCandidates (game* g)
 {
@@ -540,6 +542,7 @@ static void FindLockedCandidates (game* g)
 	bitmap *cp;
 	bitmap *gcp = g->cellPossibilities;
 	bitmap tripletPossibilities[9];
+	did_elimination = 0;
 restart:
 	//int partialFound = 0; //some bits cleared but no digit found
 	for (i = 0; i < 6; i++) {
@@ -552,6 +555,7 @@ restart:
 				& tripletPossibilities[j]);
 			if (b == 0) continue;
 			//don't care which bit where came from
+			did_elimination = 1;
 			for (k = 0; k < 12; k++) { //6 from the row/col + 6 from the square
 				ci = tripletAffectedCells[i][j][k];
 				cp = &gcp[ci];
@@ -600,6 +604,8 @@ restart:
 	if(g->mode & MODE_STOP_PROCESSING) return;
 	FindLockedCandidates(g); //bb_sudoku by Brian Turner
 	if(g->mode & MODE_STOP_PROCESSING) return;
+	if (did_elimination) goto restart;
+
 
 	//Prepare a guess
 
