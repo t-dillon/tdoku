@@ -1,12 +1,15 @@
-739a740,741
+106a107
+> static int did_eliminations;                    // If locked candidates did eliminations
+650a652
+> 	did_eliminations = 0;
+668a671
+> 			    did_eliminations = 1;
+739a743,744
 > extern size_t JSolve_guesses;
 > 
-769a772
+769a775
 >         JSolve_guesses++;
-788c791,794
-< 		else Queue(cell,mask);							// one fewer option, may set digit
+846c852
+< 				if (queue_depth<=0 && !invalid_board) Guess();
 ---
-> 		else {
->           JSolve_guesses++;
->           Queue(cell,mask);							// one fewer option, may set digit
->         }
+> 				if (queue_depth<=0 && !did_eliminations && !invalid_board) Guess();

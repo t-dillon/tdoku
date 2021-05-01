@@ -6,12 +6,12 @@ Copyright (c) 2009-2010, Jason T. Linhart
 All rights reserved.
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
-	¥	Redistributions of source code must retain the above copyright notice,
-		this list of conditions and the following disclaimer.
-	¥	Redistributions in binary form must reproduce the above copyright notice,
+    *   Redistributions of source code must retain the above copyright notice,
+        this list of conditions and the following disclaimer.
+    *   Redistributions in binary form must reproduce the above copyright notice,
 		this list of conditions and the following disclaimer in the documentation
 		and/or other materials provided with the distribution.
-	¥	Neither the name Jason T. Linhart nor the names of other contributors
+    *   Neither the name Jason T. Linhart nor the names of other contributors
 		may be used to endorse or promote products derived from this software
 		without specific prior written permission.
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -104,6 +104,7 @@ typedef unsigned char Cell;			// Cells (0 to 80)
 static int solution_count;						// Number of solutions found so far
 static int cells_remaining;						// How many cells need to be filled in
 static int invalid_board;						// Can't be solved when true
+static int did_eliminations;                    // If locked candidates did eliminations
 static int solution[CELLS];						// The solution as mask bits
 static DigitMask board[CELLS];					// Mask bits for digits allowed in cell
 static int house_solved[HOUSES];				// Mask bits for digits solved in house
@@ -648,6 +649,7 @@ LockedCandidates(void)				// Look for locked candidates
 	int strips[9];
 	CONST unsigned char *cptr;
 	CONST Cell *hptr;
+	did_eliminations = 0;
 
 	for (chute=0; chute<18; chute+=3) {					// for each of the six chutes
 		hptr=HouseCellPtr(chute);						// make a possibility mask for each strip
@@ -666,6 +668,7 @@ LockedCandidates(void)				// Look for locked candidates
 														// but not the other is a locked candidate
 			mask=(strips[strip] & ((strips[cptr[0]]|strips[cptr[1]])^(strips[cptr[2]]|strips[cptr[3]])));
 			if (mask) {									// If we found a locked candidate
+			    did_eliminations = 1;
 				for (a=0; a<4; ++a) {					// For each of the neighboring strips
 					b=cptr[a];
 					if (!(strips[b]&mask)) continue;	// Is there anything to do in this strip?
@@ -788,10 +791,7 @@ PopStack(void)						// Undo a guess by going back to the stacked state
 		cell=guess_cell[stack_depth];
 		mask=guess_mask[stack_depth];
 		if (CountOnes(mask)>1) board[cell]=mask;		// The cell we guessed in now has
-		else {
-          JSolve_guesses++;
-          Queue(cell,mask);							// one fewer option, may set digit
-        }
+		else Queue(cell,mask);							// one fewer option, may set digit
 		invalid_board=false;
 		}
 	}
@@ -849,7 +849,7 @@ JSolve(const char *clues,char *result,int max_solutions)
 			if (queue_depth<=0 && !invalid_board) {		// if that didn't do anything, try locked candidates
 				LockedCandidates();
 														// if that didn't do anything, guess
-				if (queue_depth<=0 && !invalid_board) Guess();
+				if (queue_depth<=0 && !did_eliminations && !invalid_board) Guess();
 				}
 #else
 			if (queue_depth<=0 && !invalid_board) Guess();
