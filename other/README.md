@@ -95,4 +95,6 @@ A solver aimed at using as many inference techniques as possible to reduce the n
     * Install Gurobi
     * Build with -DGUROBI=on -DGUROBI_DIR=${GUROBI_LOCATION}/gurobi900/linux64
   
-  
+ 1. **Z3**
+    * `$ sudo apt install libz3-dev`
+    * Build with -DZ3=on
