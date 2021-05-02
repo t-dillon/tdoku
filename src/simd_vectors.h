@@ -96,7 +96,7 @@ struct Bitvec08x16 {
 
     static inline Bitvec08x16
     or_X_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512F__)
         return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11111110);
 #else
         return x | y | z;
@@ -105,7 +105,7 @@ struct Bitvec08x16 {
 
     static inline Bitvec08x16
     and_X_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512F__)
         return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11101010);
 #else
         return (x & y) | z;
@@ -114,7 +114,7 @@ struct Bitvec08x16 {
 
     static inline Bitvec08x16
     and_X_Y_andnot_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512F__)
         return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b01000000);
 #else
         return (x & y).and_not(z);
@@ -129,7 +129,7 @@ struct Bitvec08x16 {
     inline Bitvec08x16 &operator=(const Bitvec08x16 &other) = default;
 
     inline bool operator==(const Bitvec08x16 &other) const {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
     return _mm_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_EQ) == 0xf;
 #else
         return (*this ^ other).AllZero();
@@ -163,7 +163,7 @@ struct Bitvec08x16 {
     }
 
     inline bool AnyZero() const {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
         return _mm_cmp_epi16_mask(vec, _mm_setzero_si128(), _MM_CMPINT_EQ) != 0;
 #else
         Bitvec08x16 which_equal_zero = WhichEqual(_mm_setzero_si128());
@@ -172,7 +172,7 @@ struct Bitvec08x16 {
     }
 
     inline bool AnyLessThan(const Bitvec08x16 &other) const {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
         return _mm_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_LT) != 0;
 #else
         Bitvec08x16 which_less_than = _mm_cmpgt_epi16(other.vec, vec);
@@ -232,7 +232,7 @@ struct Bitvec08x16 {
     }
 
     inline int Popcount() const {
-#ifdef __AVX512VPOPCNTDQ__
+#if(defined __AVX512VPOPCNTDQ__ && defined __AVX512VL__)
         __m128i counts = _mm_popcnt_epi64(vec);
         return _mm_cvtsi128_si64(counts) + _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts, counts));
 #else
@@ -601,7 +601,7 @@ struct Bitvec16x16 {
 
     static inline Bitvec16x16
     or_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512F__)
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11111110);
 #else
         return x | y | z;
@@ -610,7 +610,7 @@ struct Bitvec16x16 {
 
     static inline Bitvec16x16
     and_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512F__)
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11101010);
 #else
         return (x & y) | z;
@@ -619,7 +619,7 @@ struct Bitvec16x16 {
 
     static inline Bitvec16x16
     and_X_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512F__)
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b01000000);
 #else
         return x & y.and_not(z);
@@ -628,7 +628,7 @@ struct Bitvec16x16 {
 
     static inline Bitvec16x16
     xor_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512F__)
         return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b10111110);
 #else
         return (x ^ y) | z;
@@ -638,7 +638,7 @@ struct Bitvec16x16 {
     inline Bitvec16x16 &operator=(const Bitvec16x16 &other) = default;
 
     inline bool operator==(const Bitvec16x16 &other) const {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
     return _mm256_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_EQ) == 0xf;
 #else
         return (*this ^ other).AllZero();
@@ -679,7 +679,7 @@ struct Bitvec16x16 {
     }
 
     inline bool AnyZero() const {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
         return _mm256_cmp_epi16_mask(vec, _mm256_setzero_si256(), _MM_CMPINT_EQ) != 0;
 #else
         Bitvec16x16 which_equal_zero = WhichEqual(_mm256_setzero_si256());
@@ -688,7 +688,7 @@ struct Bitvec16x16 {
     }
 
     inline bool AnyLessThan(const Bitvec16x16 &other) const {
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
         return _mm256_cmp_epi16_mask(vec, other.vec, _MM_CMPINT_LT) != 0;
 #else
         Bitvec16x16 which_less_than = _mm256_cmpgt_epi16(other.vec, vec);
@@ -704,7 +704,7 @@ struct Bitvec16x16 {
     // subject to the assumption that the 7 high bits are zero. results are undefined if any of
     // the 7 high bits are nonzero.
     inline Bitvec16x16 Popcounts9() const {
-#ifdef __AVX512BITALG__
+#if(defined __AVX512BITALG__ && defined __AVX512VL__)
         return _mm256_popcnt_epi16(vec);
 #else
         __m256i lookup = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
@@ -722,10 +722,14 @@ struct Bitvec16x16 {
     }
 
     inline Bitvec16x16 RotateRows() const {
+#if(defined __AVX512VBMI2__ && defined __AVX512VL__)
+        return _mm256_shldi_epi64(vec, vec, 16);
+#else
         __m256i shuffle_control =
                 _mm256_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9,
                                  2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9);
         return _mm256_shuffle_epi8(vec, shuffle_control);
+#endif
     }
 
     inline Bitvec16x16 RotateRows2() const {
@@ -820,7 +824,7 @@ struct Bitvec16x16 {
 inline uint32_t WhichDots16(const char *x) {
     const __m128i dots = _mm_set1_epi8('.');
     const __m128i src = _mm_loadu_si128((const __m128i *) x);
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
     return ((uint32_t) _mm_cmpeq_epi8_mask(src, dots));
 #else
     return ((uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(src, dots)));
@@ -833,7 +837,7 @@ inline uint32_t WhichDots32(const char *x) {
 #else
     const __m256i dots = _mm256_set1_epi8('.');
     const __m256i src = _mm256_loadu_si256((const __m256i *) x);
-#ifdef __AVX512VL__
+#if(defined __AVX512VL__ && defined __AVX512BW__)
     return _mm256_cmpeq_epi8_mask(src, dots);
 #else
     return ((uint32_t) _mm256_movemask_epi8(_mm256_cmpeq_epi8(src, dots)));
