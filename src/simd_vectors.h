@@ -188,6 +188,14 @@ struct Bitvec08x16 {
 #endif
     }
 
+    inline bool SubsetOf(const Bitvec08x16 &other) const {
+#ifdef __SSE4_1__
+        return _mm_testc_si128(other.vec, vec);
+#else
+        return !(*this & other).AllZero();
+#endif
+    }
+
     inline Bitvec08x16 ClearLowBit() const {
 #ifdef __SSE4_2__
         __m128i cmp = _mm_cmpgt_epi64(vec, _mm_setzero_si128());
@@ -482,6 +490,10 @@ struct Bitvec16x16 {
         return lo_.Intersects(other.lo_) || hi_.Intersects(other.hi_);
     }
 
+    inline bool SubsetOf(const Bitvec16x16 &other) const {
+        return lo_.SubsetOf(other.lo_) && hi_.SubsetOf(other.hi_);
+    }
+
     // counts the number of bits set among the 9 lowest order bits of each packed 16-bit integer
     // subject to the assumption that the 7 high bits are zero. results are undefined if any of
     // the 7 high bits are nonzero.
@@ -698,6 +710,10 @@ struct Bitvec16x16 {
 
     inline bool Intersects(const Bitvec16x16 &other) const {
         return !_mm256_testz_si256(vec, other.vec);
+    }
+
+    inline bool SubsetOf(const Bitvec16x16 &other) const {
+        return _mm256_testc_si256(other.vec, vec);
     }
 
     // counts the number of bits set among the 9 lowest order bits of each packed 16-bit integer

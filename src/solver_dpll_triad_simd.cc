@@ -277,8 +277,8 @@ struct SolverDpllTriadSimd {
     static bool BoxRestrict(State &state, int box_idx, const Cells16 &candidates) {
         // return immediately if there are no new eliminations
         Box &box = state.boxen[box_idx];
+        if (box.cells.SubsetOf(candidates)) return true;
         auto eliminating = box.cells.and_not(candidates);
-        if (eliminating.AllZero()) return true;
 
         int box_i = tables.div3[box_idx];
         int box_j = tables.mod3[box_idx];
