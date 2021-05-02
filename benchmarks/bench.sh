@@ -22,7 +22,7 @@ if build/run_benchmark -h | grep build.info | grep -q Clang; then
     # If clang, pass no -s arg, so we'll run everything
     solver_arg=""
 fi
-cmd="build/run_benchmark -t5 -w1 -n250000 -e1 ${solver_arg}"
+cmd="build/run_benchmark -t15 -w5 -n250000 -e1 -v0 ${solver_arg}"
 
 echo "##################################################################################################"
 echo "# BUILD INFO"
