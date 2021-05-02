@@ -103,9 +103,8 @@ constexpr uint16_t shuf04 = 0x0908, shuf05 = 0x0b0a, shuf06 = 0x0d0c, shuf07 = 0
 
 struct Tables {
     // @formatter:off
-
     // used when assigning a candidate during initialization
-    Cells16 cell_assignment_eliminations[16][16]{};
+    Cells16 cell_assignment_eliminations[9][16]{};
 
     //   config       0       1       2       3       4       5
     //    elem      0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
@@ -115,6 +114,24 @@ struct Tables {
     //   peer2    | . . X | X . . | . X . | X . . | . X . | . . X |
     //            +-------+-------+-------+-------+-------+-------+
     //
+    // A set of masks for eliminating band configurations inconsistent with the placement
+    // of a digit in an element (minirow or minicol) of a box peer.
+    //
+    const Cells08 peer_x_elem_to_config_mask[3][4]{
+            {{   0,   kAll,   kAll,   kAll,      0,   kAll,    0,    0},
+             {kAll,      0,   kAll,   kAll,   kAll,      0,    0,    0},
+             {kAll,   kAll,      0,      0,   kAll,   kAll,    0,    0},
+             {   0,      0,      0,      0,      0,      0,    0,    0}},
+            {{kAll,   kAll,      0,   kAll,   kAll,      0,    0,    0},
+             {   0,   kAll,   kAll,      0,   kAll,   kAll,    0,    0},
+             {kAll,      0,   kAll,   kAll,      0,   kAll,    0,    0},
+             {   0,      0,      0,      0,      0,      0,    0,    0}},
+            {{kAll,      0,   kAll,      0,   kAll,   kAll,    0,    0},
+             {kAll,   kAll,      0,   kAll,      0,   kAll,    0,    0},
+             {   0,   kAll,   kAll,   kAll,   kAll,      0,    0,    0},
+             {   0,      0,      0,      0,      0,      0,    0,    0}}
+    };
+
     // tables for constructing band elimination messages from Cells08 containing
     // positive or negative triad views of a box stored positions 4, 5, and 6.
     // each table has three shuffle control vectors, one for each of the band's box
@@ -137,6 +154,12 @@ struct Tables {
             {shuf04, shuf05, shuf06, shuf04, shuf05, shuf06, 0xffff, 0xffff},
             {shuf05, shuf06, shuf04, shuf06, shuf04, shuf05, 0xffff, 0xffff}
     };
+
+    // Cells16 shuffle control vectors constructed from the 9 pairings of 3x3 vectors in
+    // the tables above (because this makes access more efficient in AssertionsToEliminations).
+    Cells16 triads_shift0_to_config_elims16[9]{};
+    Cells16 triads_shift1_to_config_elims16[9]{};
+    Cells16 triads_shift2_to_config_elims16[9]{};
 
     // two Cells16 shuffle control vectors whose results are or'ed together to convert
     // a vector of configurations (reproduced across 128 bit lanes) into a 3x3 matrix of
@@ -192,31 +215,6 @@ struct Tables {
         shuf02, shuf00, shuf01, shuf03, shuf06, shuf04, shuf05, shuf07,
         shuf02, shuf00, shuf01, shuf03, shuf04, shuf05, shuf06, shuf07};
 
-
-    //   config       0       1       2       3       4       5
-    //    elem      0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
-    //            +-------+-------+-------+-------+-------+-------+
-    //   peer0    | X . . | . X . | . . X | . . X | X . . | . X . |
-    //   peer1    | . X . | . . X | X . . | . X . | . . X | X . . |
-    //   peer2    | . . X | X . . | . X . | X . . | . X . | . . X |
-    //            +-------+-------+-------+-------+-------+-------+
-    //
-    // A set of masks for eliminating band configurations inconsistent with the placement
-    // of a digit in an element (minirow or minicol) of a box peer. Refer again to the
-    // configuration diagram.
-    //
-    const Cells08 peer_x_elem_to_config_mask[3][3]{
-            {{   0,   kAll,   kAll,   kAll,      0,   kAll,    0,    0},
-             {kAll,      0,   kAll,   kAll,   kAll,      0,    0,    0},
-             {kAll,   kAll,      0,      0,   kAll,   kAll,    0,    0}},
-            {{kAll,   kAll,      0,   kAll,   kAll,      0,    0,    0},
-             {   0,   kAll,   kAll,      0,   kAll,   kAll,    0,    0},
-             {kAll,      0,   kAll,   kAll,      0,   kAll,    0,    0}},
-            {{kAll,      0,   kAll,      0,   kAll,   kAll,    0,    0},
-             {kAll,   kAll,      0,   kAll,      0,   kAll,    0,    0},
-             {   0,   kAll,   kAll,   kAll,   kAll,      0,    0,    0}}
-    };
-
     const Cells08 one_value_mask[9]{
             Cells08::All(1u << 0u), Cells08::All(1u << 1u), Cells08::All(1u << 2u),
             Cells08::All(1u << 3u), Cells08::All(1u << 4u), Cells08::All(1u << 5u),
@@ -230,14 +228,13 @@ struct Tables {
     const int div3[9]{ 0, 0, 0, 1, 1, 1, 2, 2, 2 };
     const int mod3[9]{ 0, 1, 2, 0, 1, 2, 0, 1, 2 };
 
-    // @formatter:on
-
     BoxIndexing box_indexing[81]{};
+    // @formatter:on
 
     Tables() noexcept {
         for (int i : {0, 1, 2, 4, 5, 6, 8, 9, 10}) {  // only need for cells, not triads
             for (uint32_t value = 0; value < 9; value++) {
-                Cells16 &mask = cell_assignment_eliminations[i][value];
+                Cells16 &mask = cell_assignment_eliminations[value][i];
                 for (int j = 0; j < 15; j++) {
                     if (j == i) { // asserted cell: clear all bits but the one asserted
                         mask.Insert(j, kAll ^ (1u << value));
@@ -247,6 +244,16 @@ struct Tables {
                         mask.Insert(j, 1u << value);
                     }
                 }
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                triads_shift0_to_config_elims16[i * 3 + j] =
+                        Cells16{triads_shift0_to_config_elims[i],triads_shift0_to_config_elims[j]};
+                triads_shift1_to_config_elims16[i * 3 + j] =
+                        Cells16{triads_shift1_to_config_elims[i],triads_shift1_to_config_elims[j]};
+                triads_shift2_to_config_elims16[i * 3 + j] =
+                        Cells16{triads_shift2_to_config_elims[i],triads_shift2_to_config_elims[j]};
             }
         }
         for (int i = 0; i < 81; i++) box_indexing[i] = BoxIndexing{i};
@@ -354,14 +361,11 @@ struct SolverDpllTriadSimd {
                                         VerticalTriads(new_box_eliminations)};
         Cells16 new_eliminations = Cells16::or_X_Y_or_Z(
                 hv_neg_triad_assertions.Shuffle(
-                        Bitvec16x16{tables.triads_shift0_to_config_elims[box_j],
-                                    tables.triads_shift0_to_config_elims[box_i]}),
+                        tables.triads_shift0_to_config_elims16[box_j * 3 + box_i]),
                 hv_pos_triad_assertions.Shuffle(
-                        Bitvec16x16{tables.triads_shift1_to_config_elims[box_j],
-                                    tables.triads_shift1_to_config_elims[box_i]}),
+                        tables.triads_shift1_to_config_elims16[box_j * 3 + box_i]),
                 hv_pos_triad_assertions.Shuffle(
-                        Bitvec16x16{tables.triads_shift2_to_config_elims[box_j],
-                                    tables.triads_shift2_to_config_elims[box_i]}));
+                        tables.triads_shift2_to_config_elims16[box_j * 3 + box_i]));
         h_band_eliminations |= new_eliminations.GetLo();
         v_band_eliminations |= new_eliminations.GetHi();
     }
@@ -569,7 +573,7 @@ struct SolverDpllTriadSimd {
         // not strictly necessary since band eliminations will constrain the puzzle, but it
         // turns out to be important for performance on invalid zero-solution puzzles.
         state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
-                tables.cell_assignment_eliminations[indexing.elem][digit - '1']);
+                tables.cell_assignment_eliminations[digit - '1'][indexing.elem]);
         // merge band eliminations; we'll propagate after all clue are processed.
         state.bands[0][indexing.box_i].eliminations = Cells08::and_X_Y_or_Z(
                 tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i],
