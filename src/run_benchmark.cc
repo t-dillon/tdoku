@@ -175,47 +175,36 @@ struct Benchmark {
         return all_of(covered.begin(), covered.end(), [](uint32_t x) { return x == 0x1ff; });
     }
 
-    // warm caches, branch predictor, etc. and estimate solving speed on this data
+    void ExitError(const char *puzzle, const char *context) {
+        cout << "Error during " << context << endl;
+        PrintSudoku(puzzle, false);
+        exit(1);
+    }
+
+    // warm caches, branch predictor, etc. and estimate solving speed on this data.
     double WarmupAndEstimateRate(const Solver &solver) {
         char output[81]{0};
         size_t num_guesses;
         int warmup_count = 0;
-        microseconds start =
-                duration_cast<microseconds>(steady_clock::now().time_since_epoch());
+        microseconds start = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
         microseconds end = start;
         while ((end - start).count() < options_.min_seconds_warmup * 1000000) {
+            // during warmup/rate estimation we'll solve puzzles in random order just in case
+            // the data set order is biased (e.g., easy or hard puzzles up front).
             const char *puzzle = &dataset_[puzzle_buf_size_ *
-                                           (warmup_count % options_.test_dataset_size)];
+                                           (util.RandomUInt() % options_.test_dataset_size)];
             output[0] = '.'; // make sure we won't validate a previous solution
             size_t count = solver.Solve(puzzle, 1, output, &num_guesses);
             if (!allow_zero_ &&
                 (!count || (options_.validate &&
                             solver.ReturnsSolution() && !ValidateSolution(output)))) {
-                cout << "Error during warmup" << endl;
-                PrintSudoku(puzzle, false);
-                exit(1);
+                ExitError(puzzle, "warmup");
             }
             warmup_count++;
             end = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
         }
         double puzzles_per_second = 1000000.0 * warmup_count / (end - start).count();
         return puzzles_per_second;
-    }
-
-    size_t NumPuzzlesForBenchmark(double puzzles_per_second) {
-        double est_seconds_full_pass = options_.test_dataset_size / puzzles_per_second;
-        if (est_seconds_full_pass < options_.min_seconds_test * 2) {
-            // for the fast solvers we want to do the lowest multiple of the entire data set
-            // that will exceed the min time budget and not exceed the max budget.
-            // results are most comparable
-            return options_.test_dataset_size *
-                   (size_t) ceil(options_.min_seconds_test / est_seconds_full_pass);
-        } else {
-            // for the slow solvers we won't require a full pass over the data set. we'll
-            // just aim to hit the max time budget.
-            return (size_t) (options_.test_dataset_size * 2 * options_.min_seconds_test /
-                             est_seconds_full_pass);
-        }
     }
 
     void OutputHeader(const string &filename) {
@@ -274,34 +263,57 @@ struct Benchmark {
         Load(filename);
         OutputHeader(filename);
 
+        // for the slow solvers we'll solve puzzles in this order to avoid any difficulty biases.
+        auto perm = util.Permutation(options_.test_dataset_size);
+
         for (const Solver &solver : options_.solvers) {
             double puzzles_per_second = WarmupAndEstimateRate(solver);
-            size_t puzzles_todo = NumPuzzlesForBenchmark(puzzles_per_second);
+            // we'll use the procedure for fast solvers if we expect to complete a full pass through
+            // the data set in less than twice the min test time (or really less than up to 4x the min
+            // test time since warmup is run with a limit of 1).
+            bool fast = puzzles_per_second * options_.min_seconds_test * 2 > options_.test_dataset_size;
 
             char puzzle_output[81]{0};
             size_t puzzle_guesses;
             size_t total_guesses = 0;
             size_t total_no_guess = 0;
+            size_t total_solved = 0;
 
-            microseconds start =
-                    duration_cast<microseconds>(steady_clock::now().time_since_epoch());
+            microseconds start = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
+            microseconds end = start;
 
-            for (int i = 0; i < puzzles_todo; i++) {
-                const char *puzzle = &dataset_[puzzle_buf_size_ * (i % options_.test_dataset_size)];
-                size_t solutions = solver.Solve(puzzle, options_.first_solution ? 1 : 2,
-                                                puzzle_output, &puzzle_guesses);
-                if (!allow_zero_ && !solutions) {
-                    cout << "Error during benchmark" << endl;
-                    PrintSudoku(puzzle, false);
-                    exit(1);
+            if (fast) {
+                while ((end - start).count() < options_.min_seconds_test * 1000000) {
+                    for (int i = 0; i < options_.test_dataset_size; i++) {
+                        const char *puzzle = &dataset_[puzzle_buf_size_ * i];
+                        size_t solutions = solver.Solve(puzzle, options_.first_solution ? 1 : 2,
+                                                        puzzle_output, &puzzle_guesses);
+                        if (!allow_zero_ && !solutions) {
+                            ExitError(puzzle, "benchmark");
+                        }
+                        total_guesses += puzzle_guesses;
+                        total_no_guess += (puzzle_guesses == 0);
+                    }
+                    total_solved += options_.test_dataset_size;
+                    end = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
                 }
-                total_guesses += puzzle_guesses;
-                total_no_guess += (puzzle_guesses == 0);
+            } else {
+                while ((end - start).count() < options_.min_seconds_test * 2000000) {
+                    const char *puzzle = &dataset_[puzzle_buf_size_ * perm[total_solved % options_.test_dataset_size]];
+                    size_t solutions = solver.Solve(puzzle, options_.first_solution ? 1 : 2,
+                                                    puzzle_output, &puzzle_guesses);
+                    if (!allow_zero_ && !solutions) {
+                        ExitError(puzzle, "benchmark");
+                    }
+                    total_guesses += puzzle_guesses;
+                    total_no_guess += (puzzle_guesses == 0);
+                    total_solved += 1;
+                    end = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
+                }
             }
 
-            microseconds end = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
             auto total_usec = (end - start).count();
-            OutputResult(solver, filename, puzzles_todo, total_usec, total_guesses, total_no_guess);
+            OutputResult(solver, filename, total_solved, total_usec, total_guesses, total_no_guess);
         }
     }
 
