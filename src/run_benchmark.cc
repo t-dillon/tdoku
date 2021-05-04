@@ -464,7 +464,7 @@ int main(int argc, char **argv) {
     Benchmark benchmark(options);
 
     if (opt.ind == argc) {
-        benchmark.Test("data/puzzles4_forum_hardest_1905_11+");
+        benchmark.Test("data/puzzles1_unbiased");
     } else {
         for (int i = opt.ind; i < argc; i++) {
             if (do_rating) {
