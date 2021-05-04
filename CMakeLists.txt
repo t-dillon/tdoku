@@ -85,10 +85,6 @@ configure_file (
 add_library(tdoku STATIC src/solver_dpll_triad_simd.cc src/util.cc)
 target_compile_options(tdoku PUBLIC -fno-exceptions -fno-rtti -fpic)
 
-add_library(rust_sudoku SHARED IMPORTED)
-set_target_properties(rust_sudoku PROPERTIES IMPORTED_LOCATION
-        ${CMAKE_SOURCE_DIR}/other/rust_sudoku/libsudoku.so)
-
 set(GUROBI_DIR "gurobi900/linux64" CACHE STRING "Gurobi installation directory")
 
 add_library(gurobi_c++ STATIC IMPORTED)
@@ -254,6 +250,6 @@ if (MINISAT)
 endif()
 
 if (RUST_SUDOKU)
-    target_link_libraries(run_benchmark rust_sudoku)
-    target_link_libraries(run_tests rust_sudoku)
+    target_link_libraries(run_benchmark ${CMAKE_SOURCE_DIR}/other/rust_sudoku/libsudoku.so)
+    target_link_libraries(run_tests     ${CMAKE_SOURCE_DIR}/other/rust_sudoku/libsudoku.so)
 endif()
