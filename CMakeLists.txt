@@ -53,6 +53,13 @@ if (ALL)
     set(RUST_SUDOKU ON)
 endif()
 
+get_filename_component(CCOMPILER "$ENV{CC}" NAME)
+if(EXISTS "${CMAKE_SOURCE_DIR}/other/rust_sudoku/${CCOMPILER}/libsudoku.so")
+    set(HAVE_RUST_SUDOKU_LIB ON)
+else()
+    set(HAVE_RUST_SUDOKU_LIB OFF)
+endif()
+
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -${OPT} ${ARGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -${OPT} ${ARGS}")
 
@@ -211,7 +218,7 @@ if (SK_BFORCE2)
           other/SK_BFORCE2/sk_t.cpp)
 endif()
 
-if (RUST_SUDOKU)
+if (RUST_SUDOKU AND HAVE_RUST_SUDOKU_LIB)
     add_definitions(-DRUST_SUDOKU)
 endif()
 
@@ -249,7 +256,7 @@ if (MINISAT)
     target_link_libraries(generate minisat)
 endif()
 
-if (RUST_SUDOKU)
-    target_link_libraries(run_benchmark ${CMAKE_SOURCE_DIR}/other/rust_sudoku/libsudoku.so)
-    target_link_libraries(run_tests     ${CMAKE_SOURCE_DIR}/other/rust_sudoku/libsudoku.so)
+if (RUST_SUDOKU AND HAVE_RUST_SUDOKU_LIB)
+    target_link_libraries(run_benchmark ${CMAKE_SOURCE_DIR}/other/rust_sudoku/${CCOMPILER}/libsudoku.so)
+    target_link_libraries(run_tests     ${CMAKE_SOURCE_DIR}/other/rust_sudoku/${CCOMPILER}/libsudoku.so)
 endif()

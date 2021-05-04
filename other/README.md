@@ -70,12 +70,10 @@ A solver derived from JCZSolve and including further optimizations.
 1. **rust_sudoku** (Emerentius 2017-2019)\
 The rust Sudoku library. A port of JCZSolve to rust and including further optimizations.
    * Clone https://github.com/t-dillon/rust_sudoku_bench (a fork of Emerentius/sudoku with patches to work with tdoku benchmarks).
-   * Build the rust project using:\
-    `$ cd path/to/rust_sudoku_bench`\
-    `$ cargo build --release`
-   * Link shared library where tdoku looks for it:\
+   * Install [rustup](https://rustup.rs/)
+   * Run the setup script, which will build rust_sudoku shared libraries using clang 9,10,11:\
     `$ cd path/to/tdoku`\
-    `$ other/rust_sudoku/link.sh path/to/rust_sudoku_bench`
+    `$ other/rust_sudoku/setup.sh path/to/rust_sudoku_bench`
    * Build with -DRUST_SUDOKU=on
 
 1. **gss** (Bart 2019)\
