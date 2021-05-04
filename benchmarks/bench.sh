@@ -16,13 +16,11 @@
 # sudo nice -n -20 benchmarks/bench.sh setarch `uname -m` -R taskset 0x8 | tee benchmark.log
 #
 prefix="$*"
-# Rust builds are always LLVM, so exclude rust_sudoku by default.
-solver_arg="-s$(build/run_benchmark -h | grep tdoku | tr ' ' '\n' | grep -v rust_sudoku | xargs | tr ' ' ,)"
 if build/run_benchmark -h | grep build.info | grep -q Clang; then
     # If clang, pass no -s arg, so we'll run everything
     solver_arg=""
 fi
-cmd="build/run_benchmark -t15 -w5 -n250000 -e1 -v0 ${solver_arg}"
+cmd="build/run_benchmark -t15 -w5 -n250000 -e1 -v0"
 
 echo "##################################################################################################"
 echo "# BUILD INFO"
