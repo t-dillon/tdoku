@@ -53,10 +53,10 @@ extern "C" {
     SolverFn OtherSolverZ3;
     SolverFn OtherSolverGurobi;
     SolverFn OtherSolverMiniSat;
+    SolverFn OtherSolverLHLSudoku;
     SolverFn OtherSolverZeroDoku;
     SolverFn OtherSolverFastSolv9r2;
     SolverFn OtherSolverKudoku;
-    SolverFn OtherSolverLHLSudoku;
     SolverFn OtherSolverNorvig;
     SolverFn OtherSolverBBSudoku;
     SolverFn OtherSolverFsss;
@@ -178,6 +178,9 @@ std::vector<Solver> GetAllSolvers() {
     solvers.emplace_back(Solver(TdokuSolverBasic,             0, "_tdev_basic",               "G/....../..", 15));
     solvers.emplace_back(Solver(TdokuSolverBasic,             1, "_tdev_basic_heuristic",     "G/s...../m.", 15));
 #endif
+#ifdef LHL
+    solvers.emplace_back(Solver(OtherSolverLHLSudoku,         0, "lhl_sudoku",                "G/s...../m.", 14));
+#endif
 #ifdef ZERODOKU
     solvers.emplace_back(Solver(OtherSolverZeroDoku,          0, "zerodoku",                  "G/sh..../m.", 14));
 #endif
@@ -186,9 +189,6 @@ std::vector<Solver> GetAllSolvers() {
 #endif
 #ifdef KUDOKU
     solvers.emplace_back(Solver(OtherSolverKudoku,            0, "kudoku",                    "E/sh..../m.", 15));
-#endif
-#ifdef LHL
-    solvers.emplace_back(Solver(OtherSolverLHLSudoku,         0, "lhl_sudoku",                "C/s...../m.", 14));
 #endif
 #ifdef NORVIG
     solvers.emplace_back(Solver(OtherSolverNorvig,            0, "norvig",                    "C/sh..../m.", 15));
