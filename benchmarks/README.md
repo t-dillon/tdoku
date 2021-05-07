@@ -1,5 +1,40 @@
 
-# Benchmark Data Sets
+# Benchmarked Solvers
+
+The table below lists benchmarked solvers along with several of their characteristics that influence performance
+in order to facilitate comparisons between solvers with similar implementations, inference capabilities, and
+heuristics. This information is also compactly summarized in solver descriptions in the detailed result files.
+
+| solver                   |primary<br>representation | naked<br>singles | hidden<br>singles | locked<br>cands:row | locked<br>cands:col | extra | heuristics |
+|--------------------------|:-------------:|:-------:|:------:|:---------:|:---------:|:------:|:-----------:|
+| minisat_minimal          | SAT           |  Y      | -      | -         | -         | CDCL     | Min+         |
+| minisat_natural          | SAT           |  Y      | -      | -         | -         | CDCL     | Min+         |
+| minisat_complete         | SAT           |  Y      | Y      | -         | -         | CDCL     | Min+         |
+| minisat_augmented        | SAT           |  Y      | Y      | Y         | Y         | CDCL     | Min+         |
+| _tdev_dpll_triad         | SAT           |  Y      | Y      | Y         | Y         | Triad      | Min        |
+| _tdev_dpll_triad_scc_i   | SAT           |  Y      | Y      | Y         | Y         | Triad, SCC | Min+       |
+| _tdev_dpll_triad_scc_h   | SAT           |  Y      | Y      | Y         | Y         | Triad      | Min        |
+| _tdev_dpll_triad_scc_ih  | SAT           |  Y      | Y      | Y         | Y         | Triad, SCC | Min+       |
+| _tdev_basic              | Group         |  -      | -      | -         | -         |          | -            |
+| _tdev_basic_heuristic    | Group         |  Y      | -      | -         | -         |          | Min          |
+| lhl_sudoku               | Group         |  Y      | -      | -         | -         |          | Min          |
+| zerodoku                 | Group         |  Y      | Y      | -         | -         |          | Min          |
+| fast_solv_9r2            | Exact Cover Matrix  |  Y| Y      | -         | -         |          | Min          |
+| kudoku                   | Exact Cover Matrix  |  Y| Y      | -         | -         |          | Min          |
+| norvig                   | Cell          |  Y      | Y      | -         | -         |          | Min          |
+| bb_sudoku                | Cell          |  Y      | Y      | Y         | Y         |          | Min          |
+| fsss                     | Cell          |  Y      | Y      | Y         | Y         |          | Min          |
+| jsolve                   | Cell          |  Y      | Y      | Y         | Y         |          | Min          |
+| fsss2                    | Digit         |  Y      | Y      | -         | -         |          | Min          |
+| fsss2_locked             | Digit         |  Y      | Y      | Y         | Y         |          | Min          |
+| jczsolve                 | Band          |  Y      | Y      | Y         | -         |          | Min          |
+| sk_bforce2               | Band          |  Y      | Y      | Y         | Y         |          | Min+         |
+| rust_sudoku              | Band          |  Y      | Y      | Y         | -         |          | Min          |
+| tdoku                    | Tdoku Box/Band  |  Y    | Y      | Y         | Y         | Triad    | Min+         |
+
+
+# Benchmarked Data Sets
+Solvers were benchmarked using the following data sets.
 
 1. [[source](http://www.kaggle.com/bryanpark/sudoku)] **kaggle** \
 A dataset of 100000 puzzles sampled from a larger dataset created for ML experiments and 
@@ -7,6 +42,16 @@ hosted on Kaggle. The Kaggle page has a link to the code used for puzzle generat
 puzzles are *extremely easy*. Trivial even. Each has a large number of clues with lots of
 redundancy. 100% of the puzzles are solved with naked singles only. This is  more a test
 of a parsing and initialization than actual solving speed.
+
+1. [[source](https://github.com/t-dillon/tdoku/blob/master/src/grid_tools.cc)] **unbiased** \
+A dataset of 1 million puzzles sampled with uniform probability (conditional on the number of
+clues) from the set of all minimal Sudoku puzzles. This dataset was generated using the grid_tools
+puzzle sampler in this project. This sampler over-samples low-clue puzzles relative to high-clue
+puzzles, but in a quantifiable way, and for a given clue count every minimal Sudoku arises with
+the same probability. This makes an interesting dataset for benchmarking since the puzzles are
+representative of Sudoku in general, whereas other data sets often contain puzzles selected for
+special properties (clue counts, extremes of difficulty) that may favor one solver or another.
+The puzzles in this dataset are generally *very easy* because hard puzzles are rare.
 
 1. [[source](http://staffhome.ecm.uwa.edu.au/~00013890/sudokumin.php)] **17_clue** \
 A complete or nearly-complete dataset of all 17-clue puzzles (49158 of them as of 2020-01)
@@ -37,22 +82,25 @@ a wide range of solvers).
 1. [[source](http://sites.google.com/site/sergsudoku/benchmark.zip)] **serg_benchmark** \
 A benchmark dataset maintained by user Serg of the Enjoy Sudoku Player's Forum. This dataset 
 contains puzzles with two or more solutions. The idea of hardness may not apply to these since
-they are not proper Sudoku. However, brute force solvers are commonly used in searches of various
+they are not proper Sudoku. However, backtracking solvers are commonly used in searches of various
 kinds where it is not known whether a puzzle has 0, 1, or 2+ solutions, so this is an important
 use case.
 
 1. [[source](http://www.enjoysudoku.com/gen_puzzles.zip)] **gen_puzzles** \
 The raw output of a puzzle generator containing mostly invalid puzzles with 0 solutions. As
 with the previous dataset the idea of hardness may not apply to these since they are not proper
-Sudoku. However, brute force solvers are commonly used in searches of various kinds where it is 
+Sudoku. However, backtracking solvers are commonly used in searches of various kinds where it is 
 not known whether a puzzle has 0, 1, or 2+ solutions, so this is an important use case.
 
-# Benchmark Machines
+# Benchmarked Platforms
 
+Benchmarks were run for the following CPU platforms (all on Ubuntu 18.04 or 20.04):
+1. **Oracle-Optimized3** (Ice Lake Server)\
+A compute optimized server platform supporting AVX512BIGALG, AVXVPOPCNTDQ, and AVX512VL instructions.
+1. **i7-1065G7** (Ice Lake Client)\
+A modern laptop supporting AVX512BIGALG, AVXVPOPCNTDQ, and AVX512VL instructions.
 1. **GCE-c2-standard-4** (Cascade Lake)\
 A compute optimized server platform supporting AVX512VL instructions.
-1. **i7-1065G7** (Ice Lake)\
-A modern laptop supporting AVX512BIGALG, AVXVPOPCNTDQ, and AVX512VL instructions.
 1. **i5-8600k** (Coffee Lake)\
 A fast desktop supporting AVX2 instructions.
 1. **i7-4930k** (Ivy Bridge)\
@@ -60,15 +108,22 @@ An older desktop with support for SSE4.2 but not AVX2
 1. **TR-2990WX** (Threadripper)\
 An AMD platorm with AVX2 (but faster for Tdoku without it)
 
+# Benchmarked Compilers
+Benchmarks were generally run for Clang-{8,9,10,11} and GCC-{8,9,10} both with and without profile guided optimization, 
+and in the case of Threadripper both with and without AVX2. For each (platform X dataset X solver) the charts below show 
+the most favorable result across all of the compiler configurations tested (so different compilers may have been used 
+for adjacent bars for two different solvers on the same dataset, or for the same solver on different datasets).
+
 # Benchmark Summary
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1180131374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=584139883&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=860792693&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=1741583019&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1929162374&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=1180131374&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1085609822&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=2129238453&format=image)
 
-![](https://docs.google.com/spreadsheets/d/e/2PACX-1vTo3FphfVi9gixAs4nX4nNvLl_sgOZ4lgrqSly32jkGUOBWM92IpYaDg4H7R_3dpo-R3VRl5Ei9DnEE/pubchart?oid=1298913250&format=image)
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=754000374&format=image)
 
+![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=2018421902&format=image)

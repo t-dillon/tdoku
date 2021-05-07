@@ -1,0 +1,305 @@
+##################################################################################################
+# BUILD INFO
+##################################################################################################
+build info: Clang 11.1.0 -O3 -fprofile-use=pgodata.use -march=native
+
+##################################################################################################
+# CPU INFO
+##################################################################################################
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              64
+On-line CPU(s) list: 0-63
+Thread(s) per core:  2
+Core(s) per socket:  32
+Socket(s):           1
+NUMA node(s):        4
+Vendor ID:           AuthenticAMD
+CPU family:          23
+Model:               8
+Model name:          AMD Ryzen Threadripper 2990WX 32-Core Processor
+Stepping:            2
+CPU MHz:             1719.664
+BogoMIPS:            5999.03
+Virtualization:      AMD-V
+L1d cache:           32K
+L1i cache:           64K
+L2 cache:            512K
+L3 cache:            8192K
+NUMA node0 CPU(s):   0-15
+NUMA node1 CPU(s):   32-47
+NUMA node2 CPU(s):   16-31
+NUMA node3 CPU(s):   48-63
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid amd_dcm aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb hw_pstate sme ssbd ibpb vmmcall fsgsbase bmi1 avx2 smep bmi2 rdseed adx smap clflushopt sha_ni xsaveopt xsavec xgetbv1 xsaves clzero irperf xsaveerptr arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif overflow_recov succor smca
+
+##################################################################################################
+# SOLVER DESCRIPTION KEY
+##################################################################################################
+The first character indicates the solver's primary representation:
+   B: Band-oriented
+   C: Cell-oriented
+   D: Digit-oriented
+   E: Exact-cover
+   G: Group-oriented
+   I: Integer-MIP
+   S: propositional-SAT
+   T: Tdoku-box-band
+The middle section describes the solver's forward propagation capabilities:
+   s: Singles within a cell
+   h: Hidden singles
+   r: Row-oriented locked candidates
+   c: Col-oriented locked candidates
+   -: Something falling short of full propagation of the above
+   +: Something extra (++ two or more extras)
+The last section describes the solver's heuristics:
+   m: Min-candidates branching (generally finding a bivalue)
+   +: Extra considerations to choose between bivalues
+
+##################################################################################################
+# BENCHMARK
+##################################################################################################
+setarch x86_64 -R taskset 0x20 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data/*
+
+|data/puzzles0_kaggle                  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|     9,882.9 |       101.2 |     100.0% |           0.00 |
+|minisat_natural            S/s...+./m+|     9,225.1 |       108.4 |     100.0% |           0.00 |
+|minisat_complete           S/sh..+./m+|     7,606.1 |       131.5 |     100.0% |           0.00 |
+|minisat_augmented          S/shrc+./m+|     5,469.2 |       182.8 |     100.0% |           0.00 |
+|_tdev_dpll_triad           S/shrc+./m.|    14,483.4 |        69.0 |     100.0% |           0.00 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|    14,537.1 |        68.8 |     100.0% |           0.00 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|    14,481.7 |        69.1 |     100.0% |           0.00 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|    14,511.8 |        68.9 |     100.0% |           0.00 |
+|_tdev_basic                G/....../..|   381,087.8 |         2.6 |       0.0% |          54.45 |
+|_tdev_basic_heuristic      G/s...../m.|   838,604.2 |         1.2 |     100.0% |           0.00 |
+|lhl_sudoku                 G/s...../m.|   288,663.0 |         3.5 |     100.0% |           0.00 |
+|zerodoku                   G/sh..../m.|   342,588.1 |         2.9 |     100.0% |           0.00 |
+|fast_solv_9r2              E/sh..../m.|    74,038.5 |        13.5 |     100.0% |           0.00 |
+|kudoku                     E/sh..../m.|    95,768.8 |        10.4 |     100.0% |           0.00 |
+|norvig                     C/sh..../m.|    18,692.9 |        53.5 |     100.0% |           0.00 |
+|bb_sudoku                  C/shrc../m.|   276,558.0 |         3.6 |     100.0% |           0.00 |
+|fsss                       C/shrc../m.|   337,754.1 |         3.0 |     100.0% |           0.00 |
+|jsolve                     C/shrc../m.|   466,043.0 |         2.1 |     100.0% |           0.00 |
+|fsss2                      D/sh..../m.| 1,326,713.1 |         0.8 |     100.0% |           0.00 |
+|fsss2_locked               D/shrc../m.| 1,322,590.4 |         0.8 |     100.0% |           0.00 |
+|jczsolve                   B/shr.../m.|   594,455.6 |         1.7 |     100.0% |           0.00 |
+|sk_bforce2                 B/shrc-./m+| 1,173,371.7 |         0.9 |     100.0% |           0.00 |
+|rust_sudoku                B/shr.../m.|   921,692.6 |         1.1 |     100.0% |           0.00 |
+|tdoku                      T/shrc+./m+|   922,106.1 |         1.1 |     100.0% |           0.00 |
+
+|data/puzzles1_unbiased                |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|     2,502.0 |       399.7 |       1.1% |          62.28 |
+|minisat_natural            S/s...+./m+|     2,636.0 |       379.4 |       1.1% |          51.13 |
+|minisat_complete           S/sh..+./m+|     4,941.8 |       202.4 |      35.2% |           4.22 |
+|minisat_augmented          S/shrc+./m+|     3,689.5 |       271.0 |      45.1% |           2.67 |
+|_tdev_dpll_triad           S/shrc+./m.|    12,129.5 |        82.4 |      47.5% |           1.45 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|     9,040.0 |       110.6 |      64.8% |           0.64 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|     9,620.7 |       103.9 |      47.5% |           0.79 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|     9,930.4 |       100.7 |      64.8% |           0.46 |
+|_tdev_basic                G/....../..|     1,092.6 |       915.2 |       0.0% |      32,422.81 |
+|_tdev_basic_heuristic      G/s...../m.|    86,278.7 |        11.6 |       1.1% |          29.30 |
+|lhl_sudoku                 G/s...../m.|    39,347.4 |        25.4 |       1.1% |          27.44 |
+|zerodoku                   G/sh..../m.|    79,045.9 |        12.7 |      35.1% |           2.17 |
+|fast_solv_9r2              E/sh..../m.|    50,909.3 |        19.6 |      35.1% |           2.17 |
+|kudoku                     E/sh..../m.|    59,259.3 |        16.9 |      35.1% |           1.98 |
+|norvig                     C/sh..../m.|    11,513.7 |        86.9 |      35.1% |           2.17 |
+|bb_sudoku                  C/shrc../m.|   154,177.8 |         6.5 |      45.0% |           2.88 |
+|fsss                       C/shrc../m.|   185,579.1 |         5.4 |      45.0% |           1.51 |
+|jsolve                     C/shrc../m.|   195,165.4 |         5.1 |      45.0% |           1.44 |
+|fsss2                      D/sh..../m.|   311,272.2 |         3.2 |      35.1% |           2.01 |
+|fsss2_locked               D/shrc../m.|   232,334.4 |         4.3 |      45.0% |           1.48 |
+|jczsolve                   B/shr.../m.|   283,174.4 |         3.5 |      40.2% |           1.86 |
+|sk_bforce2                 B/shrc-./m+|   331,598.8 |         3.0 |      44.7% |           1.61 |
+|rust_sudoku                B/shr.../m.|   415,410.9 |         2.4 |      40.2% |           1.86 |
+|tdoku                      T/shrc+./m+|   323,622.3 |         3.1 |      47.5% |           1.13 |
+
+|data/puzzles2_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|       246.3 |     4,060.3 |       0.0% |         705.00 |
+|minisat_natural            S/s...+./m+|       248.9 |     4,017.9 |       0.0% |         645.99 |
+|minisat_complete           S/sh..+./m+|     5,301.7 |       188.6 |      44.5% |           5.00 |
+|minisat_augmented          S/shrc+./m+|     4,680.8 |       213.6 |      76.1% |           1.06 |
+|_tdev_dpll_triad           S/shrc+./m.|    12,925.5 |        77.4 |      78.7% |           0.78 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|    11,812.9 |        84.7 |      88.4% |           0.22 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|    12,236.4 |        81.7 |      78.7% |           0.27 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|    12,520.1 |        79.9 |      88.4% |           0.14 |
+|_tdev_basic                G/....../..|         1.2 |   857,451.1 |       0.0% |  30,219,271.89 |
+|_tdev_basic_heuristic      G/s...../m.|       981.7 |     1,018.7 |       0.0% |       5,176.42 |
+|lhl_sudoku                 G/s...../m.|       343.4 |     2,912.2 |       0.0% |       5,654.60 |
+|zerodoku                   G/sh..../m.|    47,873.8 |        20.9 |      44.6% |           4.81 |
+|fast_solv_9r2              E/sh..../m.|    40,160.2 |        24.9 |      44.6% |           4.47 |
+|kudoku                     E/sh..../m.|    43,918.4 |        22.8 |      44.6% |           4.57 |
+|norvig                     C/sh..../m.|     7,963.4 |       125.6 |      44.6% |           4.84 |
+|bb_sudoku                  C/shrc../m.|   149,246.5 |         6.7 |      76.0% |           1.55 |
+|fsss                       C/shrc../m.|   176,215.0 |         5.7 |      76.0% |           0.94 |
+|jsolve                     C/shrc../m.|   188,762.2 |         5.3 |      76.0% |           0.77 |
+|fsss2                      D/sh..../m.|   195,069.3 |         5.1 |      44.6% |           4.46 |
+|fsss2_locked               D/shrc../m.|   244,064.6 |         4.1 |      76.0% |           0.95 |
+|jczsolve                   B/shr.../m.|   282,058.9 |         3.5 |      70.5% |           1.76 |
+|sk_bforce2                 B/shrc-./m+|   358,897.7 |         2.8 |      74.1% |           1.02 |
+|rust_sudoku                B/shr.../m.|   411,721.8 |         2.4 |      70.5% |           1.74 |
+|tdoku                      T/shrc+./m+|   297,173.0 |         3.4 |      78.7% |           0.61 |
+
+|data/puzzles3_magictour_top1465       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|       559.4 |     1,787.5 |       0.0% |         281.18 |
+|minisat_natural            S/s...+./m+|       593.4 |     1,685.1 |       0.0% |         254.61 |
+|minisat_complete           S/sh..+./m+|     2,377.2 |       420.7 |       0.0% |          39.07 |
+|minisat_augmented          S/shrc+./m+|     2,060.0 |       485.4 |       4.0% |          19.27 |
+|_tdev_dpll_triad           S/shrc+./m.|     4,829.3 |       207.1 |       7.9% |          12.68 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|     2,284.1 |       437.8 |      15.2% |           5.28 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|     3,294.8 |       303.5 |       7.9% |           4.28 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|     3,450.1 |       289.8 |      15.3% |           2.86 |
+|_tdev_basic                G/....../..|        18.2 |    54,844.8 |       0.0% |   1,993,741.34 |
+|_tdev_basic_heuristic      G/s...../m.|     6,601.9 |       151.5 |       0.0% |         606.58 |
+|lhl_sudoku                 G/s...../m.|     2,456.9 |       407.0 |       0.0% |         645.43 |
+|zerodoku                   G/sh..../m.|     9,691.4 |       103.2 |       0.0% |          43.60 |
+|fast_solv_9r2              E/sh..../m.|     9,168.9 |       109.1 |       0.0% |          42.76 |
+|kudoku                     E/sh..../m.|    10,800.1 |        92.6 |       0.0% |          33.98 |
+|norvig                     C/sh..../m.|     1,375.1 |       727.2 |       0.0% |          42.76 |
+|bb_sudoku                  C/shrc../m.|    43,227.5 |        23.1 |       4.1% |          24.58 |
+|fsss                       C/shrc../m.|    41,020.7 |        24.4 |       4.1% |          15.04 |
+|jsolve                     C/shrc../m.|    49,561.6 |        20.2 |       4.1% |          12.29 |
+|fsss2                      D/sh..../m.|    37,063.1 |        27.0 |       0.0% |          37.37 |
+|fsss2_locked               D/shrc../m.|    44,393.0 |        22.5 |       4.1% |          14.01 |
+|jczsolve                   B/shr.../m.|    71,886.3 |        13.9 |       2.3% |          20.76 |
+|sk_bforce2                 B/shrc-./m+|    78,989.4 |        12.7 |       3.6% |          15.42 |
+|rust_sudoku                B/shr.../m.|    90,456.5 |        11.1 |       2.3% |          20.64 |
+|tdoku                      T/shrc+./m+|   110,806.8 |         9.0 |       7.9% |           9.05 |
+
+|data/puzzles4_forum_hardest_1905      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|       152.9 |     6,540.9 |       0.0% |         689.47 |
+|minisat_natural            S/s...+./m+|       155.3 |     6,437.3 |       0.0% |         646.13 |
+|minisat_complete           S/sh..+./m+|       698.8 |     1,431.0 |       0.0% |         117.79 |
+|minisat_augmented          S/shrc+./m+|       640.9 |     1,560.2 |       0.0% |          85.64 |
+|_tdev_dpll_triad           S/shrc+./m.|       845.4 |     1,182.9 |       0.0% |         110.34 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|       349.5 |     2,861.2 |       0.0% |          43.97 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|       455.5 |     2,195.3 |       0.0% |          44.06 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|       517.3 |     1,933.2 |       0.0% |          28.59 |
+|_tdev_basic                G/....../..|       172.1 |     5,812.1 |       0.0% |     192,361.97 |
+|_tdev_basic_heuristic      G/s...../m.|     3,660.6 |       273.2 |       0.0% |         817.50 |
+|lhl_sudoku                 G/s...../m.|     1,759.2 |       568.4 |       0.0% |         735.33 |
+|zerodoku                   G/sh..../m.|     2,988.8 |       334.6 |       0.0% |         145.64 |
+|fast_solv_9r2              E/sh..../m.|     3,033.6 |       329.6 |       0.0% |         141.62 |
+|kudoku                     E/sh..../m.|     3,286.1 |       304.3 |       0.0% |         117.25 |
+|norvig                     C/sh..../m.|       434.7 |     2,300.7 |       0.0% |         145.49 |
+|bb_sudoku                  C/shrc../m.|     7,512.5 |       133.1 |       0.0% |         168.79 |
+|fsss                       C/shrc../m.|     7,235.1 |       138.2 |       0.0% |          99.89 |
+|jsolve                     C/shrc../m.|     8,820.1 |       113.4 |       0.0% |          84.40 |
+|fsss2                      D/sh..../m.|    12,068.5 |        82.9 |       0.0% |         117.86 |
+|fsss2_locked               D/shrc../m.|     8,138.9 |       122.9 |       0.0% |          97.42 |
+|jczsolve                   B/shr.../m.|    14,775.5 |        67.7 |       0.0% |         138.56 |
+|sk_bforce2                 B/shrc-./m+|    16,482.2 |        60.7 |       0.0% |         103.25 |
+|rust_sudoku                B/shr.../m.|    18,704.9 |        53.5 |       0.0% |         133.55 |
+|tdoku                      T/shrc+./m+|    23,302.0 |        42.9 |       0.0% |          54.96 |
+
+|data/puzzles5_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|       125.5 |     7,970.3 |       0.0% |         814.98 |
+|minisat_natural            S/s...+./m+|       128.3 |     7,796.5 |       0.0% |         763.01 |
+|minisat_complete           S/sh..+./m+|       548.8 |     1,822.2 |       0.0% |         142.54 |
+|minisat_augmented          S/shrc+./m+|       511.9 |     1,953.4 |       0.0% |         104.40 |
+|_tdev_dpll_triad           S/shrc+./m.|       683.9 |     1,462.1 |       0.0% |         131.89 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|       269.5 |     3,710.7 |       0.0% |          56.07 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|       371.6 |     2,691.1 |       0.0% |          51.40 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|       414.2 |     2,414.5 |       0.0% |          34.81 |
+|_tdev_basic                G/....../..|       133.4 |     7,494.0 |       0.0% |     246,259.14 |
+|_tdev_basic_heuristic      G/s...../m.|     3,014.6 |       331.7 |       0.0% |         963.12 |
+|lhl_sudoku                 G/s...../m.|     1,456.7 |       686.5 |       0.0% |         865.04 |
+|zerodoku                   G/sh..../m.|     2,356.7 |       424.3 |       0.0% |         179.60 |
+|fast_solv_9r2              E/sh..../m.|     2,375.4 |       421.0 |       0.0% |         171.45 |
+|kudoku                     E/sh..../m.|     2,599.8 |       384.6 |       0.0% |         142.23 |
+|norvig                     C/sh..../m.|       349.3 |     2,862.7 |       0.0% |         178.22 |
+|bb_sudoku                  C/shrc../m.|     6,451.2 |       155.0 |       0.0% |         200.41 |
+|fsss                       C/shrc../m.|     5,923.4 |       168.8 |       0.0% |         117.52 |
+|jsolve                     C/shrc../m.|     7,187.6 |       139.1 |       0.0% |         100.21 |
+|fsss2                      D/sh..../m.|     9,873.8 |       101.3 |       0.0% |         139.23 |
+|fsss2_locked               D/shrc../m.|     6,740.0 |       148.4 |       0.0% |         112.92 |
+|jczsolve                   B/shr.../m.|    11,510.1 |        86.9 |       0.0% |         171.20 |
+|sk_bforce2                 B/shrc-./m+|    13,071.1 |        76.5 |       0.0% |         122.64 |
+|rust_sudoku                B/shr.../m.|    14,603.1 |        68.5 |       0.0% |         161.94 |
+|tdoku                      T/shrc+./m+|    19,338.0 |        51.7 |       0.0% |          64.95 |
+
+|data/puzzles6_forum_hardest_1106      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|        92.2 |    10,844.9 |       0.0% |       1,123.41 |
+|minisat_natural            S/s...+./m+|        92.6 |    10,799.4 |       0.0% |       1,064.92 |
+|minisat_complete           S/sh..+./m+|       435.6 |     2,295.7 |       0.0% |         185.70 |
+|minisat_augmented          S/shrc+./m+|       435.8 |     2,294.6 |       0.0% |         126.34 |
+|_tdev_dpll_triad           S/shrc+./m.|       363.3 |     2,752.9 |       0.0% |         274.55 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|       158.9 |     6,291.4 |       0.0% |          96.91 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|       191.1 |     5,233.3 |       0.0% |         106.37 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|       217.5 |     4,597.2 |       0.0% |          68.46 |
+|_tdev_basic                G/....../..|        48.6 |    20,573.6 |       0.0% |     695,051.94 |
+|_tdev_basic_heuristic      G/s...../m.|     1,433.6 |       697.5 |       0.0% |       2,233.24 |
+|lhl_sudoku                 G/s...../m.|       686.2 |     1,457.3 |       0.0% |       1,949.82 |
+|zerodoku                   G/sh..../m.|     1,165.7 |       857.9 |       0.0% |         400.46 |
+|fast_solv_9r2              E/sh..../m.|     1,195.9 |       836.2 |       0.0% |         373.75 |
+|kudoku                     E/sh..../m.|     1,280.8 |       780.8 |       0.0% |         313.48 |
+|norvig                     C/sh..../m.|       158.8 |     6,298.2 |       0.0% |         405.46 |
+|bb_sudoku                  C/shrc../m.|     3,777.6 |       264.7 |       0.0% |         361.05 |
+|fsss                       C/shrc../m.|     3,356.0 |       298.0 |       0.0% |         220.96 |
+|jsolve                     C/shrc../m.|     4,204.7 |       237.8 |       0.0% |         180.46 |
+|fsss2                      D/sh..../m.|     5,288.0 |       189.1 |       0.0% |         280.06 |
+|fsss2_locked               D/shrc../m.|     3,739.6 |       267.4 |       0.0% |         222.48 |
+|jczsolve                   B/shr.../m.|     5,930.0 |       168.6 |       0.0% |         366.22 |
+|sk_bforce2                 B/shrc-./m+|     6,559.4 |       152.5 |       0.0% |         270.47 |
+|rust_sudoku                B/shr.../m.|     7,779.6 |       128.5 |       0.0% |         325.91 |
+|tdoku                      T/shrc+./m+|    12,343.3 |        81.0 |       0.0% |         113.14 |
+
+|data/puzzles7_serg_benchmark          |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|     4,617.9 |       216.6 |       0.0% |          26.00 |
+|minisat_natural            S/s...+./m+|     4,567.8 |       218.9 |       0.0% |          21.05 |
+|minisat_complete           S/sh..+./m+|     4,890.8 |       204.5 |       0.0% |          16.59 |
+|minisat_augmented          S/shrc+./m+|     3,642.8 |       274.5 |       0.0% |          15.39 |
+|_tdev_dpll_triad           S/shrc+./m.|    13,511.1 |        74.0 |       0.0% |           7.10 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|     4,219.8 |       237.0 |       0.0% |           6.90 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|     4,248.3 |       235.4 |       0.0% |           8.29 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|     3,977.7 |       251.4 |       0.0% |           8.25 |
+|_tdev_basic                G/....../..|    47,357.9 |        21.1 |       0.0% |         639.31 |
+|_tdev_basic_heuristic      G/s...../m.|   463,859.9 |         2.2 |       0.0% |           8.63 |
+|lhl_sudoku                 G/s...../m.|   220,301.1 |         4.5 |       0.0% |           9.32 |
+|zerodoku                   G/sh..../m.|   126,466.7 |         7.9 |       0.0% |           7.26 |
+|fast_solv_9r2              E/sh..../m.|    62,634.2 |        16.0 |       0.0% |           7.17 |
+|kudoku                     E/sh..../m.|    94,306.4 |        10.6 |       0.0% |           7.15 |
+|norvig                     C/sh..../m.|     9,561.1 |       104.6 |       0.0% |           7.17 |
+|bb_sudoku                  C/shrc../m.|   167,057.3 |         6.0 |       0.0% |           7.41 |
+|fsss                       C/shrc../m.|   181,256.6 |         5.5 |       0.0% |           7.18 |
+|jsolve                     C/shrc../m.|   207,313.8 |         4.8 |       0.0% |           7.17 |
+|fsss2                      D/sh..../m.|   328,002.9 |         3.0 |       0.0% |           7.75 |
+|fsss2_locked               D/shrc../m.|   159,177.4 |         6.3 |       0.0% |           7.60 |
+|jczsolve                   B/shr.../m.|   285,843.4 |         3.5 |       0.0% |           7.09 |
+|sk_bforce2                 B/shrc-./m+|   321,638.5 |         3.1 |       0.0% |           7.07 |
+|rust_sudoku                B/shr.../m.|   415,648.0 |         2.4 |       0.0% |           7.09 |
+|tdoku                      T/shrc+./m+|   395,139.0 |         2.5 |       0.0% |           7.13 |
+
+|data/puzzles8_gen_puzzles             |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
+|--------------------------------------|------------:|------------:|-----------:|---------------:|
+|minisat_minimal            S/s...+./m+|    22,082.1 |        45.3 |      95.8% |           2.26 |
+|minisat_natural            S/s...+./m+|    19,924.0 |        50.2 |      95.8% |           1.66 |
+|minisat_complete           S/sh..+./m+|    17,465.9 |        57.3 |      97.4% |           0.74 |
+|minisat_augmented          S/shrc+./m+|    16,067.5 |        62.2 |      97.4% |           0.66 |
+|_tdev_dpll_triad           S/shrc+./m.|    36,116.1 |        27.7 |      97.4% |           0.28 |
+|_tdev_dpll_triad_scc_i     S/shrc++/m.|    27,758.9 |        36.0 |      97.4% |           0.28 |
+|_tdev_dpll_triad_scc_h     S/shrc+./m+|    27,188.6 |        36.8 |      97.4% |           0.34 |
+|_tdev_dpll_triad_scc_ih    S/shrc++/m+|    26,645.2 |        37.5 |      97.4% |           0.34 |
+|_tdev_basic                G/....../..|       273.1 |     3,661.8 |      61.8% |     127,124.80 |
+|_tdev_basic_heuristic      G/s...../m.|   122,856.5 |         8.1 |      95.8% |          47.23 |
+|lhl_sudoku                 G/s...../m.|    49,220.0 |        20.3 |      95.8% |          44.63 |
+|zerodoku                   G/sh..../m.|     2,978.7 |       335.7 |      97.1% |         288.39 |
+|fast_solv_9r2              E/sh..../m.|   106,767.9 |         9.4 |      97.4% |           0.30 |
+|kudoku                     E/sh..../m.|   180,611.0 |         5.5 |      97.4% |           0.29 |
+|norvig                     C/sh..../m.|    36,050.1 |        27.7 |      97.4% |           0.29 |
+|bb_sudoku                  C/shrc../m.|   834,925.6 |         1.2 |      97.4% |           0.29 |
+|fsss                       C/shrc../m.| 1,375,289.8 |         0.7 |      97.4% |           0.28 |
+|jsolve                     C/shrc../m.| 1,371,919.3 |         0.7 |      97.4% |           0.28 |
+|fsss2                      D/sh..../m.| 2,438,408.5 |         0.4 |      97.4% |           0.30 |
+|fsss2_locked               D/shrc../m.| 1,861,024.9 |         0.5 |      97.4% |           0.29 |
+|jczsolve                   B/shr.../m.| 1,635,908.5 |         0.6 |      97.4% |           0.31 |
+|sk_bforce2                 B/shrc-./m+| 1,809,181.8 |         0.6 |      97.4% |           0.30 |
+|rust_sudoku                B/shr.../m.| 1,563,147.1 |         0.6 |      97.4% |           0.28 |
+|tdoku                      T/shrc+./m+| 3,000,763.8 |         0.3 |      97.4% |           0.30 |

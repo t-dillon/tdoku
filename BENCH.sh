@@ -11,19 +11,19 @@
 #
 
 # which solvers to compile
-SOLVERS="-DALL=on"
+BUILD_SOLVER_ARGS="-DALL=on"
 # which solvers to run for profile generation
-PGO_SOLVERS="norvig,fast_solv_9r2,kudoku,bb_sudoku,jsolve,fsss2,jczsolve,sk_bforce2,tdoku"
+PGO_EVAL_SOLVERS="norvig,fast_solv_9r2,kudoku,bb_sudoku,jsolve,fsss2,jczsolve,sk_bforce2,tdoku"
 
-PLATFORM=$1
+ARCH_NAME=$1
 TASKSET_CPU=$2
 shift 2
 
 if [ "$1" == "mini" ]; then
     MINI=1
     shift
-    SOLVERS="-DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on"
-    PGO_SOLVERS="fsss2,jczsolve,sk_bforce2,tdoku"
+    BUILD_SOLVER_ARGS="-DFSSS2=on -DJCZSOLVE=on -DSK_BFORCE2=on -DRUST_SUDOKU=on"
+    PGO_EVAL_SOLVERS="fsss2,jczsolve,sk_bforce2,tdoku"
 fi
 
 for spec in "$@"
@@ -48,23 +48,24 @@ do
         # build for profile generation, profile a test load, move or merge profile, build using profile
         PGO="_pgo"
         rm -rf build/pgodata*
-        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-generate=build/pgodata.gen" $SOLVERS
-        build/run_benchmark -t15 -w15 -s${PGO_SOLVERS} data/puzzles2_17_clue
+        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-generate=build/pgodata.gen" $BUILD_SOLVER_ARGS
+        build/run_benchmark -t15 -w15 -s${PGO_EVAL_SOLVERS} data/puzzles2_17_clue
         if echo "${CC}" | grep -q gcc; then
             mv build/pgodata.gen build/pgodata.use
         else
             "${CC/clang/llvm-profdata}" merge build/pgodata.gen -output build/pgodata.use
         fi
-        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-use=pgodata.use" $SOLVERS
+        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" -DARGS="-fprofile-use=pgodata.use" $BUILD_SOLVER_ARGS
     else
         # build without pgo
-        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" $SOLVERS
+        ./BUILD.sh run_benchmark -DOPT="${OPT}" "${SSEFLAG}" $BUILD_SOLVER_ARGS
     fi
 
     # run benchmarks for this spec
     if [ "${MINI}" == "1" ]; then
-        setarch $(uname -m) -R taskset ${TASKSET_CPU} build/run_benchmark -t8 -w2 -n100000 -e1 -v0 data/puzzles4* | tee benchmarks/mini_${PLATFORM}_${CC}_${OPT}_${TARGET}${PGO}
+        setarch $(uname -m) -R taskset ${TASKSET_CPU} build/run_benchmark -t8 -w2 -n100000 -e1 -v0 data/puzzles4* | tee benchmarks/mini_${ARCH_NAME}_${CC}_${OPT}_${TARGET}${PGO}
     else
-        benchmarks/bench.sh setarch $(uname -m) -R taskset ${TASKSET_CPU} | tee benchmarks/${PLATFORM}_${CC}_${OPT}_${TARGET}${PGO}
+        mkdir -p benchmarks/results_${ARCH_NAME}
+        benchmarks/bench.sh setarch $(uname -m) -R taskset ${TASKSET_CPU} | tee benchmarks/results_${ARCH_NAME}/${ARCH_NAME}_${CC}_${OPT}_${TARGET}${PGO}
     fi
 done
