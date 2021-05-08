@@ -37,13 +37,13 @@
  *   _mm_popcnt_epi64
  *   _mm256_popcnt_epi16
  *
- * May 2020 Steam monthly hardware survey:
+ * April 2021 Steam monthly hardware survey:
  *   SSE2        100.00%
- *   SSSE3        98.52%
- *   SSE4.1       97.80%
- *   SSE4.2       97.05%
- *   AVX          92.25%
- *   AVX2         73.88%
+ *   SSSE3        99.17%
+ *   SSE4.1       98.80%
+ *   SSE4.2       98.36%
+ *   AVX          94.77%
+ *   AVX2         82.28%
  */
 
 // for functions like extract below where we use switches to determine which immediate to use
@@ -192,7 +192,7 @@ struct Bitvec08x16 {
 #ifdef __SSE4_1__
         return _mm_testc_si128(other.vec, vec);
 #else
-        return !(*this & other).AllZero();
+        return Bitvec08x16{_mm_andnot_si128(other.vec, vec)}.AllZero();
 #endif
     }
 
