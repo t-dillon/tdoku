@@ -101,9 +101,14 @@ gcc example/solve.c build/libtdoku.a -O3 -o solve -lstdc++ -lm
 
 This project is set up to facilitate benchmarking against a number of the fastest known solvers, as
 well as some solvers of historical interest. Also included is a solver based on minisat and able to
-test several different SAT encodings. 
-Follow the [instructions here](https://github.com/t-dillon/tdoku/blob/master/other/README.md) to find
-and set up sources where necessary.
+test several different SAT encodings. See [here](https://github.com/t-dillon/tdoku/blob/master/other/README.md)
+for descriptions of these solvers. So set them up for benchmarking run the following commands:
+
+```bash
+git submodule update --init --recursive
+other/setup_jczsolve.sh 
+other/setup_rust_sudoku.sh 
+```
 
 With sources set up, the benchmarks [found here](https://github.com/t-dillon/tdoku/tree/master/benchmarks) were run 
 using [BENCH.sh](https://github.com/t-dillon/tdoku/blob/master/BENCH.sh) by specifying an architecture, taskset CPU mask, and list of compiler/flag specifications as
@@ -113,8 +118,8 @@ in the following example:
 ./BENCH.sh i7-4930k 0x8 gcc-6_O3_native clang-8_O3_native clang-8_O3_native_pgo ...
 ```
 
-See CMakeLists.txt for the set of -D options to pass to BUILD.sh if you want to build and benchmark
-all supported solvers. See the benchmark program's help for details of how to run, solvers that
+See CMakeLists.txt for the set of -D options to pass to BUILD.sh. If you want to build and benchmark
+all supported solvers just pass -DALL=on. See the benchmark program's help for details of how to run, solvers that
 have been built, and build info:
 
 ```
