@@ -23,9 +23,9 @@ size_t OtherSolverRustSudoku(const char *input, size_t limit, uint32_t /*unused_
 
 
 #ifdef SK_BFORCE2
-#include "SK_BFORCE2/sk_t.h"
-#include "SK_BFORCE2/Zhn.h"
-#include "SK_BFORCE2/Zhn_cpp.h"
+#include "module_sk_bforce2/sk_t.h"
+#include "module_sk_bforce2/Zhn.h"
+#include "module_sk_bforce2/Zhn_cpp.h"
 
 size_t SKBFORCE_guesses;
 
@@ -41,7 +41,7 @@ size_t OtherSolverSKBFORCE2(const char *input, size_t limit, uint32_t /*unused_c
 
 
 #ifdef JCZSOLVE
-#include "JCZSolve/JCZSolve.h"
+#include "jczsolve/JCZSolve.h"
 // apply patch JCZSolve.c.diff so JCZSolve uses this extern.
 size_t JCZSolve_guesses;
 
@@ -57,7 +57,7 @@ size_t OtherSolverJCZSolve(const char *input, size_t limit, uint32_t /*unused_co
 
 
 #ifdef JSOLVE
-#include "JSolve/JSolve.h"
+#include "jsolve/JSolve.h"
 // apply patch JSolve.c.diff so JSolve uses this extern
 size_t JSolve_guesses;
 
@@ -90,7 +90,7 @@ size_t OtherSolverFsss(const char *input, size_t limit, uint32_t /*unused_config
 
 
 #ifdef FSSS2
-#include "fsss2/fsss2.h"
+#include "module_fsss2/fsss2.h"
 int nTrials;
 bool do_locked_candidates;
 

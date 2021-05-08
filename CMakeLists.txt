@@ -115,9 +115,9 @@ if (GSS)
     add_definitions(-DGSS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DM32bit -DGCC_POPCNT32")
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/gss/sudoku.c
-            other/gss/sudoku_parser.c
-            other/gss/gss.c)
+            other/module_gss/sudoku.c
+            other/module_gss/sudoku_parser.c
+            other/other_gss.c)
 endif()
 
 if (Z3)
@@ -152,7 +152,7 @@ endif()
 if (LHL)
     add_definitions(-DLHL)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/lhl_sudoku/Sudoku2.cpp)
+            other/module_lhl_sudoku/Sudoku2.cpp)
 endif()
 
 if (ZERODOKU)
@@ -176,7 +176,7 @@ endif()
 if (NORVIG)
     add_definitions(-DNORVIG)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/norvig/sudoku.en.cc)
+            other/module_norvig_sudoku/sudoku.en.cc)
 endif()
 
 if (BB_SUDOKU)
@@ -194,28 +194,28 @@ endif()
 if (JSOLVE)
     add_definitions(-DJSOLVE)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/JSolve/JSolve.c)
+            other/jsolve/JSolve.c)
 endif()
 
 if (FSSS2)
     add_definitions(-DFSSS2)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/fsss2/fsss2.cpp
-            other/fsss2/t_128.cpp)
+            other/module_fsss2/fsss2.cpp
+            other/module_fsss2/t_128.cpp)
     set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
 endif()
 
 if (JCZSOLVE)
     add_definitions(-DJCZSOLVE)
     set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-            other/JCZSolve/JCZSolve.c)
+            other/jczsolve/JCZSolve.c)
 endif()
 
 if (SK_BFORCE2)
   add_definitions(-DSK_BFORCE2)
   set(BENCHMARK_SOLVER_SOURCES ${BENCHMARK_SOLVER_SOURCES}
-          other/SK_BFORCE2/sk_bitfields.cpp
-          other/SK_BFORCE2/sk_t.cpp)
+          other/module_sk_bforce2/sk_bitfields.cpp
+          other/module_sk_bforce2/sk_t.cpp)
 endif()
 
 if (RUST_SUDOKU AND HAVE_RUST_SUDOKU_LIB)
@@ -257,6 +257,6 @@ if (MINISAT)
 endif()
 
 if (RUST_SUDOKU AND HAVE_RUST_SUDOKU_LIB)
-    target_link_libraries(run_benchmark ${CMAKE_SOURCE_DIR}/other/rust_sudoku/${CCOMPILER}/libsudoku.so)
-    target_link_libraries(run_tests     ${CMAKE_SOURCE_DIR}/other/rust_sudoku/${CCOMPILER}/libsudoku.so)
+    target_link_libraries(run_benchmark ${CMAKE_SOURCE_DIR}/other/module_rust_sudoku/${CCOMPILER}/libsudoku.so)
+    target_link_libraries(run_tests     ${CMAKE_SOURCE_DIR}/other/module_rust_sudoku/${CCOMPILER}/libsudoku.so)
 endif()

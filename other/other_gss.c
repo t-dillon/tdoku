@@ -31,8 +31,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "sudoku.h"
-#include "sudoku_parser.h"
+#include "module_gss/sudoku.h"
+#include "module_gss/sudoku_parser.h"
 static int init=0;
 static Sudoku S;
 static int STRAT=0;

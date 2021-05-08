@@ -1,0 +1,18 @@
+[submodule "other/module_rust_sudoku"]
+	path = other/module_rust_sudoku
+	url = https://www.github.com/t-dillon/rust_sudoku_bench
+[submodule "other/module_lhl_sudoku"]
+	path = other/module_lhl_sudoku
+	url = https://www.github.com/t-dillon/LHL-Sudoku-Solver-bench
+[submodule "other/module_norvig_sudoku"]
+	path = other/module_norvig_sudoku
+	url = https://www.github.com/t-dillon/norvig-sudoku-bench
+[submodule "other/module_fsss2"]
+	path = other/module_fsss2
+	url = https://www.github.com/t-dillon/fsss2_bench
+[submodule "other/module_sk_bforce2"]
+	path = other/module_sk_bforce2
+	url = https://www.github.com/t-dillon/SK_BFORCE2_bench
+[submodule "other/module_gss"]
+	path = other/module_gss
+	url = https://www.github.com/bartp5/gss
