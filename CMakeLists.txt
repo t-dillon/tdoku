@@ -54,7 +54,7 @@ if (ALL)
 endif()
 
 get_filename_component(CCOMPILER "$ENV{CC}" NAME)
-if(EXISTS "${CMAKE_SOURCE_DIR}/other/rust_sudoku/${CCOMPILER}/libsudoku.so")
+if(EXISTS "${CMAKE_SOURCE_DIR}/other/module_rust_sudoku/${CCOMPILER}/libsudoku.so")
     set(HAVE_RUST_SUDOKU_LIB ON)
 else()
     set(HAVE_RUST_SUDOKU_LIB OFF)
