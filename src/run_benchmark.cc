@@ -243,7 +243,7 @@ struct Benchmark {
         double guesses_per_puzzle = total_guesses / (double) num_solved;
 
         char str[1024];
-        sprintf(str, fmt,
+        snprintf(str, sizeof(str), fmt,
                 CXX_COMPILER_ID, CXX_COMPILER_VERSION, CXX_FLAGS,
                 dataset_filename.c_str(), solver.Id().c_str(), solver.Desc().c_str(),
                 puzzles_per_second, usec_per_puzzle, percent_no_guess, guesses_per_puzzle);

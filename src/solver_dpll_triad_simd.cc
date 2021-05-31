@@ -340,14 +340,14 @@ struct SolverDpllTriadSimd {
         across_cols |= across_cols.RotateCols();
         across_cols |= across_cols.RotateCols2();
         // let 3x3 submatrix have assertions occuring anywhere
-        Cells16 new_box_eliminations = Cells16::or_X_Y_or_Z(across_cols,
+        Cells16 new_box_eliminations = Cells16::X_Y_or_Z_or(across_cols,
                                                             across_cols.Shuffle(tables.row_rotate_3x3_1),
                                                             across_cols.Shuffle(tables.row_rotate_3x3_2));
         // join 3x3 submatrix, row/col margins, and all elimination bits in asserted cells
-        new_box_eliminations = Cells16::or_X_Y_or_Z(
+        new_box_eliminations = Cells16::X_Y_or_Z_or(
                 new_box_eliminations, across_rows, cell_assertions_only.WhichNonZero());
         // then apply after clearing elimination bits for the asserted candidates.
-        box_eliminations = Cells16::xor_X_Y_or_Z(
+        box_eliminations = Cells16::X_Y_xor_Z_or(
                 new_box_eliminations, cell_assertions_only, box_eliminations);
 
         // below we'll update band eliminations to reflect assertion of negative triads or positive
@@ -359,7 +359,7 @@ struct SolverDpllTriadSimd {
         // shift 0 positive triads, we'll eliminate the triads at shifts 1 and 2 in the band.
         Cells16 hv_pos_triad_assertions{HorizontalTriads(new_box_eliminations),
                                         VerticalTriads(new_box_eliminations)};
-        Cells16 new_eliminations = Cells16::or_X_Y_or_Z(
+        Cells16 new_eliminations = Cells16::X_Y_or_Z_or(
                 hv_neg_triad_assertions.Shuffle(
                         tables.triads_shift0_to_config_elims16[box_j * 3 + box_i]),
                 hv_pos_triad_assertions.Shuffle(
@@ -399,14 +399,13 @@ struct SolverDpllTriadSimd {
         auto two_or_more = one_or_more & rotated;
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more = Cells16::and_X_Y_or_Z(one_or_more, rotated, two_or_more);
+        two_or_more = Cells16::X_Y_and_Z_or(one_or_more, rotated, two_or_more);
         one_or_more |= rotated;
         rotated = rotate(rotated);
-        two_or_more = Cells16::and_X_Y_or_Z(one_or_more, rotated, two_or_more);
-        one_or_more |= rotated;
-        // we might check here that one_or_more == kAll, but the check is a net loss.
+        two_or_more = Cells16::X_Y_and_Z_or(one_or_more, rotated, two_or_more);
+        // we might rotate again and check that one_or_more == kAll, but the check is a net loss.
         // now assert (in cells where they remain) candidates that occur only once an a row/col.
-        assertions |= Cells16::and_X_Y_andnot_Z(cells, one_or_more, two_or_more);
+        assertions = Cells16::X_Y_andnot_Z_or(cells, two_or_more, assertions);
     }
 
     template<int vertical>
@@ -427,11 +426,11 @@ struct SolverDpllTriadSimd {
         Cells16 asserting = triads & counts.WhichEqual(Cells16::All(3));
         Cells08 lo = asserting.GetLo();
         Cells08 hi = asserting.GetHi();
-        band.configurations = band.configurations.and_not(Cells08::or_X_Y_or_Z(
+        band.configurations = band.configurations.and_not(Cells08::X_Y_or_Z_or(
                 lo.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[0]),
                 lo.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[0]),
                 lo.Shuffle(tables.triads_shift1_to_config_elims[1])));
-        band.configurations = band.configurations.and_not(Cells08::or_X_Y_or_Z(
+        band.configurations = band.configurations.and_not(Cells08::X_Y_or_Z_or(
                 lo.Shuffle(tables.triads_shift2_to_config_elims[1]),
                 hi.RotateCols().Shuffle(tables.triads_shift1_to_config_elims[2]),
                 hi.RotateCols().Shuffle(tables.triads_shift2_to_config_elims[2])));
@@ -575,11 +574,11 @@ struct SolverDpllTriadSimd {
         state.boxen[indexing.box].cells = state.boxen[indexing.box].cells.and_not(
                 tables.cell_assignment_eliminations[digit - '1'][indexing.elem]);
         // merge band eliminations; we'll propagate after all clue are processed.
-        state.bands[0][indexing.box_i].eliminations = Cells08::and_X_Y_or_Z(
+        state.bands[0][indexing.box_i].eliminations = Cells08::X_Y_and_Z_or(
                 tables.peer_x_elem_to_config_mask[indexing.box_j][indexing.elem_i],
                 Cells08::All(candidate),
                 state.bands[0][indexing.box_i].eliminations);
-        state.bands[1][indexing.box_j].eliminations = Cells08::and_X_Y_or_Z(
+        state.bands[1][indexing.box_j].eliminations = Cells08::X_Y_and_Z_or(
                 tables.peer_x_elem_to_config_mask[indexing.box_i][indexing.elem_j],
                 Cells08::All(candidate),
                 state.bands[1][indexing.box_j].eliminations);

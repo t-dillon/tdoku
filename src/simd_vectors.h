@@ -74,6 +74,17 @@ struct Consts {
 
 const Consts consts{};
 
+// Postfix-named specifications for three-operand boolean functions to use with ternarylogic intrinsics.
+//
+//                                X   11110000
+//                                Y   11001100
+//                                Z   10101010
+//                                    --------
+constexpr uint OP_X_Y_and_Z_or    = 0b11101010;
+constexpr uint OP_X_Y_andnot_Z_or = 0b10111010;
+constexpr uint OP_X_Y_or_Z_or     = 0b11111110;
+constexpr uint OP_X_Y_xor_Z_or    = 0b10111110;
+
 } // namespace
 
 struct Bitvec08x16 {
@@ -95,29 +106,20 @@ struct Bitvec08x16 {
     }
 
     static inline Bitvec08x16
-    or_X_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    X_Y_and_Z_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #if(defined __AVX512VL__ && defined __AVX512F__)
-        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11111110);
-#else
-        return x | y | z;
-#endif
-    }
-
-    static inline Bitvec08x16
-    and_X_Y_or_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
-#if(defined __AVX512VL__ && defined __AVX512F__)
-        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11101010);
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, OP_X_Y_and_Z_or);
 #else
         return (x & y) | z;
 #endif
     }
 
     static inline Bitvec08x16
-    and_X_Y_andnot_Z(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+    X_Y_or_Z_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
 #if(defined __AVX512VL__ && defined __AVX512F__)
-        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b01000000);
+        return _mm_ternarylogic_epi32(x.vec, y.vec, z.vec, OP_X_Y_or_Z_or);
 #else
-        return (x & y).and_not(z);
+        return x | y | z;
 #endif
     }
 
@@ -420,22 +422,22 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    or_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-        return Bitvec16x16{x.lo_ | y.lo_ | z.lo_, x.hi_ | y.hi_ | z.hi_};
-    }
-
-    static inline Bitvec16x16
-    and_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_and_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
         return Bitvec16x16{(x.lo_ & y.lo_) | z.lo_, (x.hi_ & y.hi_) | z.hi_};
     }
 
     static inline Bitvec16x16
-    and_X_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-        return Bitvec16x16{x.lo_ & y.lo_.and_not(z.lo_), x.hi_ & y.hi_.and_not(z.hi_)};
+    X_Y_andnot_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+        return Bitvec16x16{x.lo_.and_not(y.lo_) | z.lo_, x.hi_.and_not(y.hi_) | z.hi_};
     }
 
     static inline Bitvec16x16
-    xor_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_or_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+        return Bitvec16x16{x.lo_ | y.lo_ | z.lo_, x.hi_ | y.hi_ | z.hi_};
+    }
+
+    static inline Bitvec16x16
+    X_Y_xor_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
         return Bitvec16x16{(x.lo_ ^ y.lo_) | z.lo_, (x.hi_ ^ y.hi_) | z.hi_};
     }
 
@@ -612,36 +614,36 @@ struct Bitvec16x16 {
     }
 
     static inline Bitvec16x16
-    or_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_and_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #if(defined __AVX512VL__ && defined __AVX512F__)
-        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11111110);
-#else
-        return x | y | z;
-#endif
-    }
-
-    static inline Bitvec16x16
-    and_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
-#if(defined __AVX512VL__ && defined __AVX512F__)
-        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b11101010);
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, OP_X_Y_and_Z_or);
 #else
         return (x & y) | z;
 #endif
     }
 
     static inline Bitvec16x16
-    and_X_Y_andnot_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_andnot_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #if(defined __AVX512VL__ && defined __AVX512F__)
-        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b01000000);
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, OP_X_Y_andnot_Z_or);
 #else
-        return x & y.and_not(z);
+        return x.and_not(y) | z;
 #endif
     }
 
     static inline Bitvec16x16
-    xor_X_Y_or_Z(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+    X_Y_or_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
 #if(defined __AVX512VL__ && defined __AVX512F__)
-        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, 0b10111110);
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, OP_X_Y_or_Z_or);
+#else
+        return x | y | z;
+#endif
+    }
+
+    static inline Bitvec16x16
+    X_Y_xor_Z_or(const Bitvec16x16 &x, const Bitvec16x16 &y, const Bitvec16x16 &z) {
+#if(defined __AVX512VL__ && defined __AVX512F__)
+        return _mm256_ternarylogic_epi32(x.vec, y.vec, z.vec, OP_X_Y_xor_Z_or);
 #else
         return (x ^ y) | z;
 #endif
