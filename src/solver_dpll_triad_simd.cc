@@ -470,11 +470,13 @@ struct SolverDpllTriadSimd {
 
     static constexpr uint32_t NONE = UINT32_MAX;
 
-    static inline pair<uint32_t, uint32_t> ChooseBandAndValueToBranch(const State &state) {
+    static inline pair<uint32_t, Cells08> ChooseBandAndValueToBranch(const State &state) {
         uint32_t best_band = NONE, best_band_count = NONE;
         uint32_t best_value = NONE, best_value_count = NONE;
 
         // first find the unfixed band with the fewest possible configurations across all values.
+        // a minimum unfixed band will have 0 <= count-10 <= 44. if all bands are fixed then the
+        // minimum after subtracting 10 and interpreting as a uint will be 0xfffa.
         uint32_t config_minpos = Bitvec08x16{
                 (uint16_t)state.bands[0][0].configurations.Popcount(),
                 (uint16_t)state.bands[0][1].configurations.Popcount(),
@@ -486,50 +488,71 @@ struct SolverDpllTriadSimd {
                 (uint16_t)0xffff
         }.MinPosGreaterThanOrEqual(10);
 
+        // if we have an unfixed band then find a digit in the band with the fewest possibilities.
+        // the approach below is faster than actually counting the configuration for each digit and
+        // using MinPosGreaterThanOrEqual as above, but it is inexact in rare cases when all digits
+        // have 4 or more configurations. the tradeoff is a net positive for Vanilla Sudoku and a
+        // net negative for Pencilmark Sudoku.
         if ((config_minpos & 0xff00u) == 0) {
             best_band = config_minpos >> 16u;
             const auto &configurations =
                     state.bands[tables.div3[best_band]][tables.mod3[best_band]].configurations;
-            uint32_t value_minpos = Bitvec08x16{
-                    (uint16_t)(configurations & tables.one_value_mask[0]).Popcount(),
-                    (uint16_t)(configurations & tables.one_value_mask[1]).Popcount(),
-                    (uint16_t)(configurations & tables.one_value_mask[2]).Popcount(),
-                    (uint16_t)(configurations & tables.one_value_mask[3]).Popcount(),
-                    (uint16_t)(configurations & tables.one_value_mask[4]).Popcount(),
-                    (uint16_t)(configurations & tables.one_value_mask[5]).Popcount(),
-                    (uint16_t)(configurations & tables.one_value_mask[6]).Popcount(),
-                    (uint16_t)(configurations & tables.one_value_mask[7]).Popcount()
-            }.MinPosGreaterThanOrEqual(2);
+            Cells08 one = configurations;
+            Cells08 shuffle_rotate = Cells08{shuf01, shuf02, shuf03, shuf04, shuf05, shuf00, 0xffff, 0xffff};
+            Cells08 rotated = one.Shuffle(shuffle_rotate); // 1
+            Cells08 two = one & rotated;
+            one |= rotated;
+            rotated = rotated.Shuffle(shuffle_rotate); // 2
+            Cells08 three = two & rotated;
+            two |= one & rotated;
+            one |= rotated;
+            rotated = rotated.Shuffle(shuffle_rotate); // 3
+            Cells08 four = three & rotated;
+            three |= two & rotated;
+            two |= one & rotated;
+            one |= rotated;
+            rotated = rotated.Shuffle(shuffle_rotate); // 4
+            four |= three & rotated;
+            three |= two & rotated;
+            two |= one & rotated;
+            one |= rotated;
+            rotated = rotated.Shuffle(shuffle_rotate); // 5
+            four |= three & rotated;
+            three |= two & rotated;
+            two |= one & rotated;
 
-            best_value = value_minpos >> 16u;
-            uint32_t excess_over_two = value_minpos & 0xffffu;
-            if (excess_over_two) {
-                uint32_t last_count = (configurations & tables.one_value_mask[8]).Popcount();
-                if (last_count > 1 && last_count < excess_over_two + 2) {
-                    best_value = 8;
+            Cells08 only_two = two.and_not(three);
+            if (!LIKELY(only_two.AllZero())) {
+                return {best_band, only_two.GetLowBit()};
+            } else {
+                Cells08 only_three = three.and_not(four);
+                if (LIKELY(!only_three.AllZero())) {
+                    return {best_band, only_three.GetLowBit()};
+                } else {
+                    return {best_band, four.GetLowBit()};
                 }
             }
         }
-        return {best_band, best_value};
+        return {best_band, Cells08::All(0)};
     }
 
     template<int vertical>
-    void BranchOnBandAndValue(int band_idx, int value, State &state) {
+    void BranchOnBandAndValue(int band_idx, const Cells08 &value_mask, State &state) {
         Band &band = state.bands[vertical][band_idx];
         // we enter with two or more possible configurations for this value
-        Cells08 configurations = band.configurations & tables.one_value_mask[value];
-        // assert the first configuration
+        Cells08 value_configurations = band.configurations & value_mask;
+        // assign the first configuration by eliminating the others
         num_guesses_++;
         State state_copy = state;
-        Cells08 assignment1_mask = configurations.ClearLowBit();
-        state_copy.bands[vertical][band_idx].eliminations |= assignment1_mask;
+        Cells08 assignment_elims = value_configurations.ClearLowBit();
+        state_copy.bands[vertical][band_idx].eliminations |= assignment_elims;
         if (BandEliminate<vertical>(state_copy, band_idx)) {
             CountSolutionsConsistentWithPartialAssignment(state_copy);
             if (num_solutions_ == limit_) return;
         }
         // now negate the first configuration
-        Cells08 negation1_mask = configurations ^assignment1_mask;
-        state.bands[vertical][band_idx].eliminations |= negation1_mask;
+        Cells08 negation_elims = value_configurations ^ assignment_elims;
+        state.bands[vertical][band_idx].eliminations |= negation_elims;
         if (BandEliminate<vertical>(state, band_idx)) {
             CountSolutionsConsistentWithPartialAssignment(state);
         }

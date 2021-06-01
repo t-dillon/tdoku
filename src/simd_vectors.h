@@ -198,6 +198,14 @@ struct Bitvec08x16 {
 #endif
     }
 
+    inline Bitvec08x16 GetLowBit() const {
+#ifdef __SSSE3__
+        return _mm_and_si128(vec, _mm_sign_epi16(vec, _mm_set1_epi16(-1)));
+#else
+        return _mm_and_si128(vec, _mm_add_epi16(_mm_xor_si128(vec, _mm_set1_epi16(-1)), _mm_set1_epi16(1)));
+#endif
+    }
+
     inline Bitvec08x16 ClearLowBit() const {
 #ifdef __SSE4_2__
         __m128i cmp = _mm_cmpgt_epi64(vec, _mm_setzero_si128());
