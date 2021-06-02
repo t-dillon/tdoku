@@ -198,9 +198,9 @@ _tdev_dpll_triad_scc_ih        data/puzzles5_forum_hardest_1905_11+      i5-8600
 _tdev_dpll_triad_scc_ih        data/puzzles6_forum_hardest_1106          i5-8600k_clang-8_O3_native_pgo
 _tdev_dpll_triad_scc_ih        data/puzzles7_serg_benchmark              i5-8600k_clang-8_O3_native_pgo
 _tdev_dpll_triad_scc_ih        data/puzzles8_gen_puzzles                 i5-8600k_clang-8_O3_native_pgo
-tdoku                          data/puzzles0_kaggle                      i5-8600k_clang-8_O3_native
+tdoku                          data/puzzles0_kaggle                      i5-8600k_clang-8_O3_native_pgo
 tdoku                          data/puzzles1_unbiased                    i5-8600k_clang-8_O3_native
-tdoku                          data/puzzles2_17_clue                     i5-8600k_clang-8_O3_native
+tdoku                          data/puzzles2_17_clue                     i5-8600k_clang-8_O3_native_pgo
 tdoku                          data/puzzles3_magictour_top1465           i5-8600k_clang-8_O3_native
 tdoku                          data/puzzles4_forum_hardest_1905          i5-8600k_clang-8_O3_native
 tdoku                          data/puzzles5_forum_hardest_1905_11+      i5-8600k_clang-8_O3_native

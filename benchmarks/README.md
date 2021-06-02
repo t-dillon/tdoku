@@ -116,6 +116,25 @@ for adjacent bars for two different solvers on the same dataset, or for the same
 
 # Benchmark Summary
 
+Below is a series of charts comparing the fastest 5 tested solvers across a range of platforms and datasets, where each bar
+shows results for the most favorable compiler configuration for the given (platform,dataset,solver) across a range
+of compiler configurations tested.
+
+Some generalizations:
+* For over-constrained non-minimal puzzles FSSS2 tends to be fastest by a decent margin. This is likely due to FSSS2's
+  ability to perform parallel inference, something that is particularly effective for over-constrained puzzles but
+  somewhat less effective for minimal puzzles since these are more likely to require long chains of serial inference.
+* For easy minimal puzzles (e.g., unbiased and 17-clue) Rust Sudoku tends to be either fastest or on par with the fastest 
+  depending on the age of the platform. This is likely because such puzzles require only a few of the simplest and most
+  common techniques and members of the JCZSolve family are exceptionally well optimized for just these techniques.
+* For harder puzzles Tdoku tends to be fastest by a signficant margin. It incorporates a wider set of inference
+  techniques into a unified framework which reduces the amount of search required for hard puzzles. This generality
+  comes at the cost of making the simplest inferences more expensive as messages must be passed box->band->box, and this
+  is disadvantageous when only simple inferences are required. However, Tdoku mostly offsets this disadvantage on easy
+  puzzles with its own form of parallelism.
+* For invalid puzzles Tdoku tends to be fastest by a significant margin. This is likely due to Tdoku's method of
+  initialization by band, which catches certain inconsistencies very quickly.
+
 ![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=584139883&format=image)
 
 ![](https://docs.google.com/spreadsheets/d/e/2PACX-1vRrWT05pUsB0LRS8ZR-j7WNvoUIpX6TDHBGeWhJnd7bRedgNn-a60TLVIRYO9A51yUZuXo-ugWx-ibK/pubchart?oid=1741583019&format=image)

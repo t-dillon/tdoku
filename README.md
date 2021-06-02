@@ -37,7 +37,7 @@ difficult puzzles with Sudoku Explainer ratings of 11 or higher:
 |jczsolve                   B/shr.../m.|    12,162.5 |        82.2 |       0.0% |         171.20 |
 |sk_bforce2                 B/shrc-./m+|    13,454.2 |        74.3 |       0.0% |         122.64 |
 |rust_sudoku                B/shr.../m.|    14,353.8 |        69.7 |       0.0% |         161.94 |
-|<b>tdoku                      T/shrc+./m+|    23,229.9 |        43.0 |       0.0% |          64.95</b> |
+|<b>tdoku                      T/shrc+./m+|    24,001.7 |        41.7 |       0.0% |          64.98</b> |
 </pre>
 
 And here are results on the well-known and commonly-benchmarked dataset of ~49,000 generally very easy 17-clue puzzles:
@@ -56,7 +56,7 @@ And here are results on the well-known and commonly-benchmarked dataset of ~49,0
 |jczsolve                   B/shr.../m.|   281,424.2 |         3.6 |      70.5% |           1.76 |
 |sk_bforce2                 B/shrc-./m+|   355,984.3 |         2.8 |      74.1% |           1.02 |
 |rust_sudoku                B/shr.../m.|   400,162.5 |         2.5 |      70.5% |           1.74 |
-|<b>tdoku                      T/shrc+./m+|   359,167.2 |         2.8 |      78.7% |           0.61 </b>|
+|<b>tdoku                      T/shrc+./m+|   364,354.6 |         2.7 |      78.7% |           0.61</b> |
 </pre>
 
 And here is a chart comparing a narrower set of the fastest solvers on a wider range of datasets
@@ -71,8 +71,7 @@ and chart above. With older processors there are moderate declines in performanc
 precipitous declines with SSE2. See the comment [here](https://github.com/t-dillon/tdoku/blob/master/src/simd_vectors.h)
 for stats on the availability of SIMD instructions from the Steam hardware survey.
 
-
-For configuration and full details of the runs used for these comparisons, [see here](https://github.com/t-dillon/tdoku/tree/master/benchmarks/results_i7-1065G7/i7-1065G7_clang-11_O3_native).
+For configuration and full details of the runs used for the comparisons shown above, [see here](https://github.com/t-dillon/tdoku/tree/master/benchmarks/results_i7-1065G7/i7-1065G7_clang-11_O3_native).
 
 
 #### Building and Running

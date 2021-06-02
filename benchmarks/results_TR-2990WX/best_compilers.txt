@@ -206,7 +206,7 @@ tdoku                          data/puzzles4_forum_hardest_1905          TR-2990
 tdoku                          data/puzzles5_forum_hardest_1905_11+      TR-2990WX_clang-8_O3_avx
 tdoku                          data/puzzles6_forum_hardest_1106          TR-2990WX_clang-8_O3_avx
 tdoku                          data/puzzles7_serg_benchmark              TR-2990WX_clang-8_O3_avx
-tdoku                          data/puzzles8_gen_puzzles                 TR-2990WX_clang-8_O3_avx
+tdoku                          data/puzzles8_gen_puzzles                 TR-2990WX_clang-8_O3_native_pgo
 zerodoku                       data/puzzles0_kaggle                      TR-2990WX_clang-11_O3_native
 zerodoku                       data/puzzles1_unbiased                    TR-2990WX_clang-11_O3_native
 zerodoku                       data/puzzles2_17_clue                     TR-2990WX_clang-11_O3_native

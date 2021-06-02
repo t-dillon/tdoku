@@ -94,7 +94,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.| 1,061,291.0 |         0.9 |     100.0% |           0.00 |
 |jczsolve                   B/shr.../m.|   555,889.9 |         1.8 |     100.0% |           0.00 |
 |sk_bforce2                 B/shrc-./m+| 1,128,919.9 |         0.9 |     100.0% |           0.00 |
-|tdoku                      T/shrc+./m+|   985,974.9 |         1.0 |     100.0% |           0.00 |
+|tdoku                      T/shrc+./m+| 1,186,499.9 |         0.8 |     100.0% |           0.00 |
 
 |data/puzzles1_unbiased                |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -120,7 +120,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.|   235,312.1 |         4.2 |      45.0% |           1.48 |
 |jczsolve                   B/shr.../m.|   270,237.8 |         3.7 |      40.2% |           1.86 |
 |sk_bforce2                 B/shrc-./m+|   320,416.8 |         3.1 |      44.7% |           1.61 |
-|tdoku                      T/shrc+./m+|   394,915.1 |         2.5 |      47.5% |           1.13 |
+|tdoku                      T/shrc+./m+|   394,407.0 |         2.5 |      47.5% |           1.13 |
 
 |data/puzzles2_17_clue                 |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -146,7 +146,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.|   238,601.9 |         4.2 |      76.0% |           0.95 |
 |jczsolve                   B/shr.../m.|   272,192.5 |         3.7 |      70.5% |           1.76 |
 |sk_bforce2                 B/shrc-./m+|   345,550.1 |         2.9 |      74.1% |           1.02 |
-|tdoku                      T/shrc+./m+|   364,370.8 |         2.7 |      78.7% |           0.61 |
+|tdoku                      T/shrc+./m+|   372,026.2 |         2.7 |      78.7% |           0.61 |
 
 |data/puzzles3_magictour_top1465       |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -172,7 +172,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.|    46,107.8 |        21.7 |       4.1% |          14.01 |
 |jczsolve                   B/shr.../m.|    72,009.8 |        13.9 |       2.3% |          20.76 |
 |sk_bforce2                 B/shrc-./m+|    79,139.5 |        12.6 |       3.6% |          15.42 |
-|tdoku                      T/shrc+./m+|   135,230.4 |         7.4 |       7.9% |           9.05 |
+|tdoku                      T/shrc+./m+|   139,320.0 |         7.2 |       7.9% |           9.05 |
 
 |data/puzzles4_forum_hardest_1905      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -198,7 +198,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.|     8,622.0 |       116.0 |       0.0% |          97.42 |
 |jczsolve                   B/shr.../m.|    15,063.0 |        66.4 |       0.0% |         138.56 |
 |sk_bforce2                 B/shrc-./m+|    16,478.2 |        60.7 |       0.0% |         103.25 |
-|tdoku                      T/shrc+./m+|    28,426.6 |        35.2 |       0.0% |          54.96 |
+|tdoku                      T/shrc+./m+|    29,274.8 |        34.2 |       0.0% |          54.98 |
 
 |data/puzzles5_forum_hardest_1905_11+  |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -224,7 +224,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.|     7,135.5 |       140.1 |       0.0% |         112.92 |
 |jczsolve                   B/shr.../m.|    11,741.6 |        85.2 |       0.0% |         171.20 |
 |sk_bforce2                 B/shrc-./m+|    13,084.3 |        76.4 |       0.0% |         122.64 |
-|tdoku                      T/shrc+./m+|    23,592.4 |        42.4 |       0.0% |          64.95 |
+|tdoku                      T/shrc+./m+|    24,304.7 |        41.1 |       0.0% |          64.98 |
 
 |data/puzzles6_forum_hardest_1106      |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -250,7 +250,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.|     3,987.9 |       250.8 |       0.0% |         222.35 |
 |jczsolve                   B/shr.../m.|     6,233.7 |       160.4 |       0.0% |         366.22 |
 |sk_bforce2                 B/shrc-./m+|     6,679.7 |       149.7 |       0.0% |         270.40 |
-|tdoku                      T/shrc+./m+|    15,087.9 |        66.3 |       0.0% |         113.14 |
+|tdoku                      T/shrc+./m+|    15,589.6 |        64.1 |       0.0% |         113.16 |
 
 |data/puzzles7_serg_benchmark          |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -276,7 +276,7 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.|   171,370.5 |         5.8 |       0.0% |           7.60 |
 |jczsolve                   B/shr.../m.|   284,255.6 |         3.5 |       0.0% |           7.09 |
 |sk_bforce2                 B/shrc-./m+|   333,650.0 |         3.0 |       0.0% |           7.07 |
-|tdoku                      T/shrc+./m+|   467,209.5 |         2.1 |       0.0% |           7.13 |
+|tdoku                      T/shrc+./m+|   522,074.0 |         1.9 |       0.0% |           7.13 |
 
 |data/puzzles8_gen_puzzles             |  puzzles/sec|  usec/puzzle|   %no_guess|  guesses/puzzle|
 |--------------------------------------|------------:|------------:|-----------:|---------------:|
@@ -302,4 +302,4 @@ setarch x86_64 -R taskset 0x8 build/run_benchmark -t15 -w5 -n250000 -e1 -v0 data
 |fsss2_locked               D/shrc../m.| 1,258,748.1 |         0.8 |      97.4% |           0.29 |
 |jczsolve                   B/shr.../m.| 1,574,064.0 |         0.6 |      97.4% |           0.31 |
 |sk_bforce2                 B/shrc-./m+| 1,843,915.0 |         0.5 |      97.4% |           0.30 |
-|tdoku                      T/shrc+./m+| 3,529,617.6 |         0.3 |      97.4% |           0.30 |
+|tdoku                      T/shrc+./m+| 3,688,847.4 |         0.3 |      97.4% |           0.30 |
