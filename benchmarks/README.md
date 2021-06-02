@@ -53,7 +53,7 @@ representative of Sudoku in general, whereas other data sets often contain puzzl
 special properties (clue counts, extremes of difficulty) that may favor one solver or another.
 The puzzles in this dataset are generally *very easy* because hard puzzles are rare.
 
-1. [[source](http://staffhome.ecm.uwa.edu.au/~00013890/sudokumin.php)] **17_clue** \
+1. [[source](https://web.archive.org/web/20131019184812if_/http://school.maths.uwa.edu.au/~gordon/sudokumin.php)] **17_clue** \
 A complete or nearly-complete dataset of all 17-clue puzzles (49158 of them as of 2020-01)
 maintained by Gordon Royle of the University of Western Australia. These puzzles are also *very
 easy*. About half of them can be solved with naked and hidden singles only. This is largely a test of
