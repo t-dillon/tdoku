@@ -89,8 +89,11 @@ configure_file (
     "${CMAKE_SOURCE_DIR}/src/build_info.h")
 
 # a gcc-linkable library with just the fast solver
-add_library(tdoku STATIC src/solver_dpll_triad_simd.cc src/util.cc)
-target_compile_options(tdoku PUBLIC -fno-exceptions -fno-rtti -fpic)
+add_library(tdoku_object OBJECT src/solver_dpll_triad_simd.cc src/util.cc)
+target_compile_options(tdoku_object PUBLIC -fno-exceptions -fno-rtti -fpic)
+
+add_library(tdoku_static STATIC $<TARGET_OBJECTS:tdoku_object>)
+add_library(tdoku_shared SHARED $<TARGET_OBJECTS:tdoku_object>)
 
 set(GUROBI_DIR "gurobi900/linux64" CACHE STRING "Gurobi installation directory")
 
@@ -229,12 +232,12 @@ add_executable(generate src/generate.cc src/util.cc ${GENERATE_SOLVER_SOURCES})
 add_library(grid_lib STATIC src/grid_lib.cc)
 target_compile_options(grid_lib PUBLIC -fno-exceptions -fno-rtti -fpic)
 target_include_directories(grid_lib PUBLIC include)
-target_link_libraries(grid_lib tdoku)
+target_link_libraries(grid_lib tdoku_static)
 
 add_executable(grid_tools src/grid_tools.cc)
 target_include_directories(grid_tools PUBLIC include)
 target_link_libraries(grid_tools grid_lib)
-target_link_libraries(grid_tools tdoku)
+target_link_libraries(grid_tools tdoku_static)
 
 if (Z3)
     target_link_libraries(run_benchmark z3)

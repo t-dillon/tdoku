@@ -89,11 +89,17 @@ simple test program that reads Sudoku (or 729-character pencilmark Sudoku) from 
 the solution count and solution (if unique) like so:
 
 ```bash
-gcc example/solve.c build/libtdoku.a -O3 -o solve -lstdc++ -lm
+gcc example/solve.c build/libtdoku_static.a -O3 -o solve -lstdc++ -lm
 # count solutions:
 ./solve < data/puzzles0_kaggle
 # find single solution:
 ./solve 1 < data/puzzles0_kaggle
+```
+
+Or for an example of using the shared library via python bindings try:
+
+```bash
+python3 example/solve.py data/puzzles0_kaggle
 ```
 
 #### Benchmarking Other Solvers
