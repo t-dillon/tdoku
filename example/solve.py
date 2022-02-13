@@ -70,5 +70,5 @@ if __name__ == '__main__':
         for puzzle in f.readlines():
             if len(puzzle) >= 81 and not puzzle.startswith('#'):
                 count, solution, guesses = tdoku.Solve(puzzle)
-                print("%.81s:%r:%.81s:%r" % (puzzle, count, solution, guesses))
+                print("%.81s:%lu:%.81s:%lu" % (puzzle, count, solution, guesses))
 
