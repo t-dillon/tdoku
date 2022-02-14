@@ -162,17 +162,18 @@ or easy puzzles, or some combination of goals.
 ```
 $ build/generate -h
 usage: generate <options> <pattern_file>
-
 options:
   -c <clue_weight>    scoring weight for number of clues
   -g <guess weight>   scoring weight(exponent) for geo mean guesses
   -r <random weight>  scoring weight for uniform noise
   -d <drop>           number of clues to drop before re-completing
   -e <num_evals>      number of permutations to eval for guess estimate
+  -l <limit>          limit number of puzzles to generate
+  -m [0|1]            minimize generated puzzles
   -n <pool size>      number of top scored puzzles to keep in pool
   -a [0|1]            display all puzzles (not just top scored)
-  -m [0|1]            use minisat instead of tdoku for eval
   -p [0|1]            generate pencilmark puzzles
+  -s [0|1|2]          solver for eval: 0=tdoku,1=minisat,2=gurobi
   -h                  display this help message
 ```
 Examples:
@@ -182,7 +183,7 @@ Examples:
 $ build/generate -p0 -c0 -g1 -d1 -n100 -e50
 
 # starting from 100 random pencilmark Sudoku puzzle seeds perform {-2+?} generation driving  
-# towards low-clue puzzles with a secondary emphasis on puzzle difficulty (according to minisat 
+# towards high-clue puzzles with a secondary emphasis on puzzle difficulty (according to minisat 
 # evaluation of 5 random puzzle permutations). 
-build/generate -c1 -g0.01 -r0 -d2 -n100 -e5
+build/generate -c-1 -g0.01 -r0 -d2 -n100 -e5
 ```
