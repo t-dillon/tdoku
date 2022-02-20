@@ -80,10 +80,10 @@ const Consts consts{};
 //                                Y   11001100
 //                                Z   10101010
 //                                    --------
-constexpr uint OP_X_Y_and_Z_or    = 0b11101010;
-constexpr uint OP_X_Y_andnot_Z_or = 0b10111010;
-constexpr uint OP_X_Y_or_Z_or     = 0b11111110;
-constexpr uint OP_X_Y_xor_Z_or    = 0b10111110;
+constexpr int OP_X_Y_and_Z_or    = 0b11101010;
+constexpr int OP_X_Y_andnot_Z_or = 0b10111010;
+constexpr int OP_X_Y_or_Z_or     = 0b11111110;
+constexpr int OP_X_Y_xor_Z_or    = 0b10111110;
 
 } // namespace
 
