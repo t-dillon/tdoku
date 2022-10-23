@@ -54,9 +54,11 @@ special properties (clue counts, extremes of difficulty) that may favor one solv
 The puzzles in this dataset are generally *very easy* because hard puzzles are rare.
 
 1. [[source](https://web.archive.org/web/20131019184812if_/http://school.maths.uwa.edu.au/~gordon/sudokumin.php)] **17_clue** \
-A complete or nearly-complete dataset of all 17-clue puzzles (49158 of them as of 2020-01)
-maintained by Gordon Royle of the University of Western Australia. These puzzles are also *very
-easy*. About half of them can be solved with naked and hidden singles only. This is largely a test of
+A dataset of *all* 17-clue puzzles (49158 of them). This dataset was initially compiled by Gordon Royle of
+the University of Western Australia (up to 49151 puzzles). Between 2017 and 2022 the dataset was completed 
+and [proven complete](http://forum.enjoysudoku.com/scan-solution-grids-for-17-clues-as-of-blue-t34012-165.html#p323538) 
+via exhaustive search by *champagne*, *blue*, and other members of the Enjoy Sudoku Players Forum.
+These puzzles are also *very easy*. About half of them can be solved with naked and hidden singles only. This is largely a test of
 how well the solver is optimized for hidden singles.
  
 1. [[source](http://magictour.free.fr/sudoku.htm)] **magictour_top1465** \

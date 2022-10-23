@@ -37,13 +37,13 @@
  *   _mm_popcnt_epi64
  *   _mm256_popcnt_epi16
  *
- * April 2021 Steam monthly hardware survey:
+ * September 2022 Steam monthly hardware survey:
  *   SSE2        100.00%
- *   SSSE3        99.17%
- *   SSE4.1       98.80%
- *   SSE4.2       98.36%
- *   AVX          94.77%
- *   AVX2         82.28%
+ *   SSSE3        99.50%
+ *   SSE4.1       99.24%
+ *   SSE4.2       98.95%
+ *   AVX          95.27%
+ *   AVX2         89.05%
  */
 
 // for functions like extract below where we use switches to determine which immediate to use
