@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "build:c": "arch -x86_64 zsh ./BUILD.sh",
+    "build:wasm": "arch -x86_64 zsh ./BUILD-wasm.sh",
+    "compile:c": "arch -x86_64 zsh ./compile.sh",
+    "compile:wasm": "arch -x86_64 zsh ./compile-wasm.sh",
+    "solve:count": "./solve < data/puzzles0_kaggle",
+    "solve:single": "./solve 1 < data/puzzles0_kaggle",
+    "start": "npx http-server ."
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}

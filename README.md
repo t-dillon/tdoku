@@ -1,5 +1,23 @@
 ## Tdoku: A fast Sudoku Solver and Generator
 
+### WebAssembly
+
+#### Prerequisites
+1. Setup https://github.com/emscripten-core/emsdk
+2. On mac: brew install cmake
+
+#### Running example in browser with WebAssembly
+1. npm run build:wasm
+2. npm run compile:wasm
+3. npm run start
+4. Open http://localhost:8080/example/solve.html
+
+#### Running original with C
+1. npm run build:c
+2. npm run compile:c
+3. ./solve
+
+
 #### Overview
 This project contains an optimized Sudoku solver and puzzle generator for conventional 9x9 puzzles (as well as Sukaku
 "pencilmark" puzzles with clues given as negative instead of positive literals). It also contains two 
