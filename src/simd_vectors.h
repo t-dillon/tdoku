@@ -2,12 +2,21 @@
 #define TDOKU_SIMD_VECTORS_H
 
 #include <cstring>
+// NEON code assumes little-endian lane order, as on all mainstream aarch64 platforms
+#if defined(__aarch64__) && defined(__AARCH64EL__) && defined(__ARM_NEON)
+#define TDOKU_NEON 1
+#include <arm_neon.h>
+#else
 #include <immintrin.h>
+#endif
 #include <memory>
 #include <tuple>
 #include <utility>
 
 /*
+ * On 64-bit ARM (aarch64) we use NEON, implementing Bitvec08x16 natively with the same semantics as
+ * the SSSE3/SSE4 code paths below, and Bitvec16x16 as a pair of Bitvec08x16 as on pre-AVX2 x86.
+ *
  * We'll support vectors targeting sse2, sse4_1, avx2, and avx512bitalg instruction sets.
  * While avx2 or avx512 will be ideal, sse4_1 should deliver solid performance. OTOH, sse2
  * performance is seriously handicapped because of our heavy reliance on fast ssse3 shuffles
@@ -66,6 +75,7 @@ struct FourBy64 {
 
 namespace {
 
+#ifndef TDOKU_NEON
 struct Consts {
     __m128i popcount_mask4 = _mm_set1_epi16(0x0f);
     __m128i popcount_lookup = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
@@ -73,6 +83,7 @@ struct Consts {
 };
 
 const Consts consts{};
+#endif
 
 // Postfix-named specifications for three-operand boolean functions to use with ternarylogic intrinsics.
 //
@@ -86,6 +97,213 @@ constexpr int OP_X_Y_or_Z_or     = 0b11111110;
 constexpr int OP_X_Y_xor_Z_or    = 0b10111110;
 
 } // namespace
+
+#ifdef TDOKU_NEON
+
+// NEON implementation of Bitvec08x16. Each method matches the SSSE3/SSE4 code path of the x86
+// implementation below, including signedness, operand order, and tie-breaking.
+struct Bitvec08x16 {
+    uint16x8_t vec;
+
+    // true if no bit is set. shared by the tests below that x86 does with ptest or movemask
+    static inline bool NoBitsSet(const uint16x8_t &v) {
+        return vmaxvq_u16(v) == 0;
+    }
+
+    Bitvec08x16() : vec{vdupq_n_u16(0)} {}
+
+    // non-explicit conversions intended
+    Bitvec08x16(const uint16x8_t &u16x8) noexcept : vec{u16x8} {}
+
+    Bitvec08x16(const Bitvec08x16 &other) noexcept : vec(other.vec) {}
+
+    Bitvec08x16(uint16_t x00, uint16_t x01, uint16_t x02, uint16_t x03,
+                uint16_t x04, uint16_t x05, uint16_t x06, uint16_t x07) {
+        const uint16_t values[8] = {x00, x01, x02, x03, x04, x05, x06, x07};
+        vec = vld1q_u16(values);
+    }
+
+    static inline Bitvec08x16 All(uint16_t value) {
+        return vdupq_n_u16(value);
+    }
+
+    static inline Bitvec08x16
+    X_Y_and_Z_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+        return (x & y) | z;
+    }
+
+    static inline Bitvec08x16
+    X_Y_or_Z_or(const Bitvec08x16 &x, const Bitvec08x16 &y, const Bitvec08x16 &z) {
+        return x | y | z;
+    }
+
+    inline Bitvec08x16 &operator=(const Bitvec08x16 &other) = default;
+
+    inline bool operator==(const Bitvec08x16 &other) const {
+        return (*this ^ other).AllZero();
+    }
+
+    inline bool operator!=(const Bitvec08x16 &other) const {
+        return !(*this == other);
+    }
+
+    inline TwoBy64 As_2x64() const {
+        TwoBy64 out{};
+        vst1q_u16((uint16_t *) &out, vec);
+        return out;
+    }
+
+    inline Bitvec08x16 WhichEqual(const Bitvec08x16 &other) const {
+        return vceqq_u16(vec, other.vec);
+    }
+
+    // signed 16-bit comparison, as with _mm_cmpgt_epi16
+    inline Bitvec08x16 WhichNonZero() const {
+        return vcgtq_s16(vreinterpretq_s16_u16(vec), vdupq_n_s16(0));
+    }
+
+    inline bool AllZero() const {
+        return NoBitsSet(vec);
+    }
+
+    inline bool AnyZero() const {
+        return vminvq_u16(vec) == 0;
+    }
+
+    // signed 16-bit comparison, as with _mm_cmpgt_epi16
+    inline bool AnyLessThan(const Bitvec08x16 &other) const {
+        return !NoBitsSet(vcltq_s16(vreinterpretq_s16_u16(vec), vreinterpretq_s16_u16(other.vec)));
+    }
+
+    inline bool Intersects(const Bitvec08x16 &other) const {
+        return !(*this & other).AllZero();
+    }
+
+    inline bool SubsetOf(const Bitvec08x16 &other) const {
+        return and_not(other).AllZero();
+    }
+
+    // x & -x per 16-bit lane, as with _mm_sign_epi16(x, -1)
+    inline Bitvec08x16 GetLowBit() const {
+        return vandq_u16(vec, vreinterpretq_u16_s16(vnegq_s16(vreinterpretq_s16_u16(vec))));
+    }
+
+    // clears the lowest set bit of the low 64-bit lane if that lane is positive as a signed 64-bit
+    // integer, else of the high lane if it's positive, exactly as the SSE4.2 version does.
+    inline Bitvec08x16 ClearLowBit() const {
+        uint64x2_t v64 = vreinterpretq_u64_u16(vec);
+        uint64x2_t cmp = vcgtq_s64(vreinterpretq_s64_u16(vec), vdupq_n_s64(0));
+        // cmp shifted left by one byte across the whole register (_mm_slli_si128(cmp, 1))
+        uint64x2_t cmp_shifted = vreinterpretq_u64_u8(vextq_u8(vdupq_n_u8(0), vreinterpretq_u8_u64(cmp), 15));
+        uint64x2_t one = vbicq_u64(vshrq_n_u64(cmp, 63), cmp_shifted);
+        return vreinterpretq_u16_u64(vandq_u64(v64, vsubq_u64(v64, one)));
+    }
+
+    // counts the number of bits set among the 9 lowest order bits of each packed 16-bit integer
+    // subject to the assumption that the 7 high bits are zero. results are undefined if any of
+    // the 7 high bits are nonzero.
+    inline Bitvec08x16 Popcounts9() const {
+        return vpaddlq_u8(vcntq_u8(vreinterpretq_u8_u16(vec)));
+    }
+
+    inline int Popcount() const {
+        return vaddvq_u8(vcntq_u8(vreinterpretq_u8_u16(vec)));
+    }
+
+    // like _mm_minpos_epu16 on (vec - min_val): (index << 16) | min, lowest index on ties
+    inline uint32_t MinPosGreaterThanOrEqual(uint16_t min_val) {
+        const uint16_t lane_indices[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+        uint16x8_t shifted = vsubq_u16(vec, vdupq_n_u16(min_val));
+        uint16_t min = vminvq_u16(shifted);
+        uint16x8_t is_min = vceqq_u16(shifted, vdupq_n_u16(min));
+        uint16_t pos = vminvq_u16(vbslq_u16(is_min, vld1q_u16(lane_indices), vdupq_n_u16(8)));
+        return ((uint32_t) pos << 16u) | min;
+    }
+
+    // like _mm_shuffle_epi8: control bytes with the high bit set give zero, otherwise the low 4
+    // bits select a byte. vqtbl1q_u8 gives zero for indices >= 16, so masking with 0x8f matches.
+    inline Bitvec08x16 Shuffle(const Bitvec08x16 &control) const {
+        uint8x16_t index = vandq_u8(vreinterpretq_u8_u16(control.vec), vdupq_n_u8(0x8f));
+        return vreinterpretq_u16_u8(vqtbl1q_u8(vreinterpretq_u8_u16(vec), index));
+    }
+
+    // rotates the 16-bit values within each 64-bit half down by one position
+    inline Bitvec08x16 RotateRows() const {
+        uint64x2_t v64 = vreinterpretq_u64_u16(vec);
+        return vreinterpretq_u16_u64(vsriq_n_u64(vshlq_n_u64(v64, 48), v64, 16));
+    }
+
+    // swaps the 32-bit values within each 64-bit half, as _mm_shuffle_epi32(vec, 0b10110001)
+    inline Bitvec08x16 RotateRows2() const {
+        return vreinterpretq_u16_u32(vrev64q_u32(vreinterpretq_u32_u16(vec)));
+    }
+
+    // swaps the 64-bit halves, as _mm_shuffle_epi32(vec, 0b01001110)
+    inline Bitvec08x16 RotateCols() const {
+        return vextq_u16(vec, vec, 4);
+    }
+
+    inline uint16_t Extract(int index) const {
+#define CASE(x) case x: return vgetq_lane_u16(vec, x);
+        switch (index) {
+            CASE(0)
+            CASE(1)
+            CASE(2)
+            CASE(3)
+            CASE(4)
+            CASE(5)
+            CASE(6)
+            CASE(7)
+        }
+#undef CASE
+    }
+
+    void Insert(int index, uint16_t value) {
+#define CASE(x) case x: vec = vsetq_lane_u16(value, vec, x); break;
+        switch (index) {
+            CASE(0)
+            CASE(1)
+            CASE(2)
+            CASE(3)
+            CASE(4)
+            CASE(5)
+            CASE(6)
+            CASE(7)
+        }
+#undef CASE
+    }
+
+    inline Bitvec08x16 operator|(const Bitvec08x16 &other) const {
+        return vorrq_u16(vec, other.vec);
+    }
+
+    inline void operator|=(const Bitvec08x16 &other) {
+        vec = (*this | other).vec;
+    }
+
+    inline Bitvec08x16 operator^(const Bitvec08x16 &other) const {
+        return veorq_u16(vec, other.vec);
+    }
+
+    inline void operator^=(const Bitvec08x16 &other) {
+        vec = (*this ^ other).vec;
+    }
+
+    inline Bitvec08x16 operator&(const Bitvec08x16 &other) const {
+        return vandq_u16(vec, other.vec);
+    }
+
+    inline void operator&=(const Bitvec08x16 &other) {
+        vec = (*this & other).vec;
+    }
+
+    // this & ~other, as _mm_andnot_si128(other, this)
+    inline Bitvec08x16 and_not(const Bitvec08x16 &other) const {
+        return vbicq_u16(vec, other.vec);
+    };
+};
+
+#else // !TDOKU_NEON
 
 struct Bitvec08x16 {
     __m128i vec;
@@ -404,6 +622,8 @@ struct Bitvec08x16 {
     };
 };
 
+#endif // TDOKU_NEON
+
 
 #ifndef __AVX2__
 
@@ -422,8 +642,13 @@ struct Bitvec16x16 {
                 uint16_t x04, uint16_t x05, uint16_t x06, uint16_t x07,
                 uint16_t x08, uint16_t x09, uint16_t x10, uint16_t x11,
                 uint16_t x12, uint16_t x13, uint16_t x14, uint16_t x15) noexcept :
+#ifdef TDOKU_NEON
+            lo_{x00, x01, x02, x03, x04, x05, x06, x07},
+            hi_{x08, x09, x10, x11, x12, x13, x14, x15} {}
+#else
             lo_{_mm_setr_epi16(x00, x01, x02, x03, x04, x05, x06, x07)},
             hi_{_mm_setr_epi16(x08, x09, x10, x11, x12, x13, x14, x15)} {}
+#endif
 
     static inline Bitvec16x16 All(uint16_t value) {
         return Bitvec16x16{Bitvec08x16::All(value), Bitvec08x16::All(value)};
@@ -524,7 +749,11 @@ struct Bitvec16x16 {
     }
 
     inline Bitvec16x16 RotateCols() const {
-#ifdef __SSSE3__
+#if defined(TDOKU_NEON)
+        // _mm_alignr_epi8(hi, lo, 8) is vextq(lo, hi, 4 lanes)
+        return Bitvec16x16{vextq_u16(lo_.vec, hi_.vec, 4),
+                           vextq_u16(hi_.vec, lo_.vec, 4)};
+#elif defined(__SSSE3__)
         return Bitvec16x16{_mm_alignr_epi8(hi_.vec, lo_.vec, 8),
                            _mm_alignr_epi8(lo_.vec, hi_.vec, 8)};
 #else
@@ -848,6 +1077,13 @@ struct Bitvec16x16 {
 #endif // __AVX2__
 
 inline uint32_t WhichDots16(const char *x) {
+#ifdef TDOKU_NEON
+    // one bit per byte, like _mm_movemask_epi8: weight each matching byte by its bit and sum each half
+    const uint8_t bit_weights[16] = {1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128};
+    uint8x16_t matches = vceqq_u8(vld1q_u8((const uint8_t *) x), vdupq_n_u8('.'));
+    uint8x16_t bits = vandq_u8(matches, vld1q_u8(bit_weights));
+    return (uint32_t) vaddv_u8(vget_low_u8(bits)) | ((uint32_t) vaddv_u8(vget_high_u8(bits)) << 8u);
+#else
     const __m128i dots = _mm_set1_epi8('.');
     const __m128i src = _mm_loadu_si128((const __m128i *) x);
 #if(defined __AVX512VL__ && defined __AVX512BW__)
@@ -855,6 +1091,7 @@ inline uint32_t WhichDots16(const char *x) {
 #else
     return ((uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(src, dots)));
 #endif
+#endif // TDOKU_NEON
 }
 
 inline uint32_t WhichDots32(const char *x) {
